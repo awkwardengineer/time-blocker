@@ -28,11 +28,13 @@ test.describe('PDF Generation', () => {
     // Save PDF to file system for inspection
     // This will be saved in the test output directory
     const pdfPath = testInfo.outputPath('generated-pdf.pdf');
-    writeFileSync(pdfPath, pdfBuffer);
+    // Convert Buffer to Uint8Array for type compatibility
+    const pdfBytes = new Uint8Array(pdfBuffer);
+    writeFileSync(pdfPath, pdfBytes);
     console.log(`PDF saved to: ${pdfPath}`);
     
     // Parse the PDF to get page count
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
     const pageCount = pdfDoc.getPageCount();
     
     // Verify the PDF has exactly one page
