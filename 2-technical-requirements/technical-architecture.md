@@ -44,49 +44,58 @@ graph TB
     App[Application] --> Dexie[Dexie.js]
     Dexie --> IndexedDB[IndexedDB]
     
-    IndexedDB --> Tasks[Tasks Table<br/>Core Entities]
-    IndexedDB --> BacklogLists[Backlog Lists Table]
-    IndexedDB --> BacklogItems[Backlog Items Table<br/>Junction: Tasks ↔ Lists]
+    IndexedDB --> Lists[Lists Table]
+    IndexedDB --> Tasks[Tasks Table<br/>listId reference]
     IndexedDB --> CalendarState[Calendar Sync State]
     IndexedDB --> UserPrefs[User Preferences]
     
-    Tasks -.->|referenced by| BacklogItems
-    BacklogLists -.->|referenced by| BacklogItems
+    Lists -.->|listId| Tasks
 ```
 
 ### Data Models
 
-#### Tasks (Primary Entities)
-- **Tasks are independent entities** that can be referenced from multiple places
-- **Task Properties**: 
-  - `id`: Unique identifier
-  - `text`: Task content
-  - `time`: Optional start time (if time-specific)
-  - `day`: Which day the task is assigned to (null if not assigned to a day)
-  - `source`: User-created or Google Calendar
-  - `weekId`: Week identifier for organization
-- **Task Relationships**:
-  - A task can exist in a day (has `day` property) without being in any backlog list
-  - A task can exist in backlog lists (via BacklogItems junction table) without a day
-  - A task can exist in both (has `day` and is linked to backlog lists)
-  - A task can only be assigned to one day at a time
+#### Current Model (Milestones 020-050)
 
-#### Backlog Structure
-- **Backlog Lists**: Collections that organize tasks
-  - `id`: Unique identifier
-  - `name`: List name
-  - `order`: Display order
-- **Backlog Items**: Junction table linking tasks to lists (many-to-many relationship)
-  - `id`: Unique identifier
-  - `listId`: Reference to backlog list
-  - `taskId`: Reference to task
-  - `order`: Display order within the list
-- **Display Logic**: To show "planned" status in backlog, check if the linked task has a `day` value
+**Lists**
+- `id`: Unique identifier
+- `name`: List name
+- `order`: Display order
 
-#### Days
-- **Days are not separate entities** - they are represented by querying tasks where `day` is not null
-- To display days with tasks: Query tasks grouped by `day` property
-- Day values can be day names (e.g., "Monday") or dates (e.g., "2024-01-15")
+**Tasks**
+- `id`: Unique identifier
+- `text`: Task content
+- `listId`: Reference to parent list (one-to-many)
+- `order`: Display order within list
+
+#### Future Model (Later Milestones)
+
+**Tasks** (independent entities)
+- `id`: Unique identifier
+- `text`: Task content
+- `time`: Optional start time
+- `day`: Which day assigned to (null if not assigned)
+- `source`: User-created or Google Calendar
+- `weekId`: Week identifier
+
+**Backlog Lists**
+- `id`: Unique identifier
+- `name`: List name
+- `order`: Display order
+
+**Backlog Items** (junction table)
+- `id`: Unique identifier
+- `listId`: Reference to backlog list
+- `taskId`: Reference to task
+- `order`: Display order within list
+
+**Relationships**
+- Tasks can exist in multiple lists (via junction table)
+- Tasks can exist in a day without being in any list
+- Tasks can exist in both lists and days
+
+**Days**
+- Not separate entities - query tasks where `day` is not null
+- Day values: day names (e.g., "Monday") or dates (e.g., "2024-01-15")
 
 #### User Preferences
 - Settings
@@ -97,12 +106,28 @@ graph TB
 - **Storage Method**: IndexedDB via Dexie.js for all data (tasks, backlog, preferences, calendar state)
 - **Data Format**: Structured objects stored directly (no JSON serialization needed)
 
-### Dexie.js Database Schema Example
+### Dexie.js Database Schema
+
+#### Current Schema (Milestones 020-050): Simple One-to-Many
 ```javascript
 import Dexie from 'dexie';
 
 const db = new Dexie('TaskPlannerDB');
 db.version(1).stores({
+  lists: '++id, name, order',
+  tasks: '++id, text, listId, order',
+  preferences: 'key',
+  calendarSyncState: 'key'
+});
+```
+
+- **Lists Table**: Backlog list definitions
+- **Tasks Table**: Tasks with direct `listId` reference (one task belongs to one list)
+- **Query Pattern**: `db.tasks.where('listId').equals(listId).toArray()`
+
+#### Future Schema (Later Milestones): Many-to-Many with Junction Table
+```javascript
+db.version(2).stores({
   tasks: '++id, day, time, weekId, text, source',
   backlogLists: '++id, name, order',
   backlogItems: '++id, listId, taskId, order',
@@ -111,15 +136,16 @@ db.version(1).stores({
 });
 ```
 
-- **Tasks Table**: Core task entities with indexes on `day`, `time`, `weekId` for efficient queries
+- **Tasks Table**: Independent entities (can exist in multiple lists or days)
 - **BacklogLists Table**: Backlog list definitions
-- **BacklogItems Table**: Junction table linking tasks to lists (indexed on `listId` and `taskId` for efficient lookups)
-- **Auto-increment**: Primary keys use `++id` for automatic ID generation
-- **Migrations**: Dexie handles schema versioning and migrations automatically
-- **Query Patterns**:
-  - Get tasks for a day: `db.tasks.where('day').equals(dayName).toArray()`
-  - Get tasks in a backlog list: Join `backlogItems` (filtered by `listId`) with `tasks` (filtered by `taskId`)
-  - Get planned tasks in backlog: Tasks that have both a `day` value and are linked via `backlogItems`
+- **BacklogItems Table**: Junction table for many-to-many (tasks ↔ lists)
+- **Query Pattern**: Join `backlogItems` (filtered by `listId`) with `tasks` (filtered by `taskId`)
+
+#### Migration Strategy
+- Start with simple schema (version 1) for early milestones
+- Migrate to version 2 when tasks need to exist in multiple lists
+- Use Dexie migrations to convert `tasks.listId` → `backlogItems` entries
+- Abstract list access patterns in code to ease migration
 
 ## Google Calendar Integration
 
