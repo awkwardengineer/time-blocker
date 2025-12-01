@@ -7,6 +7,7 @@ export default defineConfig(({ command, mode }) => {
   const isTest = command === 'test' || mode === 'test'
   
   return {
+    base: '/time-blocker/',
     plugins: [
       svelte(),
     ],
