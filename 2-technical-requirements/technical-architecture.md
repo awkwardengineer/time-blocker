@@ -66,6 +66,14 @@ graph TB
 - `text`: Task content
 - `listId`: Reference to parent list (one-to-many)
 - `order`: Display order within list
+- `status`: Task state (`unchecked`, `checked`, `archived`) - *Added in milestone 030*
+
+**Task State Transitions** (Milestone 030+)
+- `unchecked` → `checked`: User marks task as complete
+- `checked` → `archived`: User archives completed task
+- `archived` → deleted: User permanently deletes task from archived view
+- Main page displays only `unchecked` and `checked` tasks
+- Archived view displays only `archived` tasks
 
 #### Future Model (Later Milestones)
 
@@ -108,7 +116,7 @@ graph TB
 
 ### Dexie.js Database Schema
 
-#### Current Schema (Milestones 020-050): Simple One-to-Many
+#### Schema Version 1 (Milestone 020): Simple One-to-Many
 ```javascript
 import Dexie from 'dexie';
 
@@ -125,10 +133,29 @@ db.version(1).stores({
 - **Tasks Table**: Tasks with direct `listId` reference (one task belongs to one list)
 - **Query Pattern**: `db.tasks.where('listId').equals(listId).toArray()`
 
-#### Future Schema (Later Milestones): Many-to-Many with Junction Table
+#### Schema Version 2 (Milestone 030+): Add Task Status
 ```javascript
 db.version(2).stores({
-  tasks: '++id, day, time, weekId, text, source',
+  lists: '++id, name, order',
+  tasks: '++id, text, listId, order, status',
+  preferences: 'key',
+  calendarSyncState: 'key'
+}).upgrade(tx => {
+  // Migration: Set all existing tasks to 'unchecked' status
+  return tx.tasks.toCollection().modify(task => {
+    task.status = 'unchecked';
+  });
+});
+```
+
+- **Tasks Table**: Adds `status` field (`unchecked`, `checked`, `archived`)
+- **Query Pattern (Main View)**: `db.tasks.where('listId').equals(listId).and(task => task.status !== 'archived').toArray()`
+- **Query Pattern (Archived View)**: `db.tasks.where('status').equals('archived').toArray()`
+
+#### Future Schema (Later Milestones): Many-to-Many with Junction Table
+```javascript
+db.version(3).stores({
+  tasks: '++id, day, time, weekId, text, source, status',
   backlogLists: '++id, name, order',
   backlogItems: '++id, listId, taskId, order',
   preferences: 'key',
@@ -136,16 +163,17 @@ db.version(2).stores({
 });
 ```
 
-- **Tasks Table**: Independent entities (can exist in multiple lists or days)
+- **Tasks Table**: Independent entities (can exist in multiple lists or days), retains `status` field
 - **BacklogLists Table**: Backlog list definitions
 - **BacklogItems Table**: Junction table for many-to-many (tasks ↔ lists)
-- **Query Pattern**: Join `backlogItems` (filtered by `listId`) with `tasks` (filtered by `taskId`)
+- **Query Pattern**: Join `backlogItems` (filtered by `listId`) with `tasks` (filtered by `taskId` and `status`)
 
 #### Migration Strategy
-- Start with simple schema (version 1) for early milestones
-- Migrate to version 2 when tasks need to exist in multiple lists
+- **Version 1 → Version 2** (Milestone 030): Add `status` field, default existing tasks to `unchecked`
+- **Version 2 → Version 3** (Later): Migrate to many-to-many when tasks need to exist in multiple lists
 - Use Dexie migrations to convert `tasks.listId` → `backlogItems` entries
 - Abstract list access patterns in code to ease migration
+- Preserve `status` field through all migrations
 
 ## Google Calendar Integration
 
