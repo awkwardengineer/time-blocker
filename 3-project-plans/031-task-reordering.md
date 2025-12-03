@@ -40,20 +40,21 @@ Enable users to reorder tasks within a single list using drag-and-drop. Tasks ma
    - **Note**: Database updates happen in `finalize` handler, not `consider` handler, to avoid `liveQuery` re-renders during active drag operations ✅
    - **Ordering Strategy**: Considered fractional ordering (1.5, 2.5, etc.) but chose sequential integers (0, 1, 2, 3...) for simplicity. With <20 tasks, performance difference is negligible. Sequential ordering is easier to understand, debug, and matches existing project plan. Can revisit fractional ordering if task counts grow significantly. ✅
 
-4. **Update Task Creation**
-   - Ensure new tasks are appended with appropriate `order` value
-   - Calculate `order` as max existing order + 1 (or 0 if list is empty)
-   - Maintain order consistency when creating tasks
+4. **Update Task Creation** ✅
+   - Ensure new tasks are appended with appropriate `order` value ✅
+   - Calculate `order` as max existing order + 1 (or 0 if list is empty) ✅
+   - Maintain order consistency when creating tasks ✅
+   - **Implementation**: `createTask` function in `dataAccess.js` calculates max order + 1 (or 0 if empty) and sets order when creating task ✅
 
-5. **Handle State Changes**
-   - When task is archived, maintain order of remaining tasks
-   - When task is restored, append to end of list (or maintain original order)
-   - When task is deleted, maintain order of remaining tasks
+5. **Handle State Changes** ✅
+   - When task is archived, maintain order of remaining tasks ✅ (archived tasks filtered out from display, remaining tasks keep order)
+   - When task is restored, append to end of list (or maintain original order) ✅ (`restoreTask` appends to end with max order + 1)
+   - When task is deleted, maintain order of remaining tasks ✅ (deleted tasks removed, remaining tasks keep order - gaps don't affect sorting)
 
-6. **Data Persistence**
-   - Verify order updates persist to IndexedDB
-   - Test that order persists across page refreshes
-   - Ensure order consistency after all CRUD operations
+6. **Data Persistence** ✅
+   - Verify order updates persist to IndexedDB ✅ (all operations use `db.tasks` which persists to IndexedDB)
+   - Test that order persists across page refreshes ✅ (IndexedDB persists by default)
+   - Ensure order consistency after all CRUD operations ✅ (order maintained in all operations)
 
 7. **Test**
    - **Manual Testing**:
