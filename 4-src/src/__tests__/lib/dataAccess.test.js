@@ -107,13 +107,14 @@ describe('dataAccess', () => {
   })
 
   describe('getArchivedTasks', () => {
-    it('should return only archived tasks', async () => {
+    it('should return only archived tasks ordered by archive time (newest first)', async () => {
       const lists = await getAllLists()
       const list1 = lists.find(l => l.order === 1)
       
       // Add archived tasks
-      await db.tasks.add({ text: 'Archived Task 1', listId: list1.id, order: 0, status: 'archived' })
-      await db.tasks.add({ text: 'Archived Task 2', listId: list1.id, order: 1, status: 'archived' })
+      const now = Date.now()
+      await db.tasks.add({ text: 'Archived Task 1', listId: list1.id, order: 0, status: 'archived', archivedAt: now - 1000 })
+      await db.tasks.add({ text: 'Archived Task 2', listId: list1.id, order: 1, status: 'archived', archivedAt: now })
       
       const archivedTasks = await getArchivedTasks()
       
@@ -125,11 +126,10 @@ describe('dataAccess', () => {
         expect(task.status).toBe('archived')
       })
       
-      // Verify ordering
-      expect(archivedTasks[0].order).toBe(0)
-      expect(archivedTasks[0].text).toBe('Archived Task 1')
-      expect(archivedTasks[1].order).toBe(1)
-      expect(archivedTasks[1].text).toBe('Archived Task 2')
+      // Verify ordering (newest first)
+      expect(archivedTasks[0].text).toBe('Archived Task 2')
+      expect(archivedTasks[0].archivedAt).toBeGreaterThan(archivedTasks[1].archivedAt)
+      expect(archivedTasks[1].text).toBe('Archived Task 1')
     })
   })
 
