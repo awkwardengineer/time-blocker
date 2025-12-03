@@ -35,14 +35,25 @@ export async function getAllTasks() {
 }
 
 /**
- * Fetch all archived tasks, ordered by their order field
+ * Fetch all archived tasks, ordered by archive time (newest first)
  * @returns {Promise<Array>} Array of archived task objects
  */
 export async function getArchivedTasks() {
-  return await db.tasks
+  const tasks = await db.tasks
     .where('status')
     .equals('archived')
-    .sortBy('order');
+    .toArray();
+  
+  // Sort by archivedAt descending (newest first), fallback to order for tasks without archivedAt
+  return tasks.sort((a, b) => {
+    const aTime = a.archivedAt || 0;
+    const bTime = b.archivedAt || 0;
+    if (bTime !== aTime) {
+      return bTime - aTime; // Descending order (newest first)
+    }
+    // Fallback to order if archivedAt is the same
+    return (b.order || 0) - (a.order || 0);
+  });
 }
 
 /**
@@ -87,7 +98,17 @@ export async function updateTaskStatus(taskId, status) {
     throw new Error(`Invalid status: ${status}`);
   }
   
-  return await db.tasks.update(taskId, { status });
+  const updateData = { status };
+  
+  // Set archivedAt timestamp when archiving
+  if (status === 'archived') {
+    updateData.archivedAt = Date.now();
+  } else if (status !== 'archived') {
+    // Clear archivedAt when restoring or changing to non-archived status
+    updateData.archivedAt = null;
+  }
+  
+  return await db.tasks.update(taskId, updateData);
 }
 
 /**
@@ -121,5 +142,15 @@ export async function restoreTask(taskId) {
     status: 'checked',
     order: nextOrder
   });
+}
+
+/**
+ * Permanently delete a task from the database
+ * This is a destructive operation - use with caution
+ * @param {number} taskId - The ID of the task to delete
+ * @returns {Promise<void>}
+ */
+export async function deleteTask(taskId) {
+  await db.tasks.delete(taskId);
 }
 

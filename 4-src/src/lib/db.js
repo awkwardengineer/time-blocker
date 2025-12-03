@@ -23,6 +23,22 @@ db.version(2).stores({
   });
 });
 
+// Version 3: Add archivedAt timestamp field to tasks
+db.version(3).stores({
+  lists: '++id, name, order',
+  tasks: '++id, text, listId, order, status, archivedAt',
+  preferences: 'key',
+  calendarSyncState: 'key'
+}).upgrade(tx => {
+  // Migration: Set archivedAt to current time for existing archived tasks
+  return tx.tasks
+    .where('status')
+    .equals('archived')
+    .modify(task => {
+      task.archivedAt = Date.now();
+    });
+});
+
 export default db;
 
 

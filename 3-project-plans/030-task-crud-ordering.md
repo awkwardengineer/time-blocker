@@ -39,6 +39,8 @@ stateDiagram-v2
 1. **Update Database Schema** ✅
    - Add `status` field to tasks table (values: `unchecked`, `checked`, `archived`) ✅
    - Update database version (migration from version 1 to version 2) ✅
+   - Add `archivedAt` timestamp field to tasks table ✅
+   - Update database version (migration from version 2 to version 3) ✅
    - Update existing mock data to include `status: 'unchecked'` for all tasks ✅
    - Update data access functions to handle status field ✅
 
@@ -53,6 +55,7 @@ stateDiagram-v2
 3. **Task State Management** ✅
    - Add checkbox/button to toggle task between `unchecked` and `checked` states ✅
    - Implement function to update task status in IndexedDB ✅
+   - Set `archivedAt` timestamp when archiving a task ✅
    - Display checked tasks with strikethrough styling ✅
    - Add archive button/action for checked tasks ✅
    - Implement function to change task status from `checked` to `archived` ✅
@@ -63,16 +66,18 @@ stateDiagram-v2
    - Hide `archived` tasks from main page display ✅
    - Update data access functions to filter by status ✅
 
-5. **Archived View**
-   - Create archived view component/section (temporarily below printed page area)
-   - Display all tasks with `status: 'archived'`
-   - Add restore button for each archived task
-   - Implement restore function (change status from `archived` to `checked`)
-     - **Restore behavior**: Append restored task to end of list (max order + 1) - see [[040-list-crud-ordering#Restore Behavior]] for handling edge case when list no longer exists
-   - Add delete button for each archived task
-   - Implement confirmation modal for destructive delete
-   - Implement destructive delete function (permanently remove from IndexedDB) - only after confirmation
-   - Update UI reactively after restore or deletion
+5. **Archived View** ✅
+   - Create archived view component/section (temporarily below printed page area) ✅
+   - Display all tasks with `status: 'archived'` ✅
+   - Order archived tasks by archive time (newest first) ✅
+   - Display archive time for each archived task ✅
+   - Add restore button for each archived task ✅
+   - Implement restore function (change status from `archived` to `checked`) ✅
+     - **Restore behavior**: Append restored task to end of list (max order + 1) - see [[040-list-crud-ordering#Restore Behavior]] for handling edge case when list no longer exists ✅
+   - Add delete button for each archived task ✅
+   - Implement confirmation modal for destructive delete ✅
+   - Implement destructive delete function (permanently remove from IndexedDB) - only after confirmation ✅
+   - Update UI reactively after restore or deletion ✅
 
 6. **Empty Task State**
    - Detect when a list has no unchecked/checked tasks (archived tasks don't count)
@@ -110,11 +115,15 @@ stateDiagram-v2
 ## Quick Notes
 - Database schema: Update from [[020-mock-data-display]] - add `status` field to tasks table
 - Database migration: Version 1 → Version 2 (add status field, default existing tasks to `unchecked`)
+- Database migration: Version 2 → Version 3 (add archivedAt timestamp field, set for existing archived tasks)
 - Task `status` field: Values are `unchecked`, `checked`, `archived`
+- Task `archivedAt` field: Timestamp (milliseconds since epoch) set when task is archived, cleared when restored
 - Task `order` field: Maintained from mock data, will be used for reordering in milestone 031
 - Main page filtering: Only display tasks where `status IN ('unchecked', 'checked')`
 - Archived view: Display all tasks where `status = 'archived'` (temporarily below printed page area)
-- Restore functionality: Change archived task status from `archived` back to `checked` (returns to main view)
+- Archived view ordering: Tasks ordered by `archivedAt` descending (newest first)
+- Archived view display: Shows archive time formatted as locale string
+- Restore functionality: Change archived task status from `archived` back to `checked` (returns to main view), clears `archivedAt`
 - Destructive delete: Only available for archived tasks, requires confirmation modal before permanently removing from database
 - Empty state: Simple message/placeholder, no formatting focus (based on unchecked/checked tasks only)
 - Requires: [[020-mock-data-display]]

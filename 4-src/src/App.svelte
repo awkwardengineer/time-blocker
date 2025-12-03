@@ -2,6 +2,7 @@
   import { liveQuery } from 'dexie';
   import { getAllLists } from './lib/dataAccess.js';
   import TaskList from './components/TaskList.svelte';
+  import ArchivedView from './components/ArchivedView.svelte';
   
   // Reactive query for lists - automatically updates when lists change
   let lists = liveQuery(() => getAllLists());
@@ -61,6 +62,7 @@
       </div>
     </div>
   </div>
+  <ArchivedView />
 </main>
 
 <style>
