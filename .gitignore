@@ -59,3 +59,5 @@ Thumbs.db
 # yarn.lock
 # pnpm-lock.yaml
 
+4-src/nvm-run.sh
+.obsidian/workspace.json
