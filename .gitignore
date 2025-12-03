@@ -59,5 +59,8 @@ Thumbs.db
 # yarn.lock
 # pnpm-lock.yaml
 
+# Local development scripts
 4-src/nvm-run.sh
-.obsidian/workspace.json
+
+# Obsidian workspace files
+.obsidian/
