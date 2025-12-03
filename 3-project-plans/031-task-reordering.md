@@ -23,12 +23,13 @@ Enable users to reorder tasks within a single list using drag-and-drop. Tasks ma
    - Document decision rationale in [[technical-architecture.md]] under "UI/Interaction Libraries" section ✅
    - **Decision**: **svelte-dnd-action** - Svelte-native, supports nested containers, excellent mobile/touch support, zero dependencies
 
-2. **Implement Reordering UI**
-   - Add drag handles to each task
-   - Implement visual feedback during drag-and-drop
-   - Ensure reordering only works for unchecked/checked tasks
-   - Disable reordering for archived tasks
-   - **Important - Reactivity Handling**: Use `svelte-dnd-action`'s `consider` event for visual reordering during drag (no database updates). Use `finalize` event to trigger database updates after drag completes. This prevents `liveQuery` reactivity from interfering with drag operations (updating IndexedDB during drag would trigger re-renders and break drag state).
+2. **Implement Reordering UI** ✅
+   - Add drag handles to each task ✅
+   - Implement visual feedback during drag-and-drop ✅
+   - Ensure reordering only works for unchecked/checked tasks ✅
+   - Disable reordering for archived tasks ✅
+   - **Restrict to same list**: Use `svelte-dnd-action`'s `type` parameter with unique value per list (`list-${listId}`) to prevent cross-list dragging. This will be removed/enabled in milestone 050. ✅
+   - **Important - Reactivity Handling**: Use `svelte-dnd-action`'s `consider` event for visual reordering during drag (no database updates). Use `finalize` event to trigger database updates after drag completes. This prevents `liveQuery` reactivity from interfering with drag operations (updating IndexedDB during drag would trigger re-renders and break drag state). ✅
 
 3. **Implement Order Update Logic**
    - Detect when task order changes (via `svelte-dnd-action`'s `finalize` event - fires after drag completes)

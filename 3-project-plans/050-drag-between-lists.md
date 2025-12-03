@@ -17,8 +17,9 @@ Enable users to drag tasks between different lists using drag-and-drop. When a t
 ## Implementation Steps
 
 1. **Extend Drag-and-Drop Implementation**
-   - Extend drag-and-drop from milestone [[031-task-reordering]] to support nested drop zones
-   - Configure drop zones for each list
+   - Remove or modify the `type` parameter restriction from milestone [[031-task-reordering]] (currently `type: 'list-${listId}'` prevents cross-list dragging)
+   - Either remove `type` entirely or use a shared `type` value for all lists to enable cross-list dragging
+   - Configure drop zones for each list (already done in 031)
    - Allow dragging between different list drop zones
    - Prevent dragging archived tasks between lists
 
