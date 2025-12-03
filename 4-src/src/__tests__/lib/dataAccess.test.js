@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import db from '../../lib/db.js'
-import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask } from '../../lib/dataAccess.js'
+import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, deleteTask } from '../../lib/dataAccess.js'
 
 describe('dataAccess', () => {
   beforeEach(async () => {
@@ -306,6 +306,216 @@ describe('dataAccess', () => {
     })
   })
 
+  describe('updateTaskOrder', () => {
+    it('should update order values sequentially based on array position', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks = await getTasksForList(list1.id)
+      
+      // Reorder tasks: reverse the order
+      const reorderedTasks = [...tasks].reverse()
+      
+      await updateTaskOrder(list1.id, reorderedTasks)
+      
+      // Verify new order values
+      const updatedTasks = await getTasksForList(list1.id)
+      expect(updatedTasks[0].order).toBe(0)
+      expect(updatedTasks[0].id).toBe(reorderedTasks[0].id)
+      expect(updatedTasks[1].order).toBe(1)
+      expect(updatedTasks[1].id).toBe(reorderedTasks[1].id)
+      expect(updatedTasks[2].order).toBe(2)
+      expect(updatedTasks[2].id).toBe(reorderedTasks[2].id)
+    })
+    
+    it('should maintain sequential ordering with no gaps', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks = await getTasksForList(list1.id)
+      
+      // Reorder tasks
+      const reorderedTasks = [tasks[1], tasks[0], tasks[2]]
+      await updateTaskOrder(list1.id, reorderedTasks)
+      
+      // Verify sequential ordering (0, 1, 2)
+      const updatedTasks = await getTasksForList(list1.id)
+      expect(updatedTasks[0].order).toBe(0)
+      expect(updatedTasks[1].order).toBe(1)
+      expect(updatedTasks[2].order).toBe(2)
+      
+      // Verify no gaps
+      for (let i = 0; i < updatedTasks.length; i++) {
+        expect(updatedTasks[i].order).toBe(i)
+      }
+    })
+    
+    it('should handle reordering first task to last', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks = await getTasksForList(list1.id)
+      
+      // Move first task to last
+      const reorderedTasks = [tasks[1], tasks[2], tasks[0]]
+      await updateTaskOrder(list1.id, reorderedTasks)
+      
+      const updatedTasks = await getTasksForList(list1.id)
+      expect(updatedTasks[0].id).toBe(tasks[1].id)
+      expect(updatedTasks[0].order).toBe(0)
+      expect(updatedTasks[2].id).toBe(tasks[0].id)
+      expect(updatedTasks[2].order).toBe(2)
+    })
+    
+    it('should handle reordering last task to first', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks = await getTasksForList(list1.id)
+      
+      // Move last task to first
+      const reorderedTasks = [tasks[2], tasks[0], tasks[1]]
+      await updateTaskOrder(list1.id, reorderedTasks)
+      
+      const updatedTasks = await getTasksForList(list1.id)
+      expect(updatedTasks[0].id).toBe(tasks[2].id)
+      expect(updatedTasks[0].order).toBe(0)
+      expect(updatedTasks[2].id).toBe(tasks[1].id)
+      expect(updatedTasks[2].order).toBe(2)
+    })
+    
+    it('should handle single task list', async () => {
+      const lists = await getAllLists()
+      const list2 = lists.find(l => l.order === 0) // This list has 1 task
+      const tasks = await getTasksForList(list2.id)
+      
+      // Reorder single task (no change, but should still work)
+      await updateTaskOrder(list2.id, tasks)
+      
+      const updatedTasks = await getTasksForList(list2.id)
+      expect(updatedTasks.length).toBe(1)
+      expect(updatedTasks[0].order).toBe(0)
+    })
+    
+    it('should handle empty array gracefully', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      
+      // Should not throw error
+      await expect(updateTaskOrder(list1.id, [])).resolves.not.toThrow()
+    })
+    
+    it('should throw error if task belongs to different list', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const list2 = lists.find(l => l.order === 0)
+      const tasks1 = await getTasksForList(list1.id)
+      const tasks2 = await getTasksForList(list2.id)
+      
+      // Try to reorder with a task from a different list
+      const invalidOrder = [tasks1[0], tasks2[0]]
+      
+      await expect(updateTaskOrder(list1.id, invalidOrder)).rejects.toThrow('Cannot update order: some tasks do not belong to list')
+    })
+    
+    it('should persist order changes to IndexedDB', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks = await getTasksForList(list1.id)
+      
+      // Reorder tasks
+      const reorderedTasks = [tasks[1], tasks[0], tasks[2]]
+      await updateTaskOrder(list1.id, reorderedTasks)
+      
+      // Close and reopen database to verify persistence
+      db.close()
+      await db.open()
+      
+      // Verify order persisted
+      const persistedTasks = await getTasksForList(list1.id)
+      expect(persistedTasks[0].id).toBe(reorderedTasks[0].id)
+      expect(persistedTasks[0].order).toBe(0)
+      expect(persistedTasks[1].id).toBe(reorderedTasks[1].id)
+      expect(persistedTasks[1].order).toBe(1)
+      expect(persistedTasks[2].id).toBe(reorderedTasks[2].id)
+      expect(persistedTasks[2].order).toBe(2)
+    })
+  })
+
+  describe('order consistency after CRUD operations', () => {
+    it('should maintain order after archiving a task', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks = await getTasksForList(list1.id)
+      
+      // Archive middle task
+      await updateTaskStatus(tasks[1].id, 'archived')
+      
+      // Verify remaining tasks maintain their order
+      const remainingTasks = await getTasksForList(list1.id)
+      expect(remainingTasks.length).toBe(2)
+      expect(remainingTasks[0].id).toBe(tasks[0].id)
+      expect(remainingTasks[0].order).toBe(0)
+      expect(remainingTasks[1].id).toBe(tasks[2].id)
+      expect(remainingTasks[1].order).toBe(2)
+    })
+    
+    it('should maintain order after deleting a task', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks = await getTasksForList(list1.id)
+      
+      // Archive and then delete a task
+      await updateTaskStatus(tasks[1].id, 'archived')
+      await deleteTask(tasks[1].id)
+      
+      // Verify remaining tasks maintain their order
+      const remainingTasks = await getTasksForList(list1.id)
+      expect(remainingTasks.length).toBe(2)
+      expect(remainingTasks[0].id).toBe(tasks[0].id)
+      expect(remainingTasks[0].order).toBe(0)
+      expect(remainingTasks[1].id).toBe(tasks[2].id)
+      expect(remainingTasks[1].order).toBe(2)
+    })
+    
+    it('should append new task to end maintaining order', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks = await getTasksForList(list1.id)
+      const maxOrder = Math.max(...tasks.map(t => t.order))
+      
+      // Create new task
+      const newTaskId = await createTask(list1.id, 'New Task')
+      const newTask = await db.tasks.get(newTaskId)
+      
+      // Verify it's appended to end
+      expect(newTask.order).toBe(maxOrder + 1)
+      
+      // Verify all tasks still in order
+      const allTasks = await getTasksForList(list1.id)
+      for (let i = 0; i < allTasks.length - 1; i++) {
+        expect(allTasks[i].order).toBeLessThan(allTasks[i + 1].order)
+      }
+    })
+    
+    it('should append restored task to end maintaining order', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks = await getTasksForList(list1.id)
+      const maxOrder = Math.max(...tasks.map(t => t.order))
+      
+      // Archive and restore a task
+      await updateTaskStatus(tasks[0].id, 'archived')
+      await restoreTask(tasks[0].id)
+      
+      // Verify restored task is at end
+      const restoredTask = await db.tasks.get(tasks[0].id)
+      expect(restoredTask.order).toBe(maxOrder + 1)
+      
+      // Verify all tasks still in order
+      const allTasks = await getTasksForList(list1.id)
+      for (let i = 0; i < allTasks.length - 1; i++) {
+        expect(allTasks[i].order).toBeLessThan(allTasks[i + 1].order)
+      }
+    })
+  })
+
   describe('data persistence across reopen', () => {
     it('should retain created tasks after reopening the database', async () => {
       const lists = await getAllLists()
@@ -335,6 +545,28 @@ describe('dataAccess', () => {
       const storedTask = await db.tasks.get(task.id)
       expect(storedTask.status).toBe('archived')
       expect(storedTask.archivedAt).toEqual(expect.any(Number))
+    })
+    
+    it('should retain task order after reopening the database', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks = await getTasksForList(list1.id)
+      
+      // Reorder tasks
+      const reorderedTasks = [tasks[1], tasks[0], tasks[2]]
+      await updateTaskOrder(list1.id, reorderedTasks)
+      
+      db.close()
+      await db.open()
+      
+      // Verify order persisted
+      const persistedTasks = await getTasksForList(list1.id)
+      expect(persistedTasks[0].id).toBe(reorderedTasks[0].id)
+      expect(persistedTasks[0].order).toBe(0)
+      expect(persistedTasks[1].id).toBe(reorderedTasks[1].id)
+      expect(persistedTasks[1].order).toBe(1)
+      expect(persistedTasks[2].id).toBe(reorderedTasks[2].id)
+      expect(persistedTasks[2].order).toBe(2)
     })
   })
 })

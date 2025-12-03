@@ -56,20 +56,20 @@ Enable users to reorder tasks within a single list using drag-and-drop. Tasks ma
    - Test that order persists across page refreshes ✅ (IndexedDB persists by default)
    - Ensure order consistency after all CRUD operations ✅ (order maintained in all operations)
 
-7. **Test**
-   - **Manual Testing**:
-     - Reorder tasks, verify order persists
-     - Refresh page, verify order persists
-     - Create new task, verify it appears at end
-     - Archive task, verify remaining tasks maintain order
-     - Restore archived task, verify order handling
-     - Test edge cases (reorder first/last task, single task list)
-   - **Automated Tests**:
-     - Unit tests: Order update logic (calculate new order values)
-     - Unit tests: Order persistence in IndexedDB
-     - Integration tests: UI reordering interactions
-     - Integration tests: Order persists after page refresh
-     - Test order consistency after CRUD operations
+7. **Test** ✅
+   - **Manual Testing**: ✅
+     - Reorder tasks, verify order persists ✅
+     - Refresh page, verify order persists ✅
+     - Create new task, verify it appears at end ✅
+     - Archive task, verify remaining tasks maintain order ✅
+     - Restore archived task, verify order handling ✅
+     - Test edge cases (reorder first/last task, single task list) ✅
+   - **Automated Tests**: ✅
+     - Unit tests: Order update logic (calculate new order values) ✅ (`dataAccess.test.js` - `updateTaskOrder` tests)
+     - Unit tests: Order persistence in IndexedDB ✅ (`dataAccess.test.js` - persistence tests)
+     - Integration tests: UI reordering interactions ✅ (`App.test.js` - reordering UI tests)
+     - Integration tests: Order persists after page refresh ✅ (`App.test.js` - refresh persistence test)
+     - Test order consistency after CRUD operations ✅ (`dataAccess.test.js` - CRUD consistency tests)
 
 ## Quick Notes
 - Database schema: Uses existing `order` field from [[020-mock-data-display]]
