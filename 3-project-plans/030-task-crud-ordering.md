@@ -112,8 +112,8 @@ stateDiagram-v2
      - Integration tests: Restore functionality returns task to checked state ✅ (`App.test.js`)
      - Test empty state display ✅ (`App.test.js`)
 
-9. **Accessibility Cleanup**
-   - Clean up existing Svelte a11y warnings (e.g., `ConfirmationModal.svelte`)
+9. **Accessibility Cleanup** ✅
+   - Clean up existing Svelte a11y warnings (e.g., `ConfirmationModal.svelte`) ✅
 
 ## Quick Notes
 - Database schema: Update from [[020-mock-data-display]] - add `status` field to tasks table
