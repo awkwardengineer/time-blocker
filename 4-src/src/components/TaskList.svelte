@@ -13,6 +13,10 @@
   // Only includes unchecked/checked tasks (archived excluded)
   let draggableTasks = $state([]);
   
+  // State for Add Task button/input toggle
+  let isInputActive = $state(false);
+  let inputElement = $state(null);
+  
   $effect(() => {
     // Create query once when listId is available
     if (listId && !tasksQuery) {
@@ -55,6 +59,67 @@
     }
   }
   
+  function handleAddTaskClick() {
+    isInputActive = true;
+    // Focus will be handled by $effect after input is rendered
+  }
+  
+  function handleInputEscape(e) {
+    if (e.key === 'Escape') {
+      isInputActive = false;
+      onInputChange('');
+    }
+  }
+  
+  // Handle click outside input to close it (only if no content)
+  $effect(() => {
+    if (!isInputActive) return;
+    
+    function handleDocumentClick(e) {
+      const container = document.querySelector(`[data-list-id="${listId}"] .task-input-container`);
+      if (!container) return;
+      
+      // Check if click is on the Save button - don't close, let Save handle it
+      const saveButton = container.querySelector('button');
+      if (saveButton && saveButton.contains(e.target)) {
+        return; // Let Save button handle the click
+      }
+      
+      // Check if click is outside the input field itself (even if inside container)
+      const inputField = container.querySelector('input');
+      if (inputField && inputField.contains(e.target)) {
+        return; // Click is on input, don't close
+      }
+      
+      // Click is outside input (could be in container but not on input or Save button)
+      // Only close if input hasn't changed (no content)
+      if (!newTaskInput || newTaskInput.trim() === '') {
+        isInputActive = false;
+        onInputChange('');
+      }
+    }
+    
+    // Add click listener after a brief delay to avoid immediate trigger
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleDocumentClick);
+    }, 0);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  });
+  
+  // Focus input when it becomes active
+  $effect(() => {
+    if (isInputActive && inputElement) {
+      // Small delay to ensure input is rendered
+      setTimeout(() => {
+        inputElement?.focus();
+      }, 0);
+    }
+  });
+  
   async function handleCreateTask() {
     const taskText = newTaskInput?.trim();
     if (!taskText) {
@@ -64,7 +129,8 @@
     try {
       await createTask(listId, taskText);
       onInputChange('');
-      // No need to reload - liveQuery will update automatically!
+      // Keep input active for sequential creation (will be handled in step 3)
+      // Input will remain focused for next task
     } catch (error) {
       console.error('Error creating task:', error);
     }
@@ -90,7 +156,7 @@
   }
 </script>
 
-<div>
+<div data-list-id={listId}>
   <h2>{listName}</h2>
   {#if tasksQuery && $tasksQuery !== undefined}
     {#if $tasksQuery.length === 0}
@@ -138,19 +204,56 @@
   {:else}
     <p>Loading tasks...</p>
   {/if}
-  <div>
-    <input
-      type="text"
-      placeholder="Add new task..."
-      value={newTaskInput}
-      oninput={(e) => onInputChange(e.target.value)}
-      onkeydown={(e) => {
-        if (e.key === 'Enter') {
-          handleCreateTask();
-        }
-      }}
-    />
-    <button onclick={handleCreateTask}>Add</button>
+  <div class="task-input-container">
+    {#if isInputActive}
+      <div class="flex gap-2">
+        <input
+          bind:this={inputElement}
+          type="text"
+          placeholder="Add new task..."
+          value={newTaskInput}
+          oninput={(e) => onInputChange(e.target.value)}
+          onkeydown={(e) => {
+            if (e.key === 'Enter') {
+              handleCreateTask();
+            } else if (e.key === 'Escape') {
+              handleInputEscape(e);
+            }
+          }}
+          class="print:hidden"
+        />
+        <button
+          onclick={handleCreateTask}
+          class="print:hidden"
+        >
+          Save
+        </button>
+      </div>
+    {:else}
+      <button
+        onclick={handleAddTaskClick}
+        class="add-task-button"
+        style="visibility: visible;"
+      >
+        Add Task
+      </button>
+    {/if}
   </div>
 </div>
+
+<style>
+  .add-task-button {
+    /* Button styles */
+  }
+  
+  @media print {
+    .add-task-button {
+      visibility: hidden;
+    }
+    
+    .task-input-container input {
+      visibility: hidden;
+    }
+  }
+</style>
 

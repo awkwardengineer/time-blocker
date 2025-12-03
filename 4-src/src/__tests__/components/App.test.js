@@ -117,12 +117,14 @@ describe('App', () => {
     // Verify Task 1 starts unchecked
     expect(task1Checkbox).not.toBeChecked()
 
-    // Add a new task
-    const input = within(workSection).getByPlaceholderText('Add new task...')
-    const addButton = within(workSection).getByRole('button', { name: /add/i })
-
+    // Add a new task - click "Add Task" button first to show input
+    const addTaskButton = within(workSection).getByRole('button', { name: /add task/i })
+    await user.click(addTaskButton)
+    
+    // Wait for input to appear and get it
+    const input = await within(workSection).findByPlaceholderText('Add new task...')
     await user.type(input, 'UI Task')
-    await user.click(addButton)
+    await user.keyboard('{Enter}')
 
     await waitFor(() => {
       expect(within(workSection).getByText('UI Task')).toBeInTheDocument()
@@ -418,11 +420,15 @@ describe('App', () => {
     })
 
     const workSection = getListSection('Work')
-    const input = within(workSection).getByPlaceholderText('Add new task...')
-    const addButton = within(workSection).getByRole('button', { name: /add/i })
-
+    
+    // Click "Add Task" button first to show input
+    const addTaskButton = within(workSection).getByRole('button', { name: /add task/i })
+    await user.click(addTaskButton)
+    
+    // Wait for input to appear and get it
+    const input = await within(workSection).findByPlaceholderText('Add new task...')
     await user.type(input, 'New Task')
-    await user.click(addButton)
+    await user.keyboard('{Enter}')
 
     // Wait for new task to appear
     await waitFor(() => {
