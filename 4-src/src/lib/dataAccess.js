@@ -145,6 +145,41 @@ export async function restoreTask(taskId) {
 }
 
 /**
+ * Update the order of tasks in a list
+ * Recalculates sequential order values (0, 1, 2, 3...) for all tasks based on their new positions
+ * @param {number} listId - The ID of the list
+ * @param {Array<{id: number}>} reorderedTasks - Array of tasks in their new order (must include id field)
+ * @returns {Promise<void>}
+ */
+export async function updateTaskOrder(listId, reorderedTasks) {
+  if (!reorderedTasks || reorderedTasks.length === 0) {
+    return; // No tasks to update
+  }
+  
+  // Validate that all tasks belong to the specified list
+  const taskIds = reorderedTasks.map(t => t.id);
+  const tasks = await db.tasks.bulkGet(taskIds);
+  const invalidTasks = tasks.filter(t => !t || t.listId !== listId);
+  if (invalidTasks.length > 0) {
+    throw new Error(`Cannot update order: some tasks do not belong to list ${listId}`);
+  }
+  
+  // Calculate new sequential order values based on array position
+  // Array index becomes the order value (0, 1, 2, 3...)
+  const updates = reorderedTasks.map((task, index) => ({
+    id: task.id,
+    order: index
+  }));
+  
+  // Update all tasks in a transaction for atomicity
+  await db.transaction('rw', db.tasks, async () => {
+    for (const update of updates) {
+      await db.tasks.update(update.id, { order: update.order });
+    }
+  });
+}
+
+/**
  * Permanently delete a task from the database
  * This is a destructive operation - use with caution
  * @param {number} taskId - The ID of the task to delete

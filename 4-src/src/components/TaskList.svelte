@@ -1,7 +1,7 @@
 <script>
   import { liveQuery } from 'dexie';
   import { dndzone } from 'svelte-dnd-action';
-  import { getTasksForList, createTask, updateTaskStatus } from '../lib/dataAccess.js';
+  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder } from '../lib/dataAccess.js';
   
   let { listId, listName, newTaskInput, onInputChange } = $props();
   
@@ -39,12 +39,20 @@
   }
   
   // Handle drag events - finalize event for database updates
-  function handleFinalize(event) {
-    // Update local state
+  async function handleFinalize(event) {
+    // Update local state for immediate visual feedback
     draggableTasks = event.detail.items;
-    // TODO: Update database with new order values (step 3)
-    // This will be implemented in the next step
-    console.log('Drag finalized, new order:', event.detail.items.map(t => ({ id: t.id, order: t.order })));
+    
+    // Update database with new order values
+    // Calculate sequential order values (0, 1, 2, 3...) based on new positions
+    try {
+      await updateTaskOrder(listId, event.detail.items);
+      // liveQuery will automatically update the UI after database changes
+    } catch (error) {
+      console.error('Error updating task order:', error);
+      // On error, revert draggableTasks to match database state
+      // The $effect will sync it back from liveQuery
+    }
   }
   
   async function handleCreateTask() {

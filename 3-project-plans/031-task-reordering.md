@@ -31,13 +31,14 @@ Enable users to reorder tasks within a single list using drag-and-drop. Tasks ma
    - **Restrict to same list**: Use `svelte-dnd-action`'s `type` parameter with unique value per list (`list-${listId}`) to prevent cross-list dragging. This will be removed/enabled in milestone 050. ✅
    - **Important - Reactivity Handling**: Use `svelte-dnd-action`'s `consider` event for visual reordering during drag (no database updates). Use `finalize` event to trigger database updates after drag completes. This prevents `liveQuery` reactivity from interfering with drag operations (updating IndexedDB during drag would trigger re-renders and break drag state). ✅
 
-3. **Implement Order Update Logic**
-   - Detect when task order changes (via `svelte-dnd-action`'s `finalize` event - fires after drag completes)
-   - Calculate new `order` values for affected tasks
-   - Update task `order` values in IndexedDB (only after drag completes, not during drag)
-   - Maintain sequential ordering (no gaps, e.g., 0, 1, 2, 3...)
-   - Handle edge cases (first task, last task, single task)
-   - **Note**: Database updates happen in `finalize` handler, not `consider` handler, to avoid `liveQuery` re-renders during active drag operations
+3. **Implement Order Update Logic** ✅
+   - Detect when task order changes (via `svelte-dnd-action`'s `finalize` event - fires after drag completes) ✅
+   - Calculate new `order` values for affected tasks ✅
+   - Update task `order` values in IndexedDB (only after drag completes, not during drag) ✅
+   - Maintain sequential ordering (no gaps, e.g., 0, 1, 2, 3...) ✅
+   - Handle edge cases (first task, last task, single task) ✅
+   - **Note**: Database updates happen in `finalize` handler, not `consider` handler, to avoid `liveQuery` re-renders during active drag operations ✅
+   - **Ordering Strategy**: Considered fractional ordering (1.5, 2.5, etc.) but chose sequential integers (0, 1, 2, 3...) for simplicity. With <20 tasks, performance difference is negligible. Sequential ordering is easier to understand, debug, and matches existing project plan. Can revisit fractional ordering if task counts grow significantly. ✅
 
 4. **Update Task Creation**
    - Ensure new tasks are appended with appropriate `order` value
