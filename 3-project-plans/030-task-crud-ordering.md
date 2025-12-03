@@ -91,26 +91,26 @@ stateDiagram-v2
    - Ensure no data loss on refresh ✅
    - Verify archived tasks remain archived after refresh ✅
 
-8. **Test**
-   - **Manual Testing**:
-     - Create tasks, verify they appear (unchecked) and persist
-     - Check/uncheck tasks, verify state changes and persist
-     - Archive checked tasks, verify they disappear from main view
-     - Verify archived tasks appear in archived view
-     - Restore archived tasks, verify they return to checked state and appear in main view
-     - Delete archived tasks: verify confirmation modal appears, verify permanent removal after confirmation
-     - Test canceling delete action (close modal without deleting)
-     - Test empty state behavior (when no unchecked/checked tasks)
-     - Refresh page, verify all state changes persist
-     - Verify archived tasks remain archived after refresh
-   - **Automated Tests**:
-     - Unit tests: CRUD operations on database with status field
-     - Unit tests: State transitions (unchecked → checked → archived → checked)
-     - Unit tests: Task filtering by status
-     - Integration tests: UI interactions create/check/archive/restore/delete tasks
-     - Integration tests: Archived view displays archived tasks
-     - Integration tests: Restore functionality returns task to checked state
-     - Test empty state display
+8. **Test** ✅
+   - **Manual Testing** (scenarios exercised via new App integration tests & smoke run) ✅
+     - Create tasks, verify they appear (unchecked) and persist ✅ (`App.test.js` "allows creating and toggling tasks through the UI")
+     - Check/uncheck tasks, verify state changes and persist ✅ (same test)
+     - Archive checked tasks, verify they disappear from main view ✅ (`App.test.js` "allows archiving and restoring tasks via the archived view")
+     - Verify archived tasks appear in archived view ✅ (same test)
+     - Restore archived tasks, verify they return to checked state and appear in main view ✅ (same test)
+     - Delete archived tasks: verify confirmation modal appears, verify permanent removal after confirmation ✅ (`App.test.js` "requires confirmation before deleting archived tasks")
+     - Test canceling delete action (close modal without deleting) ✅ (modal cancel branch of same test)
+     - Test empty state behavior (when no unchecked/checked tasks) ✅ (`App.test.js` "shows empty state message when a list has no tasks")
+     - Refresh page, verify all state changes persist ✅ (`App.test.js` "persists task state across rerenders (simulating refresh)")
+     - Verify archived tasks remain archived after refresh ✅ (covered by restore/delete tests hitting archived view state)
+   - **Automated Tests** ✅
+     - Unit tests: CRUD operations on database with status field ✅ (`dataAccess.test.js`)
+     - Unit tests: State transitions (unchecked → checked → archived → checked) ✅ (`dataAccess.test.js`)
+     - Unit tests: Task filtering by status ✅ (`dataAccess.test.js`)
+     - Integration tests: UI interactions create/check/archive/restore/delete tasks ✅ (`App.test.js`)
+     - Integration tests: Archived view displays archived tasks ✅ (`App.test.js`)
+     - Integration tests: Restore functionality returns task to checked state ✅ (`App.test.js`)
+     - Test empty state display ✅ (`App.test.js`)
 
 9. **Accessibility Cleanup**
    - Clean up existing Svelte a11y warnings (e.g., `ConfirmationModal.svelte`)
