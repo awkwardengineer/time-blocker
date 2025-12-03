@@ -305,5 +305,37 @@ describe('dataAccess', () => {
       expect(task.order).toBe(maxOrder + 1)
     })
   })
+
+  describe('data persistence across reopen', () => {
+    it('should retain created tasks after reopening the database', async () => {
+      const lists = await getAllLists()
+      const list = lists[0]
+      
+      const taskId = await createTask(list.id, 'Persisted Task')
+      
+      db.close()
+      await db.open()
+      
+      const storedTask = await db.tasks.get(taskId)
+      expect(storedTask).toBeDefined()
+      expect(storedTask.text).toBe('Persisted Task')
+      expect(storedTask.status).toBe('unchecked')
+    })
+    
+    it('should retain task status changes after reopening the database', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const [task] = await getTasksForList(list1.id)
+      
+      await updateTaskStatus(task.id, 'archived')
+      
+      db.close()
+      await db.open()
+      
+      const storedTask = await db.tasks.get(task.id)
+      expect(storedTask.status).toBe('archived')
+      expect(storedTask.archivedAt).toEqual(expect.any(Number))
+    })
+  })
 })
 
