@@ -111,8 +111,15 @@ describe('App', () => {
       expect(within(workSection).getByText('UI Task')).toBeInTheDocument()
     })
 
-    const checkbox = await getFirstCheckboxFor('Work')
-    expect(checkbox).not.toBeChecked()
+    // Wait for all tasks to be loaded and ensure the first checkbox is unchecked
+    // This ensures the component has fully rendered and the database state is correct
+    await waitFor(() => {
+      const checkboxes = within(getListSection('Work')).getAllByRole('checkbox')
+      expect(checkboxes.length).toBeGreaterThan(0)
+      expect(checkboxes[0]).not.toBeChecked()
+    })
+    
+    const checkbox = within(getListSection('Work')).getAllByRole('checkbox')[0]
 
     await user.click(checkbox)
     await waitFor(() => {
