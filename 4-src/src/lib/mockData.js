@@ -16,16 +16,16 @@ export const mockLists = [
 // The 'order' field (0, 1, 2) is for display ordering and doesn't need to match IDs
 export const mockTasks = [
   // Work tasks (listId: 1 - first list gets ID 1)
-  { text: 'Review project proposal', listId: 1, order: 0 },
-  { text: 'Team meeting prep', listId: 1, order: 1 },
-  { text: 'Update documentation', listId: 1, order: 2 },
+  { text: 'Review project proposal', listId: 1, order: 0, status: 'unchecked' },
+  { text: 'Team meeting prep', listId: 1, order: 1, status: 'unchecked' },
+  { text: 'Update documentation', listId: 1, order: 2, status: 'unchecked' },
   
   // Personal tasks (listId: 2 - second list gets ID 2)
-  { text: 'Call dentist', listId: 2, order: 0 },
-  { text: 'Exercise', listId: 2, order: 1 },
+  { text: 'Call dentist', listId: 2, order: 0, status: 'unchecked' },
+  { text: 'Exercise', listId: 2, order: 1, status: 'unchecked' },
   
   // Shopping tasks (listId: 3 - third list gets ID 3)
-  { text: 'Buy groceries', listId: 3, order: 0 },
-  { text: 'Pick up dry cleaning', listId: 3, order: 1 }
+  { text: 'Buy groceries', listId: 3, order: 0, status: 'unchecked' },
+  { text: 'Pick up dry cleaning', listId: 3, order: 1, status: 'unchecked' }
 ];
 

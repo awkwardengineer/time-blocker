@@ -17,7 +17,7 @@ This document outlines the incremental development milestones for building the P
 | # | Milestone | Status | Focus | Details |
 |---|-----------|--------|-------|--------|
 | 010 | [[010-static-print\|Static WYSIWYG Print Foundation]] | ✅ DONE | Establish printable page and print trigger | Static "Hello World" page, print button, basic print CSS |
-| 020 | [[020-mock-data-display\|Mock Data & Display]] | In Progress | Dexie setup, display data (no formatting focus) | Create mock dataset (tasks, lists), save to IndexedDB using Dexie.js, read and display data. No formatting concerns. |
+| 020 | [[020-mock-data-display\|Mock Data & Display]] | ✅ DONE | Dexie setup, display data (no formatting focus) | Create mock dataset (tasks, lists), save to IndexedDB using Dexie.js, read and display data. No formatting concerns. |
 | 030 | [[030-task-crud-ordering\|Task CRUD & State Management]] | Pending | Create, delete, manage task states (+ empty task state behavior) | Task creation, task deletion, task state management (unchecked → checked → archived), restore functionality. Empty task state behavior. No formatting focus. |
 | 031 | [[031-task-reordering\|Task Reordering]] | Pending | Reorder tasks within lists | Task reordering via drag-and-drop or buttons. Order persistence in IndexedDB. Only affects unchecked/checked tasks. No formatting focus. |
 | 032 | [[032-task-ux-behaviors\|Task UX Behaviors]] | Pending | Refine task interaction patterns | Enter key behavior, focus management, click behaviors, keyboard navigation. Interaction polish for task creation and editing. No formatting focus. |

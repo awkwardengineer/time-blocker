@@ -1,29 +1,31 @@
 <script>
-  import { getAllLists, getTasksForList } from './lib/dataAccess.js';
+  import { liveQuery } from 'dexie';
+  import { getAllLists } from './lib/dataAccess.js';
+  import TaskList from './components/TaskList.svelte';
   
-  let lists = $state([]);
-  let tasksByList = $state({});
+  // Reactive query for lists - automatically updates when lists change
+  let lists = liveQuery(() => getAllLists());
   
+  // Track new task inputs per list
+  let newTaskInputs = $state({});
+  
+  // Initialize inputs when lists first load (only once)
   $effect(() => {
-    // Fetch lists and tasks when component mounts
-    async function loadData() {
-      try {
-        const allLists = await getAllLists();
-        lists = allLists;
-        
-        // Fetch tasks for each list
-        const tasksMap = {};
-        for (const list of allLists) {
-          tasksMap[list.id] = await getTasksForList(list.id);
+    if ($lists && Array.isArray($lists) && $lists.length > 0) {
+      // Only initialize if we don't have inputs yet
+      if (Object.keys(newTaskInputs).length === 0) {
+        const inputs = {};
+        for (const list of $lists) {
+          inputs[list.id] = '';
         }
-        tasksByList = tasksMap;
-      } catch (error) {
-        console.error('Error loading data:', error);
+        newTaskInputs = inputs;
       }
     }
-    
-    loadData();
   });
+  
+  function handleInputChange(listId, value) {
+    newTaskInputs[listId] = value;
+  }
   
   function handlePrint() {
     window.print();
@@ -42,18 +44,18 @@
   <div class="w-[1056px] h-[816px] bg-gray-400 print:bg-gray-400 border-2 border-gray-300 shadow-lg print:shadow-none print:border-0 print:mx-auto relative">
     <div class="absolute inset-[16px] border border-red-600" style="border-color: rgb(220, 38, 38);">
       <div class="w-full h-full p-4 overflow-auto">
-        {#if lists.length === 0}
+        {#if $lists === undefined || $lists === null}
           <p>Loading...</p>
-        {:else}
-          {#each lists as list}
-            <div>
-              <h2>{list.name}</h2>
-              <ul>
-                {#each (tasksByList[list.id] || []) as task}
-                  <li>{task.text}</li>
-                {/each}
-              </ul>
-            </div>
+        {:else if Array.isArray($lists) && $lists.length === 0}
+          <p>No lists found</p>
+        {:else if Array.isArray($lists)}
+          {#each $lists as list}
+            <TaskList
+              listId={list.id}
+              listName={list.name}
+              newTaskInput={newTaskInputs[list.id] || ''}
+              onInputChange={(value) => handleInputChange(list.id, value)}
+            />
           {/each}
         {/if}
       </div>

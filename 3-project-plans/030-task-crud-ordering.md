@@ -36,37 +36,39 @@ stateDiagram-v2
 
 ## Implementation Steps
 
-1. **Update Database Schema**
-   - Add `status` field to tasks table (values: `unchecked`, `checked`, `archived`)
-   - Update database version (migration from version 1 to version 2)
-   - Update existing mock data to include `status: 'unchecked'` for all tasks
-   - Update data access functions to handle status field
+1. **Update Database Schema** ✅
+   - Add `status` field to tasks table (values: `unchecked`, `checked`, `archived`) ✅
+   - Update database version (migration from version 1 to version 2) ✅
+   - Update existing mock data to include `status: 'unchecked'` for all tasks ✅
+   - Update data access functions to handle status field ✅
 
-2. **Task Creation**
-   - Add UI for creating new tasks (input field + button or form)
-   - Implement function to add task to IndexedDB
-   - Assign task to current list (`listId`)
-   - Set `status: 'unchecked'` by default
-   - Set appropriate `order` value (append to end or handle insertion)
-   - Update UI reactively after creation
+2. **Task Creation** ✅
+   - Add UI for creating new tasks (input field + button or form) ✅
+   - Implement function to add task to IndexedDB ✅
+   - Assign task to current list (`listId`) ✅
+   - Set `status: 'unchecked'` by default ✅
+   - Set appropriate `order` value (append to end or handle insertion) ✅
+   - Update UI reactively after creation ✅
 
-3. **Task State Management**
-   - Add checkbox/button to toggle task between `unchecked` and `checked` states
-   - Implement function to update task status in IndexedDB
-   - Add archive button/action for checked tasks
-   - Implement function to change task status from `checked` to `archived`
-   - Update UI reactively after state changes
+3. **Task State Management** ✅
+   - Add checkbox/button to toggle task between `unchecked` and `checked` states ✅
+   - Implement function to update task status in IndexedDB ✅
+   - Display checked tasks with strikethrough styling ✅
+   - Add archive button/action for checked tasks ✅
+   - Implement function to change task status from `checked` to `archived` ✅
+   - Update UI reactively after state changes ✅ (using liveQuery)
 
-4. **Task Filtering & Display**
-   - Filter tasks in main view: only show `unchecked` and `checked` tasks
-   - Hide `archived` tasks from main page display
-   - Update data access functions to filter by status
+4. **Task Filtering & Display** ✅
+   - Filter tasks in main view: only show `unchecked` and `checked` tasks ✅
+   - Hide `archived` tasks from main page display ✅
+   - Update data access functions to filter by status ✅
 
 5. **Archived View**
    - Create archived view component/section (temporarily below printed page area)
    - Display all tasks with `status: 'archived'`
    - Add restore button for each archived task
    - Implement restore function (change status from `archived` to `checked`)
+     - **Restore behavior**: Append restored task to end of list (max order + 1) - see [[040-list-crud-ordering#Restore Behavior]] for handling edge case when list no longer exists
    - Add delete button for each archived task
    - Implement confirmation modal for destructive delete
    - Implement destructive delete function (permanently remove from IndexedDB) - only after confirmation
