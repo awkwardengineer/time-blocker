@@ -52,25 +52,31 @@
 
 <div>
   <h2>{listName}</h2>
-  <ul>
-    {#if tasksQuery && $tasksQuery}
-      {#each $tasksQuery as task}
-        <li>
-          <input
-            type="checkbox"
-            checked={task.status === 'checked'}
-            onchange={() => handleToggleTaskStatus(task.id, task.status)}
-          />
-          <span class={task.status === 'checked' ? 'line-through' : ''}>
-            {task.text}
-          </span>
-          {#if task.status === 'checked'}
-            <button onclick={() => handleArchiveTask(task.id)}>Archive</button>
-          {/if}
-        </li>
-      {/each}
+  {#if tasksQuery && $tasksQuery !== undefined}
+    {#if $tasksQuery.length === 0}
+      <p>No tasks yet for {listName}. Add your first task.</p>
+    {:else}
+      <ul>
+        {#each $tasksQuery as task}
+          <li>
+            <input
+              type="checkbox"
+              checked={task.status === 'checked'}
+              onchange={() => handleToggleTaskStatus(task.id, task.status)}
+            />
+            <span class={task.status === 'checked' ? 'line-through' : ''}>
+              {task.text}
+            </span>
+            {#if task.status === 'checked'}
+              <button onclick={() => handleArchiveTask(task.id)}>Archive</button>
+            {/if}
+          </li>
+        {/each}
+      </ul>
     {/if}
-  </ul>
+  {:else}
+    <p>Loading tasks...</p>
+  {/if}
   <div>
     <input
       type="text"

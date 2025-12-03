@@ -61,4 +61,20 @@ describe('App', () => {
     // Verify loading message is gone
     expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
   })
+
+  it('shows empty state message when a list has no tasks', async () => {
+    await db.lists.add({ name: 'Empty', order: 2 })
+    
+    render(App)
+    
+    await waitFor(() => {
+      expect(screen.getByText('Empty')).toBeInTheDocument()
+    })
+    
+    await waitFor(() => {
+      expect(
+        screen.getByText('No tasks yet for Empty. Add your first task.')
+      ).toBeInTheDocument()
+    })
+  })
 })
