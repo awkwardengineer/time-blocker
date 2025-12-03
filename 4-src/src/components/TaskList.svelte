@@ -1,22 +1,18 @@
 <script>
+  import { liveQuery } from 'dexie';
   import { getTasksForList, createTask, updateTaskStatus } from '../lib/dataAccess.js';
   
   let { listId, listName, newTaskInput, onInputChange } = $props();
   
-  // Use regular state and reload manually (avoiding liveQuery infinite loop issues)
-  let tasks = $state([]);
+  // Create liveQuery at top level - capture listId in closure
+  // This creates the query once and it will automatically update when database changes
+  let tasksQuery = $state(null);
   
-  async function loadTasks() {
-    try {
-      tasks = await getTasksForList(listId);
-    } catch (error) {
-      console.error('Error loading tasks:', error);
-    }
-  }
-  
-  // Load tasks when component mounts or listId changes
   $effect(() => {
-    loadTasks();
+    // Create query once when listId is available
+    if (listId && !tasksQuery) {
+      tasksQuery = liveQuery(() => getTasksForList(listId));
+    }
   });
   
   async function handleCreateTask() {
@@ -28,7 +24,7 @@
     try {
       await createTask(listId, taskText);
       onInputChange('');
-      await loadTasks(); // Reload after creation
+      // No need to reload - liveQuery will update automatically!
     } catch (error) {
       console.error('Error creating task:', error);
     }
@@ -38,7 +34,7 @@
     try {
       const newStatus = currentStatus === 'unchecked' ? 'checked' : 'unchecked';
       await updateTaskStatus(taskId, newStatus);
-      await loadTasks(); // Reload after status change
+      // No need to reload - liveQuery will update automatically!
     } catch (error) {
       console.error('Error updating task status:', error);
     }
@@ -47,7 +43,7 @@
   async function handleArchiveTask(taskId) {
     try {
       await updateTaskStatus(taskId, 'archived');
-      await loadTasks(); // Reload after archiving
+      // No need to reload - liveQuery will update automatically!
     } catch (error) {
       console.error('Error archiving task:', error);
     }
@@ -57,8 +53,8 @@
 <div>
   <h2>{listName}</h2>
   <ul>
-    {#if tasks}
-      {#each tasks as task}
+    {#if tasksQuery && $tasksQuery}
+      {#each $tasksQuery as task}
         <li>
           <input
             type="checkbox"
