@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/svelte'
 import userEvent from '@testing-library/user-event'
 import App from '../../App.svelte'
@@ -25,6 +25,7 @@ describe('App', () => {
     window.print = vi.fn()
     
     // Clear existing data and set up fresh test data
+    // This ensures each test starts with a clean state
     await db.lists.clear()
     await db.tasks.clear()
     
@@ -102,6 +103,21 @@ describe('App', () => {
     })
 
     const workSection = getListSection('Work')
+    
+    // Wait for initial tasks to load
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
+    // Find Task 1's checkbox specifically (more reliable than assuming first checkbox)
+    const task1Text = within(workSection).getByText('Task 1')
+    const task1ListItem = task1Text.closest('li')
+    const task1Checkbox = within(task1ListItem).getByRole('checkbox')
+    
+    // Verify Task 1 starts unchecked
+    expect(task1Checkbox).not.toBeChecked()
+
+    // Add a new task
     const input = within(workSection).getByPlaceholderText('Add new task...')
     const addButton = within(workSection).getByRole('button', { name: /add/i })
 
@@ -112,24 +128,16 @@ describe('App', () => {
       expect(within(workSection).getByText('UI Task')).toBeInTheDocument()
     })
 
-    // Wait for all tasks to be loaded and ensure the first checkbox is unchecked
-    // This ensures the component has fully rendered and the database state is correct
+    // Toggle Task 1 checkbox
+    await user.click(task1Checkbox)
     await waitFor(() => {
-      const checkboxes = within(getListSection('Work')).getAllByRole('checkbox')
-      expect(checkboxes.length).toBeGreaterThan(0)
-      expect(checkboxes[0]).not.toBeChecked()
-    })
-    
-    const checkbox = within(getListSection('Work')).getAllByRole('checkbox')[0]
-
-    await user.click(checkbox)
-    await waitFor(() => {
-      expect(within(getListSection('Work')).getAllByRole('checkbox')[0]).toBeChecked()
+      expect(task1Checkbox).toBeChecked()
     })
 
-    await user.click(within(getListSection('Work')).getAllByRole('checkbox')[0])
+    // Toggle it back
+    await user.click(task1Checkbox)
     await waitFor(() => {
-      expect(within(getListSection('Work')).getAllByRole('checkbox')[0]).not.toBeChecked()
+      expect(task1Checkbox).not.toBeChecked()
     })
   })
 
