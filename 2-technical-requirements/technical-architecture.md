@@ -26,6 +26,20 @@ graph TB
 - **Tailwind CSS**: Utility-first CSS framework for styling
 - **Custom fonts/colors**: To be provided by design team
 
+### UI/Interaction Libraries
+- **Drag-and-Drop Library**: **svelte-dnd-action** (v0.9.68+)
+- **Rationale**: 
+  - **Svelte-native**: Built specifically for Svelte, works seamlessly with Svelte 5 (supports both `on:consider`/`on:finalize` and `onconsider`/`onfinalize` syntax)
+  - **Nested containers**: Supports nested drop zones required for milestone 050 (cross-list dragging)
+  - **Mobile/touch support**: Excellent touch device support, critical for mobile users
+  - **Zero dependencies**: No external dependencies, keeping bundle size minimal
+  - **Active maintenance**: Recently updated (maintained), actively developed
+  - **Simple API**: Uses Svelte actions (`use:dndzone`), fits naturally with Svelte's component model
+  - **Framework-agnostic alternatives considered**: SortableJS and native HTML5 were evaluated but rejected due to:
+    - SortableJS: Requires more manual integration with Svelte reactivity
+    - Native HTML5: Poor mobile/touch support, requires significant polyfills
+  - **React-specific alternatives rejected**: @dnd-kit/core is React-specific and not suitable for Svelte projects
+
 ### Data Storage Library
 - **Dexie.js**: IndexedDB wrapper library for simplified database operations
 - **Rationale**: Provides simple Promise-based API, TypeScript support, and handles schema migrations

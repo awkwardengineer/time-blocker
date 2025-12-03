@@ -1,11 +1,12 @@
 # 031: Task Reordering
 
 ## Goal
-Enable users to reorder tasks within lists using drag-and-drop or buttons. Tasks maintain their order in IndexedDB and persist across page refreshes. **No formatting focus** - focus purely on functionality.
+Enable users to reorder tasks within a single list using drag-and-drop. Tasks maintain their order in IndexedDB and persist across page refreshes. **Scope**: Reordering is limited to within a single list only. Cross-list dragging will be implemented in milestone [[050-drag-between-lists]]. **No formatting focus** - focus purely on functionality.
 
 ## Acceptance Criteria
-- [ ] Users can reorder tasks within a list (only unchecked/checked tasks)
-- [ ] Reordering mechanism works (drag-and-drop OR up/down buttons)
+- [ ] Users can reorder tasks within a single list (only unchecked/checked tasks)
+- [ ] Reordering is limited to within the same list (no cross-list dragging in this milestone)
+- [ ] Reordering mechanism works (drag-and-drop)
 - [ ] Task order persists in IndexedDB
 - [ ] Task order persists across page refreshes
 - [ ] Order consistency maintained (no gaps, sequential ordering)
@@ -15,24 +16,27 @@ Enable users to reorder tasks within lists using drag-and-drop or buttons. Tasks
 
 ## Implementation Steps
 
-1. **Choose Reordering Approach**
-   - Evaluate drag-and-drop libraries (e.g., dnd-kit, @dnd-kit/core, or native HTML5 drag-and-drop)
-   - OR evaluate button-based approach (up/down arrows)
-   - Choose approach based on simplicity and mobile compatibility
-   - Document decision rationale
+1. **Choose Drag-and-Drop Library** ✅
+   - Evaluate drag-and-drop libraries (e.g., dnd-kit, @dnd-kit/core, or native HTML5 drag-and-drop) ✅
+   - Choose library based on simplicity and mobile compatibility ✅
+   - **Important**: Library must support nested drop zones for future milestone [[050-drag-between-lists]] (cross-list dragging) ✅
+   - Document decision rationale in [[technical-architecture.md]] under "UI/Interaction Libraries" section ✅
+   - **Decision**: **svelte-dnd-action** - Svelte-native, supports nested containers, excellent mobile/touch support, zero dependencies
 
 2. **Implement Reordering UI**
-   - Add drag handles or up/down buttons to each task
-   - Implement visual feedback during reordering (if drag-and-drop)
+   - Add drag handles to each task
+   - Implement visual feedback during drag-and-drop
    - Ensure reordering only works for unchecked/checked tasks
    - Disable reordering for archived tasks
+   - **Important - Reactivity Handling**: Use `svelte-dnd-action`'s `consider` event for visual reordering during drag (no database updates). Use `finalize` event to trigger database updates after drag completes. This prevents `liveQuery` reactivity from interfering with drag operations (updating IndexedDB during drag would trigger re-renders and break drag state).
 
 3. **Implement Order Update Logic**
-   - Detect when task order changes
+   - Detect when task order changes (via `svelte-dnd-action`'s `finalize` event - fires after drag completes)
    - Calculate new `order` values for affected tasks
-   - Update task `order` values in IndexedDB
+   - Update task `order` values in IndexedDB (only after drag completes, not during drag)
    - Maintain sequential ordering (no gaps, e.g., 0, 1, 2, 3...)
    - Handle edge cases (first task, last task, single task)
+   - **Note**: Database updates happen in `finalize` handler, not `consider` handler, to avoid `liveQuery` re-renders during active drag operations
 
 4. **Update Task Creation**
    - Ensure new tasks are appended with appropriate `order` value
@@ -68,8 +72,11 @@ Enable users to reorder tasks within lists using drag-and-drop or buttons. Tasks
 - Database schema: Uses existing `order` field from [[020-mock-data-display]]
 - Task `order` field: Sequential integer values (0, 1, 2, 3...)
 - Reordering scope: Only unchecked/checked tasks (archived tasks excluded)
+- Reordering limitation: **Within a single list only** - cross-list dragging deferred to milestone [[050-drag-between-lists]]
+- Drag-and-drop library: Must support nested drop zones (for future cross-list dragging)
+- **Reactivity handling**: `svelte-dnd-action` uses `consider` (visual only) and `finalize` (database update) events to prevent `liveQuery` from interfering with drag operations
 - New task order: Append to end (max order + 1)
 - Requires: [[030-task-crud-ordering]]
 - No formatting concerns - basic HTML/UI is fine
-- Mobile compatibility: Consider touch-friendly drag-and-drop or button approach
+- Mobile compatibility: Use touch-friendly drag-and-drop library
 
