@@ -79,11 +79,11 @@ stateDiagram-v2
    - Implement destructive delete function (permanently remove from IndexedDB) - only after confirmation ✅
    - Update UI reactively after restore or deletion ✅
 
-6. **Empty Task State**
-   - Detect when a list has no unchecked/checked tasks (archived tasks don't count)
-   - Display appropriate empty state message/UI
-   - Ensure empty state doesn't break functionality
-   - Handle edge case: creating first task in empty list
+6. **Empty Task State** ✅
+   - Detect when a list has no unchecked/checked tasks (archived tasks don't count) ✅
+   - Display appropriate empty state message/UI ✅
+   - Ensure empty state doesn't break functionality ✅
+   - Handle edge case: creating first task in empty list ✅
 
 7. **Data Persistence**
    - Verify all CRUD operations and state changes persist to IndexedDB
