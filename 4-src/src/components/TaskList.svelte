@@ -381,7 +381,7 @@
   <h2>{listName}</h2>
   {#if tasksQuery && $tasksQuery !== undefined}
     {#if $tasksQuery.length === 0}
-      <p>No tasks yet for {listName}. Add your first task.</p>
+      <p class="empty-state-message">No tasks yet for {listName}. Add your first task.</p>
     {:else}
       <ul 
         bind:this={ulElement}
@@ -470,7 +470,6 @@
       <button
         onclick={handleAddTaskClick}
         class="add-task-button"
-        style="visibility: visible;"
         aria-label="Add new task to {listName}"
       >
         Add Task
@@ -499,6 +498,14 @@
     }
     
     .task-input-container textarea {
+      visibility: hidden;
+    }
+    
+    .drag-handle {
+      visibility: hidden;
+    }
+    
+    .empty-state-message {
       visibility: hidden;
     }
   }
