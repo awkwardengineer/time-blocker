@@ -28,9 +28,12 @@
     const offsetToInputTop = modalPaddingTop + titleHeight + titleMarginBottom + inputPaddingTop - 8; // Reduced by 8px to shift down
     
     // Position modal so input aligns with task text
+    // Small offset to account for checkbox alignment
+    const checkboxOffset = 10; // Small adjustment for checkbox alignment
     const top = taskPosition.top - offsetToInputTop;
-    const left = taskPosition.left - 16; // Reduced left offset to shift modal right
-    const width = Math.max(taskPosition.width + 48, 400); // Add padding on both sides (24px each)
+    const left = taskPosition.left - 16 + checkboxOffset; // Small shift right to align with text
+    // Match the task text width (150px) plus padding on both sides (24px each = 48px)
+    const width = taskPosition.width + 48; // Add padding on both sides (24px each)
     
     return `background-color: white; z-index: 10000; top: ${top}px; left: ${left}px; width: ${width}px;`;
   });
@@ -123,7 +126,7 @@
     <!-- Modal positioned over the task -->
     <div 
       bind:this={modalElement}
-      class="bg-white text-gray-900 p-6 rounded-xl shadow-2xl border-2 border-gray-300 fixed min-w-[400px]"
+      class="bg-white text-gray-900 p-6 rounded-xl shadow-2xl border-2 border-gray-300 fixed"
       style={modalStyle()}
       onclick={(e) => e.stopPropagation()}
     >

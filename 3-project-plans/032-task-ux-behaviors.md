@@ -141,7 +141,8 @@ stateDiagram-v2
    - ✅ Tab navigation: ensure logical tab order through tasks and interactive elements
      - Drag handles excluded from tab order (tabindex="-1", aria-hidden="true")
      - Tab order: checkbox → task text → archive button (if checked) → Add Task button
-   - ✅ Enter: create task (in input) or save edit (in modal, if valid)
+   - ✅ Enter: create task (in input), open edit modal (on task text), or save edit (in modal, if valid)
+     - Enter on task text span opens edit modal (capture-phase handler prevents drag library from intercepting)
    - ✅ Escape: cancel task creation or discard edit
    - ✅ Ensure all interactive elements are keyboard accessible
      - Added aria-labels to all buttons and interactive elements
@@ -153,23 +154,23 @@ stateDiagram-v2
    - (Arrow keys and other shortcuts deferred - focus on core Tab/Enter/Escape first)
 
 7. **Handle Edge Cases**
-   - Empty string "" handling in task creation (exit task creation, don't create task)
-   - Whitespace-only input handling in task creation (treat as blank task, create blank task)
-   - Empty string "" handling in edit modal (prevent saving, show validation suggesting archiving)
-   - Whitespace-only input handling in edit modal (allow saving as blank task - consistent with creation)
-   - Distinguish between empty string and whitespace-only (empty exits in creation, empty prevents save in edit)
-   - Validation message in edit modal when input is empty (suggest archiving)
-   - Canceling edit (revert to original task text)
-   - Focus when list is empty
-   - Focus when all tasks are archived
-   - Keyboard navigation with no tasks
-   - Modal behavior when task is deleted while modal is open
-   - Modal behavior when task is archived while modal is open
+   - ✅ Empty string "" handling in task creation (exit task creation, don't create task) - Implemented in TaskList.svelte handleCreateTask()
+   - ✅ Whitespace-only input handling in task creation (treat as blank task, create blank task) - Implemented in TaskList.svelte handleCreateTask()
+   - ✅ Empty string "" handling in edit modal (prevent saving, show validation suggesting archiving) - Implemented in TaskEditModal.svelte handleSave()
+   - ✅ Whitespace-only input handling in edit modal (allow saving as blank task - consistent with creation) - Implemented in TaskEditModal.svelte handleSave()
+   - ✅ Distinguish between empty string and whitespace-only (empty exits in creation, empty prevents save in edit) - Both components correctly distinguish these cases
+   - ✅ Validation message in edit modal when input is empty (suggest archiving) - Implemented with role="alert" and aria-describedby
+   - ✅ Canceling edit (revert to original task text) - Implemented in TaskEditModal.svelte handleCancel()
+   - ✅ Focus when list is empty - "Add Task" button is focusable and accessible when list is empty
+   - ✅ Focus when all tasks are archived - Archive handler focuses "Add Task" button as fallback (TaskList.svelte lines 212-215)
+   - ✅ Keyboard navigation with no tasks - "Add Task" button is keyboard accessible (tabindex="0" by default for buttons)
+   - ✅ Modal behavior when task is deleted while modal is open - N/A: Tasks can only be deleted from archived view, not while modal is open
+   - ✅ Modal behavior when task is archived while modal is open - Modal closes and focus moves to next task or "Add Task" button (TaskList.svelte lines 177-218)
 
-8. **Limit Task Width and Enable Word Wrapping**
-   - Add max-width constraint to task text elements
-   - Enable word wrapping for long task text
-   - Ensure tasks wrap nicely instead of extending horizontally
+8. **Limit Task Width and Enable Word Wrapping** ✅
+   - ✅ Add max-width constraint to task text elements - Set fixed width of `150px` using `w-[150px]` class
+   - ✅ Enable word wrapping for long task text - Added `break-words` Tailwind class to enable word wrapping
+   - ✅ Ensure tasks wrap nicely instead of extending horizontally - Fixed width with word wrapping ensures text wraps within 150px
 
 9. **Test**
    - **Manual Testing**:

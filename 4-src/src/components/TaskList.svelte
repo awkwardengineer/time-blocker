@@ -24,6 +24,7 @@
   let editingTaskText = $state('');
   let editingTaskPosition = $state(null); // { top, left, width, height }
   let editingTaskElement = $state(null); // Reference to the task element for focus return
+  let ulElement = $state(null); // Reference to the ul element for capture-phase handler
   
   $effect(() => {
     // Create query once when listId is available
@@ -41,6 +42,49 @@
         task.status === 'unchecked' || task.status === 'checked'
       );
     }
+  });
+  
+  // Add capture-phase keyboard handler to prevent drag library from intercepting Enter on task text
+  $effect(() => {
+    if (!ulElement) return;
+    
+    function handleKeydownCapture(e) {
+      // If Enter/Space is pressed on task text span (has data-no-drag attribute), handle it here
+      const target = e.target;
+      if ((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.hasAttribute('data-no-drag')) {
+        e.preventDefault();
+        e.stopImmediatePropagation(); // Stop ALL handlers including drag library
+        
+        // Find the task ID from the parent li element
+        const liElement = target.closest('li[data-id]');
+        if (liElement) {
+          const taskId = parseInt(liElement.getAttribute('data-id'));
+          const task = draggableTasks.find(t => t.id === taskId);
+          if (task) {
+            // Get the element's position for modal positioning
+            const rect = target.getBoundingClientRect();
+            editingTaskPosition = {
+              top: rect.top,
+              left: rect.left,
+              width: rect.width,
+              height: rect.height
+            };
+            editingTaskElement = target;
+            
+            // Open the modal directly
+            editingTaskId = taskId;
+            editingTaskText = task.text;
+            editModalOpen = true;
+          }
+        }
+      }
+    }
+    
+    ulElement.addEventListener('keydown', handleKeydownCapture, true); // true = capture phase
+    
+    return () => {
+      ulElement.removeEventListener('keydown', handleKeydownCapture, true);
+    };
   });
   
   // Handle drag events - consider event for visual reordering only
@@ -243,6 +287,33 @@
     editModalOpen = true;
   }
   
+  function handleTaskTextKeydown(taskId, taskText, event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      // Stop the event immediately to prevent drag library from intercepting
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      
+      // Get the span element
+      const spanElement = event.currentTarget;
+      if (spanElement) {
+        // Get the element's position for modal positioning
+        const rect = spanElement.getBoundingClientRect();
+        editingTaskPosition = {
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height
+        };
+        editingTaskElement = spanElement;
+        
+        // Open the modal directly
+        editingTaskId = taskId;
+        editingTaskText = taskText;
+        editModalOpen = true;
+      }
+    }
+  }
+  
   async function handleTaskSave(taskId, newText) {
     try {
       await updateTaskText(taskId, newText);
@@ -293,6 +364,7 @@
       <p>No tasks yet for {listName}. Add your first task.</p>
     {:else}
       <ul 
+        bind:this={ulElement}
         use:dndzone={{ 
           items: draggableTasks,
           type: `list-${listId}` // Unique type per list - prevents cross-list dragging
@@ -303,7 +375,7 @@
         class="space-y-2"
       >
         {#each draggableTasks as task (task.id)}
-          <li data-id={task.id} class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50">
+          <li data-id={task.id} class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-fit">
             <span 
               class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
               title="Drag to reorder"
@@ -320,17 +392,14 @@
               aria-label={`Mark task "${task.text || 'blank task'}" as ${task.status === 'checked' ? 'unchecked' : 'checked'}`}
             />
             <span 
-              class={task.status === 'checked' ? 'line-through flex-1 cursor-pointer hover:underline' : 'flex-1 cursor-pointer hover:underline'}
+              class={task.status === 'checked' ? 'line-through w-[150px] cursor-pointer hover:underline break-words' : 'w-[150px] cursor-pointer hover:underline break-words'}
               onclick={(e) => handleTaskTextClick(task.id, task.text, e)}
               role="button"
               tabindex="0"
+              contenteditable="false"
+              data-no-drag="true"
               aria-label={`Edit task: ${task.text || 'blank task'}`}
-              onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleTaskTextClick(task.id, task.text, e);
-                }
-              }}
+              onkeydown={(e) => handleTaskTextKeydown(task.id, task.text, e)}
             >
               {task.text || '\u00A0'}
             </span>
