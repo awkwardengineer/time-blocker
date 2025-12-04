@@ -1,4 +1,4 @@
-# Master Project Plan: Paper-Loving Digital Task Planner
+**# Master Project Plan: Paper-Loving Digital Task Planner
 
 ## Overview
 
