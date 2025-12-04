@@ -3,8 +3,9 @@ import { expect } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/svelte'
 
 export function getListSection(name) {
-  const heading = screen.getByRole('heading', { name })
-  return heading.parentElement
+  // List name is now a button (h2 with role="button"), so find by text instead
+  const listNameElement = screen.getByText(name)
+  return listNameElement.parentElement
 }
 
 export async function getFirstCheckboxFor(listName) {

@@ -80,7 +80,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - Rename persists in IndexedDB
      - UI updates reactively after rename
    - **Technical Work:**
-     - Add UI for renaming lists (click to edit, input field)
+     - Add UI for renaming lists using a modal similar to task editing (overlaid with blackout background)
      - Implement function to update list name in IndexedDB
      - Validate non-empty name
      - Update UI reactively after rename

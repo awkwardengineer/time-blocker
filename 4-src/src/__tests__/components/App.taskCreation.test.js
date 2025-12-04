@@ -118,9 +118,9 @@ describe('App - Task Creation UX Behaviors', () => {
     const input = await openTaskInput(user, workSection, 'Work')
     expect(input).toBeInTheDocument()
     
-    // Click outside (on the heading)
-    const heading = within(workSection).getByRole('heading', { name: 'Work' })
-    await user.click(heading)
+    // Click outside (on the list name button)
+    const listNameButton = within(workSection).getByRole('button', { name: /Rename list: Work/i })
+    await user.click(listNameButton)
     
     // Wait for input to disappear and button to reappear
     await waitFor(() => {

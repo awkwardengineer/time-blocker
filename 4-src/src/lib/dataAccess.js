@@ -9,6 +9,21 @@ export async function getAllLists() {
 }
 
 /**
+ * Update a list's name
+ * @param {number} listId - The ID of the list
+ * @param {string} name - The new list name (cannot be empty)
+ * @returns {Promise<number>} The number of lists updated (should be 1)
+ */
+export async function updateListName(listId, name) {
+  const trimmedName = name.trim();
+  if (trimmedName === '') {
+    throw new Error('List name cannot be empty');
+  }
+  
+  return await db.lists.update(listId, { name: trimmedName });
+}
+
+/**
  * Fetch all tasks for a specific list, ordered by their order field
  * Only returns unchecked and checked tasks (excludes archived)
  * @param {number} listId - The ID of the list

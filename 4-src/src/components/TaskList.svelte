@@ -1,8 +1,9 @@
 <script>
   import { liveQuery } from 'dexie';
   import { dndzone } from 'svelte-dnd-action';
-  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText } from '../lib/dataAccess.js';
+  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateListName } from '../lib/dataAccess.js';
   import TaskEditModal from './TaskEditModal.svelte';
+  import ListEditModal from './ListEditModal.svelte';
   
   let { listId, listName, newTaskInput, onInputChange } = $props();
   
@@ -25,6 +26,11 @@
   let editingTaskPosition = $state(null); // { top, left, width, height }
   let editingTaskElement = $state(null); // Reference to the task element for focus return
   let ulElement = $state(null); // Reference to the ul element for capture-phase handler
+  
+  // State for list edit modal
+  let listEditModalOpen = $state(false);
+  let editingListPosition = $state(null); // { top, left, width, height }
+  let listNameElement = $state(null); // Reference to the h2 element for focus return
   
   $effect(() => {
     // Create query once when listId is available
@@ -375,10 +381,89 @@
   async function handleTaskEditArchive(taskId) {
     await handleArchiveTask(taskId);
   }
+  
+  function handleListNameClick(event) {
+    // Get the clicked h2 element's position for modal positioning
+    const clickedElement = event?.currentTarget || event?.target;
+    if (clickedElement) {
+      const rect = clickedElement.getBoundingClientRect();
+      editingListPosition = {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height
+      };
+      listNameElement = clickedElement;
+    }
+    listEditModalOpen = true;
+  }
+  
+  function handleListNameKeydown(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      const h2Element = event.currentTarget;
+      if (h2Element) {
+        const rect = h2Element.getBoundingClientRect();
+        editingListPosition = {
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height
+        };
+        listNameElement = h2Element;
+        listEditModalOpen = true;
+      }
+    }
+  }
+  
+  async function handleListSave(listId, newName) {
+    try {
+      await updateListName(listId, newName);
+      listEditModalOpen = false;
+      const nameElement = listNameElement; // Store reference before clearing
+      editingListPosition = null;
+      listNameElement = null;
+      
+      // Return focus to the list name element after modal closes
+      if (nameElement && nameElement instanceof HTMLElement) {
+        setTimeout(() => {
+          nameElement.focus();
+        }, 0);
+      }
+      // No need to reload - liveQuery in App.svelte will update automatically!
+    } catch (error) {
+      console.error('Error updating list name:', error);
+    }
+  }
+  
+  function handleListEditCancel() {
+    const nameElement = listNameElement; // Store reference before clearing
+    listEditModalOpen = false;
+    editingListPosition = null;
+    listNameElement = null;
+    
+    // Return focus to the list name element after modal closes
+    if (nameElement && nameElement instanceof HTMLElement) {
+      setTimeout(() => {
+        nameElement.focus();
+      }, 0);
+    }
+  }
 </script>
 
 <div data-list-id={listId}>
-  <h2>{listName}</h2>
+  <h2 
+    onclick={handleListNameClick}
+    onkeydown={handleListNameKeydown}
+    role="button"
+    tabindex="0"
+    class="cursor-pointer hover:underline"
+    aria-label={`Rename list: ${listName}`}
+  >
+    {listName}
+  </h2>
   {#if tasksQuery && $tasksQuery !== undefined}
     {#if $tasksQuery.length === 0}
       <p class="empty-state-message">No tasks yet for {listName}. Add your first task.</p>
@@ -519,5 +604,14 @@
   onSave={handleTaskSave}
   onCancel={handleTaskEditCancel}
   onArchive={handleTaskEditArchive}
+/>
+
+<ListEditModal
+  isOpen={listEditModalOpen}
+  listId={listId}
+  listName={listName}
+  listPosition={editingListPosition}
+  onSave={handleListSave}
+  onCancel={handleListEditCancel}
 />
 

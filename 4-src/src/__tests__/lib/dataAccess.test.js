@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import db from '../../lib/db.js'
-import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, deleteTask } from '../../lib/dataAccess.js'
+import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, deleteTask, updateListName } from '../../lib/dataAccess.js'
 
 describe('dataAccess', () => {
   beforeEach(async () => {
@@ -39,6 +39,63 @@ describe('dataAccess', () => {
       for (let i = 0; i < lists.length - 1; i++) {
         expect(lists[i].order).toBeLessThanOrEqual(lists[i + 1].order)
       }
+    })
+  })
+
+  describe('updateListName', () => {
+    it('should update list name successfully', async () => {
+      const lists = await getAllLists()
+      const targetList = lists.find(l => l.name === 'First')
+      expect(targetList).toBeDefined()
+      
+      const result = await updateListName(targetList.id, 'Updated First')
+      expect(result).toBe(1) // Should update 1 list
+      
+      // Verify the name was updated
+      const updatedList = await db.lists.get(targetList.id)
+      expect(updatedList.name).toBe('Updated First')
+      expect(updatedList.order).toBe(targetList.order) // Order should remain unchanged
+    })
+    
+    it('should trim whitespace from list name', async () => {
+      const lists = await getAllLists()
+      const targetList = lists.find(l => l.name === 'Second')
+      expect(targetList).toBeDefined()
+      
+      await updateListName(targetList.id, '  Updated Second  ')
+      
+      // Verify the name was trimmed
+      const updatedList = await db.lists.get(targetList.id)
+      expect(updatedList.name).toBe('Updated Second')
+    })
+    
+    it('should throw error when list name is empty', async () => {
+      const lists = await getAllLists()
+      const targetList = lists.find(l => l.name === 'Third')
+      expect(targetList).toBeDefined()
+      
+      await expect(updateListName(targetList.id, '')).rejects.toThrow('List name cannot be empty')
+      
+      // Verify the name was not updated
+      const unchangedList = await db.lists.get(targetList.id)
+      expect(unchangedList.name).toBe('Third')
+    })
+    
+    it('should throw error when list name is only whitespace', async () => {
+      const lists = await getAllLists()
+      const targetList = lists.find(l => l.name === 'First')
+      expect(targetList).toBeDefined()
+      
+      await expect(updateListName(targetList.id, '   ')).rejects.toThrow('List name cannot be empty')
+      
+      // Verify the name was not updated
+      const unchangedList = await db.lists.get(targetList.id)
+      expect(unchangedList.name).toBe('First')
+    })
+    
+    it('should return 0 when list does not exist', async () => {
+      const result = await updateListName(99999, 'Non-existent')
+      expect(result).toBe(0) // Should update 0 lists
     })
   })
 
