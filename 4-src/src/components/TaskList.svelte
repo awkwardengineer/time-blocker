@@ -121,16 +121,33 @@
   });
   
   async function handleCreateTask() {
-    const taskText = newTaskInput?.trim();
-    if (!taskText) {
+    const inputValue = newTaskInput || '';
+    
+    // Check if input is empty string "" - exit task creation
+    if (inputValue === '') {
+      isInputActive = false;
+      onInputChange('');
       return;
+    }
+    
+    // Check if input contains only whitespace (e.g., " ", "      ")
+    const trimmedValue = inputValue.trim();
+    const isWhitespaceOnly = trimmedValue === '' && inputValue.length > 0;
+    
+    let taskText;
+    if (isWhitespaceOnly) {
+      // Create blank task (empty text)
+      taskText = '';
+    } else {
+      // Create normal task with content
+      taskText = trimmedValue;
     }
     
     try {
       await createTask(listId, taskText);
       onInputChange('');
-      // Keep input active for sequential creation (will be handled in step 3)
-      // Input will remain focused for next task
+      // Keep input active and focused for sequential creation
+      // Input will remain active, focus will be handled by $effect
     } catch (error) {
       console.error('Error creating task:', error);
     }
@@ -215,6 +232,7 @@
           oninput={(e) => onInputChange(e.target.value)}
           onkeydown={(e) => {
             if (e.key === 'Enter') {
+              e.preventDefault(); // Prevent form submission if inside a form
               handleCreateTask();
             } else if (e.key === 'Escape') {
               handleInputEscape(e);

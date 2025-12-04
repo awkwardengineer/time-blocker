@@ -77,8 +77,12 @@ export async function createTask(listId, text) {
   const nextOrder = maxOrder + 1;
   
   // Create the task
+  // Note: text can be empty string for blank tasks (whitespace-only input creates blank tasks)
+  // For non-empty text, trim whitespace; for empty/blank tasks, preserve empty string
+  const taskText = text === '' ? '' : text.trim();
+  
   const taskId = await db.tasks.add({
-    text: text.trim(),
+    text: taskText,
     listId: listId,
     order: nextOrder,
     status: 'unchecked'
