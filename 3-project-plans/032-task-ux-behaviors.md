@@ -75,6 +75,8 @@ stateDiagram-v2
 - [ ] Keyboard navigation works (Tab order is logical, Enter/Escape behave correctly)
 - [ ] Blank tasks can be created (whitespace-only input allowed - e.g., " ", "      ")
 - [ ] Empty string "" does NOT create a task, but exits task creation mode
+- [ ] Input fields for task creation and editing have width constraints matching task width (150px)
+- [ ] Input fields support word wrapping for long text (may require textarea instead of input)
 - [ ] No formatting/styling focus - just functional interaction behavior
 
 ## Implementation Steps
@@ -172,7 +174,15 @@ stateDiagram-v2
    - ✅ Enable word wrapping for long task text - Added `break-words` Tailwind class to enable word wrapping
    - ✅ Ensure tasks wrap nicely instead of extending horizontally - Fixed width with word wrapping ensures text wraps within 150px
 
-9. **Test**
+9. **Add Width and Word Wrapping to Input Fields**
+   - Add width constraint to task creation input field (match task width of 150px)
+   - Add width constraint to edit modal input field (match task width)
+   - Enable word wrapping in input fields (may require converting `<input>` to `<textarea>`)
+   - Ensure input fields wrap text nicely instead of extending horizontally
+   - Maintain all existing keyboard behaviors (Enter to save, Escape to cancel, etc.)
+   - Ensure textarea auto-resizes or has appropriate height for multi-line text
+
+10. **Test**
    - **Manual Testing**:
      - Test Enter key behavior in various scenarios
      - Test focus management after all actions
