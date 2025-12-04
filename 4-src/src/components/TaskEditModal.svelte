@@ -46,13 +46,33 @@
     }
   });
   
-  // Focus input when modal opens
+  // Focus textarea when modal opens and auto-resize
   $effect(() => {
     if (isOpen && inputElement) {
       setTimeout(() => {
         inputElement?.focus();
         inputElement?.select(); // Select all text for easy editing
+        // Auto-resize textarea to fit content
+        if (inputElement instanceof HTMLTextAreaElement) {
+          inputElement.style.height = 'auto';
+          inputElement.style.height = `${Math.min(inputElement.scrollHeight, 160)}px`; // max-h-[10rem] = 160px
+        }
       }, 0);
+    }
+  });
+  
+  // Auto-resize textarea as content changes
+  $effect(() => {
+    if (inputElement && inputElement instanceof HTMLTextAreaElement) {
+      const resizeTextarea = () => {
+        inputElement.style.height = 'auto';
+        inputElement.style.height = `${Math.min(inputElement.scrollHeight, 160)}px`;
+      };
+      
+      inputElement.addEventListener('input', resizeTextarea);
+      return () => {
+        inputElement.removeEventListener('input', resizeTextarea);
+      };
     }
   });
   
@@ -129,20 +149,21 @@
       class="bg-white text-gray-900 p-6 rounded-xl shadow-2xl border-2 border-gray-300 fixed"
       style={modalStyle()}
       onclick={(e) => e.stopPropagation()}
+      role="document"
     >
       <h3 id="modal-title" class="text-lg font-semibold mb-4">Edit Task</h3>
       
       <div class="mb-4">
-        <input
+        <textarea
           bind:this={inputElement}
-          type="text"
           bind:value={editedText}
-          class="task-input w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="task-input w-[150px] flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Task text..."
           onkeydown={handleKeydown}
           aria-label="Edit task text"
           aria-describedby={showValidation ? "validation-message" : undefined}
-        />
+          rows="1"
+        ></textarea>
         
         {#if showValidation}
           <div id="validation-message" class="mt-2 text-sm text-red-600" role="alert">

@@ -174,13 +174,13 @@ stateDiagram-v2
    - ✅ Enable word wrapping for long task text - Added `break-words` Tailwind class to enable word wrapping
    - ✅ Ensure tasks wrap nicely instead of extending horizontally - Fixed width with word wrapping ensures text wraps within 150px
 
-9. **Add Width and Word Wrapping to Input Fields**
-   - Add width constraint to task creation input field (match task width of 150px)
-   - Add width constraint to edit modal input field (match task width)
-   - Enable word wrapping in input fields (may require converting `<input>` to `<textarea>`)
-   - Ensure input fields wrap text nicely instead of extending horizontally
-   - Maintain all existing keyboard behaviors (Enter to save, Escape to cancel, etc.)
-   - Ensure textarea auto-resizes or has appropriate height for multi-line text
+9. **Add Width and Word Wrapping to Input Fields** ✅
+   - ✅ Add width constraint to task creation input field (match task width of 150px) - Converted to textarea with `w-[150px] flex-none` classes
+   - ✅ Add width constraint to edit modal input field (match task width) - Converted to textarea with `w-[150px] flex-none` classes
+   - ✅ Enable word wrapping in input fields (may require converting `<input>` to `<textarea>`) - Both inputs converted to `<textarea>` with `break-words` class
+   - ✅ Ensure input fields wrap text nicely instead of extending horizontally - Textareas wrap text within 150px width
+   - ✅ Maintain all existing keyboard behaviors (Enter to save, Escape to cancel, etc.) - Enter (without Shift) saves, Shift+Enter adds newline, Escape cancels
+   - ✅ Ensure textarea auto-resizes or has appropriate height for multi-line text - Auto-resizes with min-height 2.5rem and max-height 10rem (160px)
 
 10. **Test**
    - **Manual Testing**:

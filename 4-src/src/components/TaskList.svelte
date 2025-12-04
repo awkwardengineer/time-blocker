@@ -137,10 +137,10 @@
         return; // Let Save button handle the click
       }
       
-      // Check if click is outside the input field itself (even if inside container)
-      const inputField = container.querySelector('input');
-      if (inputField && inputField.contains(e.target)) {
-        return; // Click is on input, don't close
+      // Check if click is outside the textarea field itself (even if inside container)
+      const textareaField = container.querySelector('textarea');
+      if (textareaField && textareaField.contains(e.target)) {
+        return; // Click is on textarea, don't close
       }
       
       // Click is outside input (could be in container but not on input or Save button)
@@ -162,13 +162,33 @@
     };
   });
   
-  // Focus input when it becomes active
+  // Focus textarea when it becomes active and auto-resize
   $effect(() => {
     if (isInputActive && inputElement) {
-      // Small delay to ensure input is rendered
+      // Small delay to ensure textarea is rendered
       setTimeout(() => {
         inputElement?.focus();
+        // Auto-resize textarea to fit content
+        if (inputElement instanceof HTMLTextAreaElement) {
+          inputElement.style.height = 'auto';
+          inputElement.style.height = `${Math.min(inputElement.scrollHeight, 160)}px`; // max-h-[10rem] = 160px
+        }
       }, 0);
+    }
+  });
+  
+  // Auto-resize textarea as content changes
+  $effect(() => {
+    if (inputElement && inputElement instanceof HTMLTextAreaElement) {
+      const resizeTextarea = () => {
+        inputElement.style.height = 'auto';
+        inputElement.style.height = `${Math.min(inputElement.scrollHeight, 160)}px`;
+      };
+      
+      inputElement.addEventListener('input', resizeTextarea);
+      return () => {
+        inputElement.removeEventListener('input', resizeTextarea);
+      };
     }
   });
   
@@ -422,22 +442,22 @@
   <div class="task-input-container">
     {#if isInputActive}
       <div class="flex gap-2">
-        <input
+        <textarea
           bind:this={inputElement}
-          type="text"
           placeholder="Add new task..."
           value={newTaskInput}
           oninput={(e) => onInputChange(e.currentTarget.value)}
           onkeydown={(e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault(); // Prevent form submission if inside a form
               handleCreateTask();
             } else if (e.key === 'Escape') {
               handleInputEscape(e);
             }
           }}
-          class="print:hidden"
-        />
+          class="print:hidden w-[150px] flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
+          rows="1"
+        ></textarea>
         <button
           onclick={handleCreateTask}
           class="print:hidden"
@@ -478,7 +498,7 @@
       visibility: hidden;
     }
     
-    .task-input-container input {
+    .task-input-container textarea {
       visibility: hidden;
     }
   }
