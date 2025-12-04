@@ -92,6 +92,20 @@ export async function createTask(listId, text) {
 }
 
 /**
+ * Update a task's text content
+ * @param {number} taskId - The ID of the task
+ * @param {string} text - The new text content (can be empty string for blank tasks)
+ * @returns {Promise<number>} The number of tasks updated (should be 1)
+ */
+export async function updateTaskText(taskId, text) {
+  // Note: text can be empty string for blank tasks (whitespace-only input creates blank tasks)
+  // For non-empty text, trim whitespace; for empty/blank tasks, preserve empty string
+  const taskText = text === '' ? '' : text.trim();
+  
+  return await db.tasks.update(taskId, { text: taskText });
+}
+
+/**
  * Update a task's status
  * @param {number} taskId - The ID of the task
  * @param {string} status - The new status ('unchecked', 'checked', 'archived')

@@ -1,7 +1,8 @@
 <script>
   import { liveQuery } from 'dexie';
   import { dndzone } from 'svelte-dnd-action';
-  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder } from '../lib/dataAccess.js';
+  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText } from '../lib/dataAccess.js';
+  import TaskEditModal from './TaskEditModal.svelte';
   
   let { listId, listName, newTaskInput, onInputChange } = $props();
   
@@ -16,6 +17,13 @@
   // State for Add Task button/input toggle
   let isInputActive = $state(false);
   let inputElement = $state(null);
+  
+  // State for task edit modal
+  let editModalOpen = $state(false);
+  let editingTaskId = $state(null);
+  let editingTaskText = $state('');
+  let editingTaskPosition = $state(null); // { top, left, width, height }
+  let editingTaskElement = $state(null); // Reference to the task element for focus return
   
   $effect(() => {
     // Create query once when listId is available
@@ -166,10 +174,115 @@
   async function handleArchiveTask(taskId) {
     try {
       await updateTaskStatus(taskId, 'archived');
+      // Close modal if this task was being edited
+      if (editingTaskId === taskId) {
+        const taskElement = editingTaskElement; // Store reference before clearing
+        editModalOpen = false;
+        editingTaskId = null;
+        editingTaskText = '';
+        editingTaskPosition = null;
+        editingTaskElement = null;
+        
+        // Focus management: after archiving, focus should go to next logical element
+        // Find the next task in the list, or the "Add Task" button if no tasks remain
+        setTimeout(() => {
+          if (taskElement && taskElement instanceof HTMLElement) {
+            // Try to find the next task element (sibling or next in list)
+            const taskCard = taskElement.closest('li');
+            if (taskCard) {
+              const nextTaskCard = taskCard.nextElementSibling;
+              if (nextTaskCard) {
+                const nextTaskText = nextTaskCard.querySelector('span[role="button"]');
+                if (nextTaskText && nextTaskText instanceof HTMLElement) {
+                  nextTaskText.focus();
+                  return;
+                }
+              }
+              // If no next task, try previous task
+              const prevTaskCard = taskCard.previousElementSibling;
+              if (prevTaskCard) {
+                const prevTaskText = prevTaskCard.querySelector('span[role="button"]');
+                if (prevTaskText && prevTaskText instanceof HTMLElement) {
+                  prevTaskText.focus();
+                  return;
+                }
+              }
+            }
+            // Fallback: focus the "Add Task" button
+            const addTaskButton = document.querySelector(`[data-list-id="${listId}"] .add-task-button`);
+            if (addTaskButton && addTaskButton instanceof HTMLElement) {
+              addTaskButton.focus();
+            }
+          }
+        }, 0);
+      }
       // No need to reload - liveQuery will update automatically!
     } catch (error) {
       console.error('Error archiving task:', error);
     }
+  }
+  
+  function handleTaskTextClick(taskId, taskText, event) {
+    // Get the clicked text span's position - we want to align the input field with the text
+    const clickedElement = event?.currentTarget || event?.target;
+    if (clickedElement) {
+      // Use the clicked element directly (the text span) for precise positioning
+      const rect = clickedElement.getBoundingClientRect();
+      // Store viewport coordinates (getBoundingClientRect returns viewport coordinates)
+      editingTaskPosition = {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height
+      };
+      // Store reference to the clicked element for focus return
+      editingTaskElement = clickedElement;
+    }
+    editingTaskId = taskId;
+    editingTaskText = taskText;
+    editModalOpen = true;
+  }
+  
+  async function handleTaskSave(taskId, newText) {
+    try {
+      await updateTaskText(taskId, newText);
+      editModalOpen = false;
+      const taskElement = editingTaskElement; // Store reference before clearing
+      editingTaskId = null;
+      editingTaskText = '';
+      editingTaskPosition = null;
+      editingTaskElement = null;
+      
+      // Return focus to the task element after modal closes
+      if (taskElement && taskElement instanceof HTMLElement) {
+        setTimeout(() => {
+          taskElement.focus();
+        }, 0);
+      }
+      // No need to reload - liveQuery will update automatically!
+    } catch (error) {
+      console.error('Error updating task text:', error);
+    }
+  }
+  
+  function handleTaskEditCancel() {
+    const taskElement = editingTaskElement; // Store reference before clearing
+    editModalOpen = false;
+    editingTaskId = null;
+    editingTaskText = '';
+    editingTaskPosition = null;
+    editingTaskElement = null;
+    
+    // Return focus to the task element after modal closes
+    if (taskElement && taskElement instanceof HTMLElement) {
+      setTimeout(() => {
+        taskElement.focus();
+      }, 0);
+    }
+  }
+  
+  async function handleTaskEditArchive(taskId) {
+    await handleArchiveTask(taskId);
   }
 </script>
 
@@ -203,8 +316,19 @@
               onchange={() => handleToggleTaskStatus(task.id, task.status)}
               class="cursor-pointer"
             />
-            <span class={task.status === 'checked' ? 'line-through flex-1' : 'flex-1'}>
-              {task.text}
+            <span 
+              class={task.status === 'checked' ? 'line-through flex-1 cursor-pointer hover:underline' : 'flex-1 cursor-pointer hover:underline'}
+              onclick={(e) => handleTaskTextClick(task.id, task.text, e)}
+              role="button"
+              tabindex="0"
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleTaskTextClick(task.id, task.text, e);
+                }
+              }}
+            >
+              {task.text || '\u00A0'}
             </span>
             {#if task.status === 'checked'}
               <button 
@@ -229,7 +353,7 @@
           type="text"
           placeholder="Add new task..."
           value={newTaskInput}
-          oninput={(e) => onInputChange(e.target.value)}
+          oninput={(e) => onInputChange(e.currentTarget.value)}
           onkeydown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault(); // Prevent form submission if inside a form
@@ -261,7 +385,16 @@
 
 <style>
   .add-task-button {
-    /* Button styles */
+    padding: 0.5rem 1rem;
+    background-color: #3b82f6;
+    color: white;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .add-task-button:hover {
+    background-color: #2563eb;
   }
   
   @media print {
@@ -274,4 +407,14 @@
     }
   }
 </style>
+
+<TaskEditModal
+  isOpen={editModalOpen}
+  taskId={editingTaskId}
+  taskText={editingTaskText}
+  taskPosition={editingTaskPosition}
+  onSave={handleTaskSave}
+  onCancel={handleTaskEditCancel}
+  onArchive={handleTaskEditArchive}
+/>
 

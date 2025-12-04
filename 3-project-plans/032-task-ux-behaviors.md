@@ -106,13 +106,13 @@ stateDiagram-v2
    - Implement Escape key handler to close input and show button
    - Implement click-outside handler to close input and show button (only if no changes made)
 
-3. **Implement Enter Key Behavior for Task Creation**
+3. **Implement Enter Key Behavior for Task Creation** ✅
    - Check if input is empty string "" - if so, exit task creation (close input, show button)
    - If input contains only whitespace (e.g., " ", "      "), create blank task
    - If input has content (non-empty, non-whitespace-only), create task with that content
    - After saving task, automatically open new input field with focus (enables sequential creation)
 
-4. **Implement Focus Management**
+4. **Implement Focus Management** ✅
    - Focus new task input after creation (enables sequential task creation)
    - Focus input field when edit modal opens
    - Return focus to task or next logical element when edit modal closes
@@ -120,7 +120,7 @@ stateDiagram-v2
    - Handle focus when deleting tasks
    - Maintain focus order for keyboard navigation
 
-5. **Implement Modal-Based Task Editing**
+5. **Implement Modal-Based Task Editing** ✅
    - Create modal component for task editing
    - Implement click handler on task text to open modal
    - Modal overlays task card and shades background
@@ -158,7 +158,12 @@ stateDiagram-v2
    - Modal behavior when task is deleted while modal is open
    - Modal behavior when task is archived while modal is open
 
-8. **Test**
+8. **Limit Task Width and Enable Word Wrapping**
+   - Add max-width constraint to task text elements
+   - Enable word wrapping for long task text
+   - Ensure tasks wrap nicely instead of extending horizontally
+
+9. **Test**
    - **Manual Testing**:
      - Test Enter key behavior in various scenarios
      - Test focus management after all actions
