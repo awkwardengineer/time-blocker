@@ -19,6 +19,42 @@ async function getFirstCheckboxFor(listName) {
   return within(getListSection(listName)).getAllByRole('checkbox')[0]
 }
 
+// Helper: Render App and wait for a specific list section to be ready
+async function setupAppWithListSection(listName = 'Work') {
+  render(App)
+  await waitFor(() => {
+    expect(screen.getByText(listName)).toBeInTheDocument()
+  })
+  return getListSection(listName)
+}
+
+// Helper: Open task input field by clicking "Add Task" button
+async function openTaskInput(user, listSection, listName = 'Work') {
+  const addTaskButton = within(listSection).getByRole('button', { 
+    name: new RegExp(`add new task to ${listName}`, 'i') 
+  })
+  await user.click(addTaskButton)
+  return await within(listSection).findByPlaceholderText('Add new task...')
+}
+
+// Helper: Wait for tasks to load in a list section
+async function waitForTasksToLoad(listSection, taskText) {
+  await waitFor(() => {
+    expect(within(listSection).getByText(taskText)).toBeInTheDocument()
+  })
+}
+
+// Helper: Open edit modal by clicking on a task
+async function openTaskEditModal(user, listSection, taskText) {
+  await waitForTasksToLoad(listSection, taskText)
+  const taskElement = within(listSection).getByText(taskText)
+  await user.click(taskElement)
+  await waitFor(() => {
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+  return screen.getByRole('textbox', { name: /edit task text/i })
+}
+
 describe('App', () => {
   beforeEach(async () => {
     // Mock window.print() before each test
@@ -455,23 +491,12 @@ describe('App', () => {
   describe('Task Creation UX Behaviors', () => {
     it('"Add Task" button opens input field with focus', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
-      const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
+      const workSection = await setupAppWithListSection('Work')
       
-      // Verify button is visible
+      const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
       expect(addTaskButton).toBeInTheDocument()
       
-      // Click button
-      await user.click(addTaskButton)
-      
-      // Wait for input to appear
-      const input = await within(workSection).findByPlaceholderText('Add new task...')
+      const input = await openTaskInput(user, workSection, 'Work')
       
       // Verify input is visible and focused
       expect(input).toBeInTheDocument()
@@ -480,20 +505,9 @@ describe('App', () => {
 
     it('Enter key on empty string "" exits task creation (closes input, shows button)', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
-      const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
+      const workSection = await setupAppWithListSection('Work')
       
-      // Open input
-      await user.click(addTaskButton)
-      const input = await within(workSection).findByPlaceholderText('Add new task...')
-      
-      // Verify input is visible
+      const input = await openTaskInput(user, workSection, 'Work')
       expect(input).toBeInTheDocument()
       
       // Press Enter on empty input (input should be empty by default)
@@ -508,18 +522,10 @@ describe('App', () => {
 
     it('Enter key creates task (including blank tasks with whitespace) and automatically opens new input for sequential creation', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
-      const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
+      const workSection = await setupAppWithListSection('Work')
       
       // Create a normal task
-      await user.click(addTaskButton)
-      const input1 = await within(workSection).findByPlaceholderText('Add new task...')
+      const input1 = await openTaskInput(user, workSection, 'Work')
       await user.type(input1, 'Normal Task')
       await user.keyboard('{Enter}')
       
@@ -553,18 +559,9 @@ describe('App', () => {
 
     it('Escape key closes input and shows button', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
-      const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
+      const workSection = await setupAppWithListSection('Work')
       
-      // Open input
-      await user.click(addTaskButton)
-      const input = await within(workSection).findByPlaceholderText('Add new task...')
+      const input = await openTaskInput(user, workSection, 'Work')
       expect(input).toBeInTheDocument()
       
       // Type something (but don't save)
@@ -585,18 +582,9 @@ describe('App', () => {
 
     it('Click-outside closes input and shows button', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
-      const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
+      const workSection = await setupAppWithListSection('Work')
       
-      // Open input
-      await user.click(addTaskButton)
-      const input = await within(workSection).findByPlaceholderText('Add new task...')
+      const input = await openTaskInput(user, workSection, 'Work')
       expect(input).toBeInTheDocument()
       
       // Click outside (on the heading)
@@ -611,13 +599,7 @@ describe('App', () => {
     })
 
     it('Button hidden during print but retains space', async () => {
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
       
       // Verify button is visible normally
@@ -641,59 +623,20 @@ describe('App', () => {
   describe('Task Editing Modal UX Behaviors', () => {
     it('Clicking task opens edit modal', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Find task text and click it
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      // Wait for modal to appear
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-        expect(screen.getByText('Edit Task')).toBeInTheDocument()
-      })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       
       // Verify modal has input with task text
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      expect(screen.getByText('Edit Task')).toBeInTheDocument()
       expect(modalInput).toHaveValue('Task 1')
     })
 
     it('Enter in edit modal saves and closes (when input has content)', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Open modal
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
-      
-      // Edit task text
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       await user.clear(modalInput)
       await user.type(modalInput, 'Updated Task 1')
       
@@ -713,29 +656,9 @@ describe('App', () => {
 
     it('Enter in edit modal saves and closes (when input has whitespace-only)', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Open modal
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
-      
-      // Edit task text to whitespace only
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       await user.clear(modalInput)
       await user.type(modalInput, '   ') // Multiple spaces
       
@@ -757,29 +680,9 @@ describe('App', () => {
 
     it('Enter in edit modal with empty input prevents saving and shows validation', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Open modal
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
-      
-      // Clear task text completely
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       await user.clear(modalInput)
       
       // Press Enter
@@ -800,29 +703,9 @@ describe('App', () => {
 
     it('Save button in edit modal with empty input prevents saving and shows validation', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Open modal
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
-      
-      // Clear task text completely
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       await user.clear(modalInput)
       
       // Click Save button
@@ -844,29 +727,9 @@ describe('App', () => {
 
     it('Save button in edit modal with whitespace-only saves as blank task', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Open modal
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
-      
-      // Edit task text to whitespace only
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       await user.clear(modalInput)
       await user.type(modalInput, '   ') // Multiple spaces
       
@@ -888,29 +751,9 @@ describe('App', () => {
 
     it('Validation message suggests archiving when input is empty', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Open modal
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
-      
-      // Clear task text
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       await user.clear(modalInput)
       
       // Try to save (trigger validation)
@@ -930,29 +773,9 @@ describe('App', () => {
 
     it('Escape in edit modal discards and closes', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Open modal
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
-      
-      // Edit task text
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       await user.clear(modalInput)
       await user.type(modalInput, 'This should be discarded')
       
@@ -971,29 +794,9 @@ describe('App', () => {
 
     it('Click outside edit modal discards and closes', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Open modal
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
-      
-      // Edit task text
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       await user.clear(modalInput)
       await user.type(modalInput, 'This should be discarded')
       
@@ -1013,29 +816,9 @@ describe('App', () => {
 
     it('Save button saves and closes modal (when input has content)', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Open modal
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
-      
-      // Edit task text
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       await user.clear(modalInput)
       await user.type(modalInput, 'Saved via button')
       
@@ -1058,18 +841,9 @@ describe('App', () => {
   describe('Keyboard Navigation', () => {
     it('Tab navigation works through interactive elements', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
+      await waitForTasksToLoad(workSection, 'Task 1')
       
       // Find first checkbox
       const task1Text = within(workSection).getByText('Task 1')
@@ -1109,29 +883,11 @@ describe('App', () => {
   describe('Focus Management', () => {
     it('Focus returns to task after closing edit modal', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-      })
-      
-      // Open modal by clicking task text
+      await waitForTasksToLoad(workSection, 'Task 1')
       const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
-      
-      // Verify modal input has focus
-      const modalInput = screen.getByRole('textbox', { name: /edit task text/i })
+      const modalInput = await openTaskEditModal(user, workSection, 'Task 1')
       expect(modalInput).toHaveFocus()
       
       // Save and close modal
@@ -1153,27 +909,11 @@ describe('App', () => {
 
     it('Focus moves to next task after archiving', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-        expect(within(workSection).getByText('Task 2')).toBeInTheDocument()
-      })
+      await waitForTasksToLoad(workSection, 'Task 2')
       
-      // Open modal for Task 1
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
+      await openTaskEditModal(user, workSection, 'Task 1')
       
       // Archive Task 1 from modal
       const archiveButton = screen.getByRole('button', { name: /archive this task instead of saving/i })
@@ -1196,27 +936,12 @@ describe('App', () => {
 
     it('Focus moves to Add Task button when all tasks archived', async () => {
       const user = userEvent.setup()
-      render(App)
-
-      await waitFor(() => {
-        expect(screen.getByText('Work')).toBeInTheDocument()
-      })
-
-      const workSection = getListSection('Work')
+      const workSection = await setupAppWithListSection('Work')
       
-      // Wait for tasks to load
-      await waitFor(() => {
-        expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-        expect(within(workSection).getByText('Task 2')).toBeInTheDocument()
-      })
+      await waitForTasksToLoad(workSection, 'Task 2')
       
       // Archive Task 1 via modal (this triggers focus management)
-      const task1Text = within(workSection).getByText('Task 1')
-      await user.click(task1Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
+      await openTaskEditModal(user, workSection, 'Task 1')
       
       // Archive from modal
       const archiveButton = screen.getByRole('button', { name: /archive this task instead of saving/i })
@@ -1229,12 +954,7 @@ describe('App', () => {
       })
       
       // Archive Task 2 via modal (this should trigger focus to Add Task button)
-      const task2Text = within(workSection).getByText('Task 2')
-      await user.click(task2Text)
-      
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-      })
+      await openTaskEditModal(user, workSection, 'Task 2')
       
       // Archive from modal
       const archiveButton2 = screen.getByRole('button', { name: /archive this task instead of saving/i })
