@@ -137,11 +137,19 @@ stateDiagram-v2
    - Focus management: focus input field when modal opens
    - Focus management: return focus appropriately when modal closes
 
-6. **Implement Keyboard Navigation**
-   - Tab navigation: ensure logical tab order through tasks and interactive elements
-   - Enter: create task (in input) or save edit (in modal, if valid)
-   - Escape: cancel task creation or discard edit
-   - Ensure all interactive elements are keyboard accessible
+6. **Implement Keyboard Navigation** ✅
+   - ✅ Tab navigation: ensure logical tab order through tasks and interactive elements
+     - Drag handles excluded from tab order (tabindex="-1", aria-hidden="true")
+     - Tab order: checkbox → task text → archive button (if checked) → Add Task button
+   - ✅ Enter: create task (in input) or save edit (in modal, if valid)
+   - ✅ Escape: cancel task creation or discard edit
+   - ✅ Ensure all interactive elements are keyboard accessible
+     - Added aria-labels to all buttons and interactive elements
+     - Added aria-label to checkboxes with task context
+     - Added aria-label to task text spans for editing
+     - Added aria-label to modal buttons
+     - Added aria-describedby to modal input for validation messages
+     - Added role="alert" to validation messages
    - (Arrow keys and other shortcuts deferred - focus on core Tab/Enter/Escape first)
 
 7. **Handle Edge Cases**

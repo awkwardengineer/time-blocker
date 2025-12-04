@@ -118,7 +118,7 @@ describe('App', () => {
     expect(task1Checkbox).not.toBeChecked()
 
     // Add a new task - click "Add Task" button first to show input
-    const addTaskButton = within(workSection).getByRole('button', { name: /add task/i })
+    const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton)
     
     // Wait for input to appear and get it
@@ -136,10 +136,12 @@ describe('App', () => {
       expect(task1Checkbox).toBeChecked()
     })
 
-    // Toggle it back
+    // Toggle it back - re-query the checkbox to avoid stale reference
     await user.click(task1Checkbox)
-    await waitFor(() => {
-      expect(task1Checkbox).not.toBeChecked()
+    await waitFor(async () => {
+      // Re-query the checkbox to ensure we have the latest state
+      const updatedCheckbox = within(task1ListItem).getByRole('checkbox')
+      expect(updatedCheckbox).not.toBeChecked()
     })
   })
 
@@ -422,7 +424,7 @@ describe('App', () => {
     const workSection = getListSection('Work')
     
     // Click "Add Task" button first to show input
-    const addTaskButton = within(workSection).getByRole('button', { name: /add task/i })
+    const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton)
     
     // Wait for input to appear and get it

@@ -137,10 +137,12 @@
           class="task-input w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Task text..."
           onkeydown={handleKeydown}
+          aria-label="Edit task text"
+          aria-describedby={showValidation ? "validation-message" : undefined}
         />
         
         {#if showValidation}
-          <div class="mt-2 text-sm text-red-600">
+          <div id="validation-message" class="mt-2 text-sm text-red-600" role="alert">
             Task cannot be empty. Consider archiving this task instead.
           </div>
         {/if}
@@ -150,6 +152,7 @@
         <button
           onclick={handleArchive}
           class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
+          aria-label="Archive this task instead of saving"
         >
           Archive instead
         </button>
@@ -158,6 +161,7 @@
           <button
             onclick={handleCancel}
             class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+            aria-label="Cancel editing and discard changes"
           >
             Cancel
           </button>
@@ -165,6 +169,7 @@
             onclick={handleSave}
             class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             disabled={showValidation}
+            aria-label={showValidation ? "Save disabled: task cannot be empty" : "Save task changes"}
           >
             Save
           </button>

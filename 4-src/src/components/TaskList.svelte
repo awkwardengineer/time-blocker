@@ -307,6 +307,8 @@
             <span 
               class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
               title="Drag to reorder"
+              tabindex="-1"
+              aria-hidden="true"
             >
               ⋮⋮
             </span>
@@ -315,12 +317,14 @@
               checked={task.status === 'checked'}
               onchange={() => handleToggleTaskStatus(task.id, task.status)}
               class="cursor-pointer"
+              aria-label={`Mark task "${task.text || 'blank task'}" as ${task.status === 'checked' ? 'unchecked' : 'checked'}`}
             />
             <span 
               class={task.status === 'checked' ? 'line-through flex-1 cursor-pointer hover:underline' : 'flex-1 cursor-pointer hover:underline'}
               onclick={(e) => handleTaskTextClick(task.id, task.text, e)}
               role="button"
               tabindex="0"
+              aria-label={`Edit task: ${task.text || 'blank task'}`}
               onkeydown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
@@ -334,6 +338,7 @@
               <button 
                 onclick={() => handleArchiveTask(task.id)}
                 class="px-2 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+                aria-label={`Archive task: ${task.text || 'blank task'}`}
               >
                 Archive
               </button>
@@ -367,6 +372,7 @@
         <button
           onclick={handleCreateTask}
           class="print:hidden"
+          aria-label="Save new task"
         >
           Save
         </button>
@@ -376,6 +382,7 @@
         onclick={handleAddTaskClick}
         class="add-task-button"
         style="visibility: visible;"
+        aria-label="Add new task to {listName}"
       >
         Add Task
       </button>
