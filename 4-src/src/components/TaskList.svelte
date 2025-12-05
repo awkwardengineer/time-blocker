@@ -501,7 +501,6 @@
   </h2>
   {#if tasksQuery && $tasksQuery !== undefined}
     {#if $tasksQuery.length === 0}
-      <p class="empty-state-message">No tasks yet for {listName}. Add your first task.</p>
       <div class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-fit print:hidden add-task-container add-task-button mt-2" style="margin-left: 1.5rem;">
         {#if isInputActive}
           <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
@@ -778,10 +777,6 @@
     }
     
     .drag-handle {
-      visibility: hidden;
-    }
-    
-    .empty-state-message {
       visibility: hidden;
     }
   }
