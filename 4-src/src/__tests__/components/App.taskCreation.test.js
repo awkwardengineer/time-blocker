@@ -137,18 +137,13 @@ describe('App - Task Creation UX Behaviors', () => {
     // Verify button is visible normally
     expect(addTaskButton).toBeVisible()
     
-    // Get computed styles in print mode
-    const buttonElement = addTaskButton
-    const printStyle = window.getComputedStyle(buttonElement, '@media print')
-    
-    // In a real browser, we'd check print media query, but in test environment
-    // we can check the CSS class or style directly
-    // The button should have visibility: hidden in print mode
-    // Since we can't easily test @media print in jsdom, we'll verify the CSS class exists
-    expect(buttonElement).toHaveClass('add-task-button')
+    // Get the container element (parent div) which has the add-task-button class
+    const buttonContainer = addTaskButton.closest('.add-task-button')
+    expect(buttonContainer).toBeInTheDocument()
+    expect(buttonContainer).toHaveClass('add-task-button')
     
     // Verify button still exists in DOM (not display: none)
-    expect(buttonElement).toBeInTheDocument()
+    expect(addTaskButton).toBeInTheDocument()
   })
 })
 
