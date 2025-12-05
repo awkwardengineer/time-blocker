@@ -104,7 +104,7 @@ describe('App - Focus Management', () => {
     })
     
     // Verify focus moved to Add Task button
-    const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
+    const addTaskButton = within(workSection).getByRole('button', { name: /add your first task to work/i })
     await waitFor(() => {
       expect(addTaskButton).toHaveFocus()
     }, { timeout: 1000 })
