@@ -55,12 +55,13 @@ stateDiagram-v2
 Since we already have lists, we'll start with editing and adding new lists, then add archive (which will lead to the empty state), then restore.
 
 1. Edit/rename existing lists
-2. Add new lists (non-empty state)
-3. Archive lists
-4. Empty state (for creating lists when no lists exist)
-5. Restore archived lists
-6. Sort/reorder lists
-7. Delete archived lists
+2. Clean up "Add Task" button
+3. Add new lists (non-empty state)
+4. Archive lists
+5. Empty state (for creating lists when no lists exist)
+6. Restore archived lists
+7. Sort/reorder lists
+8. Delete archived lists
 
 ## Same-Day Grouping Approach
 
@@ -86,7 +87,28 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - ✅ Update UI reactively after rename
      - ✅ Write tests: unit tests for rename function, integration tests for UI interaction
 
-2. **Add New Lists (Non-Empty State)**
+2. **Clean Up "Add Task" Button** ✅
+   - **Description:** Refactor and clean up the "Add Task" button implementation to ensure consistent behavior and proper styling
+   - **Acceptance Criteria:**
+     - ✅ "Add Task" button is consistently styled across all list states
+     - ✅ Button behavior is consistent (focus management, keyboard navigation)
+     - ✅ Button is properly positioned within task lists
+     - ✅ No visual jumping or layout shifts when button appears/disappears
+   - **Technical Work:**
+     - ✅ Review current "Add Task" button implementation
+     - ✅ Ensure consistent styling (matches task item appearance)
+     - ✅ Position button outside `<ul>` but aligned with task items using wrapper div and CSS
+     - ✅ Add button to empty state for consistency
+     - ✅ Style button to match task item appearance with proper indentation
+     - ✅ Style button to match task items with proper spacing for drag handle and checkbox offsets
+     - ✅ Add hidden drag handle and disabled checkbox to maintain alignment with task items
+     - ✅ Ensure button is not draggable (`data-no-drag="true"`)
+     - ✅ Verify focus management works correctly
+     - ✅ Ensure keyboard navigation works properly (Enter/Space to activate)
+     - ✅ Update click-outside handler to work with new structure
+     - Write tests: integration tests for button behavior and styling
+
+3. **Add New Lists (Non-Empty State)**
    - **Description:** Users can create new lists when lists already exist. Users can create named lists explicitly, or add tasks to unnamed lists (which creates an unnamed list if needed).
    - **Acceptance Criteria:**
      - Users can create new lists with a name
@@ -141,7 +163,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
 
 ---
 
-3. **Archive Lists**
+4. **Archive Lists**
    - **Description:** Archive a list by setting `archivedAt` timestamp on the list and archiving all active tasks individually with timestamps from the same day. Pre-archived tasks keep their original `archivedAt` timestamp.
    - **Acceptance Criteria:**
      - Users can archive lists
@@ -161,7 +183,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - Update UI reactively after archiving
      - Write tests: unit tests for archive functions, integration tests for UI interaction and same-day grouping
 
-4. **Empty State (Creating Lists When No Lists Exist)**
+5. **Empty State (Creating Lists When No Lists Exist)**
    - **Description:** Handle empty list state behavior - when no lists exist, provide buttons to "name a list" or "add a task" to get started
    - **Acceptance Criteria:**
      - Empty state is displayed when no active lists exist
@@ -176,7 +198,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - Handle edge case: creating first list
      - Write tests: integration tests for empty state display and interactions
 
-5. **Restore Archived Lists**
+6. **Restore Archived Lists**
    - **Description:** Restore a list by clearing its `archivedAt` timestamp and restoring all tasks with that `listId` that were archived on the same calendar day as the list's `archivedAt`. Pre-archived tasks (different day) stay archived.
    - **Acceptance Criteria:**
      - Users can restore archived lists
@@ -197,7 +219,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - Update UI reactively after restoration
      - Write tests: unit tests for restore function and same-day comparison, integration tests for UI interaction
 
-6. **Restore Pre-Archived Tasks (Whose List is Archived)**
+7. **Restore Pre-Archived Tasks (Whose List is Archived)**
    - **Description:** When restoring a pre-archived task whose list is archived, detect the archived list, show error/message, and prompt user to restore the list. If yes, restore the list and all tasks archived on the same day.
    - **Acceptance Criteria:**
      - Restoring a task whose list is archived shows error/message
@@ -213,7 +235,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - Update UI to inform user of what happened
      - Write tests: integration tests for restore pre-archived task flow and prompt
 
-7. **Archived Tasks View UI Updates**
+8. **Archived Tasks View UI Updates**
    - **Description:** Show list name for each task and badge indicator `[List Archived]` or `[List Active]` next to the list name to help users understand which tasks belong to archived lists
    - **Acceptance Criteria:**
      - List name is shown for each archived task (already implemented)
@@ -225,7 +247,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - Display badge next to list name in archived view
      - Write tests: integration tests for badge display and list status checking
 
-8. **Sort/Reorder Lists**
+9. **Sort/Reorder Lists**
    - **Description:** Users can reorder lists via drag-and-drop or buttons to prioritize and organize their lists
    - **Acceptance Criteria:**
      - Users can reorder lists via drag-and-drop or buttons
@@ -275,7 +297,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
 
 ---
 
-9. **Delete Lists (Soft Delete with Day-Based Grouping)**
+10. **Delete Lists (Soft Delete with Day-Based Grouping)**
    - **Description:** Delete a list by setting `deletedAt` timestamp. Show confirmation modal with warning about tasks that will be deleted or orphaned. User chooses to delete only tasks from that day (orphaning pre-archived tasks) or delete all tasks.
    - **Acceptance Criteria:**
      - Users can delete lists
@@ -298,7 +320,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - Update UI reactively after deletion
      - Write tests: unit tests for delete functions and orphan handling, integration tests for confirmation modal and day-based options
 
-10. **Delete Tasks**
+11. **Delete Tasks**
     - **Description:** Delete a task by setting `deletedAt` timestamp. Task is hidden from UI but data remains in database.
     - **Acceptance Criteria:**
       - Users can delete tasks
@@ -312,7 +334,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - Update UI reactively after deletion
      - Write tests: unit tests for delete task function, integration tests for UI interaction
 
-11. **Filtering Deleted Items**
+12. **Filtering Deleted Items**
     - **Description:** All queries filter out items where `deletedAt` is not null. Archived view only shows tasks where `status = 'archived'` AND `deletedAt` is null. Main view only shows lists where `deletedAt` is null.
     - **Acceptance Criteria:**
       - Deleted lists are not visible in main view
@@ -326,7 +348,7 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - Ensure Orphaned list is not filtered out
      - Write tests: unit tests for filtering logic, integration tests to verify deleted items are hidden
 
-12. **Verify All Tests Pass**
+13. **Verify All Tests Pass**
     - **Description:** Ensure all tests written during implementation pass and provide comprehensive coverage
     - **Acceptance Criteria:**
       - All unit tests pass
