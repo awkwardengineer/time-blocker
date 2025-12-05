@@ -256,5 +256,32 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
       expect(screen.getByText('Second New List')).toBeInTheDocument()
     })
   })
+
+  it('Focus moves to first task input after creating list', async () => {
+    const user = userEvent.setup()
+    render(App)
+    
+    const input = await activateCreateListInput(user)
+    await user.type(input, 'List for Focus Test')
+    await user.keyboard('{Enter}')
+    
+    // Wait for list to be created
+    await waitFor(() => {
+      expect(screen.getByText('List for Focus Test')).toBeInTheDocument()
+    })
+    
+    // Wait for task input to appear and verify it has focus
+    // The focus management happens via setTimeout in App.svelte, wait for focus to move
+    await waitFor(() => {
+      const listSection = Array.from(document.querySelectorAll('[data-list-id]')).find(section => {
+        const h2 = section.querySelector('h2')
+        return h2 && h2.textContent === 'List for Focus Test'
+      })
+      expect(listSection).toBeDefined()
+      const taskInput = listSection?.querySelector('textarea[placeholder="Add new task..."]')
+      expect(taskInput).toBeInTheDocument()
+      expect(taskInput).toHaveFocus()
+    })
+  })
 })
 

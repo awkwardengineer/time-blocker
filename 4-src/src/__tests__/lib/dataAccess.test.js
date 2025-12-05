@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import db from '../../lib/db.js'
-import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, deleteTask, updateListName, createList } from '../../lib/dataAccess.js'
+import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, deleteTask, updateListName, createList, createUnnamedList } from '../../lib/dataAccess.js'
 
 describe('dataAccess', () => {
   beforeEach(async () => {
@@ -257,6 +257,52 @@ describe('dataAccess', () => {
     })
   })
 
+  describe('createUnnamedList', () => {
+    it('should create a new list with name set to null', async () => {
+      const listId = await createUnnamedList()
+      
+      expect(listId).toBeDefined()
+      
+      const list = await db.lists.get(listId)
+      expect(list).toBeDefined()
+      expect(list.name).toBeNull()
+      expect(typeof list.order).toBe('number')
+    })
+    
+    it('should assign order value as max order + 1', async () => {
+      const lists = await getAllLists()
+      const maxOrder = lists.length > 0 
+        ? Math.max(...lists.map(l => l.order))
+        : -1
+      
+      const listId = await createUnnamedList()
+      const list = await db.lists.get(listId)
+      
+      expect(list.order).toBe(maxOrder + 1)
+    })
+    
+    it('should assign order 0 for first list when no lists exist', async () => {
+      await db.lists.clear()
+      
+      const listId = await createUnnamedList()
+      const list = await db.lists.get(listId)
+      
+      expect(list.order).toBe(0)
+    })
+    
+    it('should persist unnamed list to IndexedDB', async () => {
+      const listId = await createUnnamedList()
+      
+      // Close and reopen database to verify persistence
+      db.close()
+      await db.open()
+      
+      const persistedList = await db.lists.get(listId)
+      expect(persistedList).toBeDefined()
+      expect(persistedList.name).toBeNull()
+    })
+  })
+
   describe('createTask', () => {
     it('should create a new task with correct properties', async () => {
       const lists = await getAllLists()
@@ -305,6 +351,66 @@ describe('dataAccess', () => {
       const task = await db.tasks.get(taskId)
       
       expect(task.text).toBe('Trimmed Task')
+    })
+    
+    it('should create unnamed list when listId is null', async () => {
+      const initialLists = await getAllLists()
+      const initialCount = initialLists.length
+      
+      const taskId = await createTask(null, 'Task in Unnamed List')
+      
+      expect(taskId).toBeDefined()
+      
+      // Verify task was created
+      const task = await db.tasks.get(taskId)
+      expect(task).toBeDefined()
+      expect(task.text).toBe('Task in Unnamed List')
+      expect(typeof task.listId).toBe('number')
+      
+      // Verify unnamed list was created
+      const lists = await getAllLists()
+      expect(lists.length).toBe(initialCount + 1)
+      
+      const unnamedList = lists.find(l => l.name === null)
+      expect(unnamedList).toBeDefined()
+      expect(task.listId).toBe(unnamedList.id)
+    })
+    
+    it('should create task in unnamed list with correct order when listId is null', async () => {
+      const taskId = await createTask(null, 'First Task in Unnamed')
+      const task = await db.tasks.get(taskId)
+      
+      expect(task.order).toBe(0) // First task should have order 0
+    })
+    
+    it('should append subsequent tasks to unnamed list when listId is null', async () => {
+      // Create first task (creates unnamed list)
+      const taskId1 = await createTask(null, 'First Task')
+      const task1 = await db.tasks.get(taskId1)
+      const listId = task1.listId
+      
+      // Create second task in same unnamed list
+      const taskId2 = await createTask(listId, 'Second Task')
+      const task2 = await db.tasks.get(taskId2)
+      
+      expect(task2.listId).toBe(listId)
+      expect(task2.order).toBe(1) // Should be appended after first task
+    })
+    
+    it('should create multiple unnamed lists when listId is null multiple times', async () => {
+      const initialLists = await getAllLists()
+      const initialCount = initialLists.length
+      
+      // Create tasks with null listId - each should create a new unnamed list
+      await createTask(null, 'Task 1')
+      await createTask(null, 'Task 2')
+      
+      const lists = await getAllLists()
+      expect(lists.length).toBe(initialCount + 2)
+      
+      // Verify both unnamed lists exist
+      const unnamedLists = lists.filter(l => l.name === null)
+      expect(unnamedLists.length).toBeGreaterThanOrEqual(2)
     })
   })
 
