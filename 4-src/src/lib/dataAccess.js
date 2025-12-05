@@ -39,6 +39,29 @@ export async function createList(name) {
 }
 
 /**
+ * Create a new unnamed list (name set to null)
+ * @returns {Promise<number>} The ID of the created list
+ */
+export async function createUnnamedList() {
+  // Get all existing lists to determine the next order value
+  const existingLists = await db.lists.orderBy('order').toArray();
+  
+  // Calculate the next order value (max order + 1, or 0 if no lists)
+  const maxOrder = existingLists.length > 0 
+    ? Math.max(...existingLists.map(l => l.order))
+    : -1;
+  const nextOrder = maxOrder + 1;
+  
+  // Create the list with name set to null
+  const listId = await db.lists.add({
+    name: null,
+    order: nextOrder
+  });
+  
+  return listId;
+}
+
+/**
  * Update a list's name
  * @param {number} listId - The ID of the list
  * @param {string} name - The new list name (cannot be empty)
@@ -103,15 +126,25 @@ export async function getArchivedTasks() {
 
 /**
  * Create a new task in a list
- * @param {number} listId - The ID of the list
+ * @param {number|null} listId - The ID of the list, or null to create an unnamed list first
+ *   Note: null is only used as a parameter convention; the stored listId is always a number.
+ *   The list's name field can be null (for unnamed lists), but listId is never null in the database.
  * @param {string} text - The task text content
  * @returns {Promise<number>} The ID of the created task
  */
 export async function createTask(listId, text) {
+  // If listId is null, create an unnamed list first (listId will be a number after this)
+  let targetListId = listId;
+  if (listId === null) {
+    targetListId = await createUnnamedList(); // Returns a number (database ID)
+  }
+  
+  // At this point, targetListId is always a number (never null)
+  
   // Get existing tasks for this list to determine the next order value
   const existingTasks = await db.tasks
     .where('listId')
-    .equals(listId)
+    .equals(targetListId)
     .filter(task => task.status !== 'archived')
     .sortBy('order');
   
@@ -128,7 +161,7 @@ export async function createTask(listId, text) {
   
   const taskId = await db.tasks.add({
     text: taskText,
-    listId: listId,
+    listId: targetListId,
     order: nextOrder,
     status: 'unchecked'
   });

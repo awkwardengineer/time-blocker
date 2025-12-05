@@ -1,6 +1,7 @@
 <script>
   import { liveQuery } from 'dexie';
-  import { getAllLists, createList } from './lib/dataAccess.js';
+  import { getAllLists, createList, createTask } from './lib/dataAccess.js';
+  import db from './lib/db.js';
   import TaskList from './components/TaskList.svelte';
   import ArchivedView from './components/ArchivedView.svelte';
   
@@ -14,6 +15,11 @@
   let isCreateListInputActive = $state(false);
   let createListInput = $state('');
   let createListInputElement = $state(null);
+  
+  // State for creating task in unnamed list (task 3b)
+  let isUnnamedListInputActive = $state(false);
+  let unnamedListTaskInput = $state('');
+  let unnamedListInputElement = $state(null);
   
   // Initialize inputs when lists first load (only once)
   $effect(() => {
@@ -165,6 +171,140 @@
       console.error('Error creating list:', error);
     }
   }
+  
+  // Unnamed list task creation handlers (task 3b)
+  function handleUnnamedListAddTaskClick() {
+    isUnnamedListInputActive = true;
+  }
+  
+  function handleUnnamedListInputEscape(e) {
+    if (e.key === 'Escape') {
+      isUnnamedListInputActive = false;
+      unnamedListTaskInput = '';
+    }
+  }
+  
+  // Handle click outside unnamed list input to close it (only if no content)
+  $effect(() => {
+    if (!isUnnamedListInputActive) return;
+    
+    function handleDocumentClick(e) {
+      // Check if click is on the input field itself
+      if (unnamedListInputElement && unnamedListInputElement.contains(e.target)) {
+        return; // Click is on input, don't close
+      }
+      
+      // Check if click is on a Save button
+      const saveButton = e.target.closest('button');
+      if (saveButton && saveButton.textContent?.trim() === 'Save') {
+        return; // Let Save button handle the click
+      }
+      
+      // Click is outside input
+      // Only close if input hasn't changed (no content)
+      if (!unnamedListTaskInput || unnamedListTaskInput.trim() === '') {
+        isUnnamedListInputActive = false;
+        unnamedListTaskInput = '';
+      }
+    }
+    
+    // Add click listener after a brief delay to avoid immediate trigger
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleDocumentClick);
+    }, 0);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  });
+  
+  // Focus input when it becomes active
+  $effect(() => {
+    if (isUnnamedListInputActive && unnamedListInputElement) {
+      setTimeout(() => {
+        unnamedListInputElement?.focus();
+        // Auto-resize textarea to fit content
+        if (unnamedListInputElement instanceof HTMLTextAreaElement) {
+          unnamedListInputElement.style.height = 'auto';
+          unnamedListInputElement.style.height = `${Math.min(unnamedListInputElement.scrollHeight, 160)}px`;
+        }
+      }, 0);
+    }
+  });
+  
+  // Auto-resize textarea as content changes
+  $effect(() => {
+    if (unnamedListInputElement && unnamedListInputElement instanceof HTMLTextAreaElement) {
+      const resizeTextarea = () => {
+        unnamedListInputElement.style.height = 'auto';
+        unnamedListInputElement.style.height = `${Math.min(unnamedListInputElement.scrollHeight, 160)}px`;
+      };
+      
+      unnamedListInputElement.addEventListener('input', resizeTextarea);
+      return () => {
+        unnamedListInputElement.removeEventListener('input', resizeTextarea);
+      };
+    }
+  });
+  
+  async function handleUnnamedListCreateTask() {
+    const inputValue = unnamedListTaskInput || '';
+    
+    // Check if input is empty string "" - exit task creation
+    if (inputValue === '') {
+      isUnnamedListInputActive = false;
+      unnamedListTaskInput = '';
+      return;
+    }
+    
+    // Check if input contains only whitespace (e.g., " ", "      ")
+    const trimmedValue = inputValue.trim();
+    const isWhitespaceOnly = trimmedValue === '' && inputValue.length > 0;
+    
+    let taskText;
+    if (isWhitespaceOnly) {
+      // Create blank task (empty text)
+      taskText = '';
+    } else {
+      // Create normal task with content
+      taskText = trimmedValue;
+    }
+    
+    try {
+      // Pass null as listId to create task in unnamed list (which will be created)
+      const taskId = await createTask(null, taskText);
+      unnamedListTaskInput = '';
+      isUnnamedListInputActive = false;
+      
+      // Get the listId from the created task to focus the correct list
+      const task = await db.tasks.get(taskId);
+      const listId = task?.listId;
+      
+      if (listId) {
+        // Focus moves to creating the next task in the newly created unnamed list
+        // Wait for the list to appear in the DOM and TaskList to render, then activate task input
+        setTimeout(() => {
+          const listSection = document.querySelector(`[data-list-id="${listId}"]`);
+          if (listSection) {
+            // Find the "Add Task" button and click it to activate the input
+            const addTaskContainer = listSection.querySelector('.add-task-container');
+            if (addTaskContainer) {
+              const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
+              if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
+                // Use a small delay to ensure TaskList component is fully rendered
+                setTimeout(() => {
+                  addTaskSpan.click();
+                }, 50);
+              }
+            }
+          }
+        }, 150);
+      }
+    } catch (error) {
+      console.error('Error creating task in unnamed list:', error);
+    }
+  }
 </script>
 
 <main class="min-h-screen flex flex-col items-center justify-center bg-gray-50 print:bg-white print:min-h-0 print:gap-0 print:py-0 gap-4 py-8">
@@ -187,7 +327,7 @@
           {#each $lists as list}
             <TaskList
               listId={list.id}
-              listName={list.name}
+              listName={list.name ?? 'Unnamed list'}
               newTaskInput={newTaskInputs[list.id] || ''}
               onInputChange={(value) => handleInputChange(list.id, value)}
             />
@@ -233,6 +373,74 @@
             >
               Create new list
             </h2>
+          {/if}
+          
+          <!-- Add task button for creating unnamed list (task 3b) -->
+          {#if isUnnamedListInputActive}
+            <div class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-fit print:hidden mt-2" style="margin-left: 1.5rem;">
+              <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
+                ⋮⋮
+              </span>
+              <input
+                type="checkbox"
+                disabled
+                class="cursor-pointer opacity-0"
+                aria-hidden="true"
+                tabindex="-1"
+              />
+              <div class="flex gap-2">
+                <textarea
+                  bind:this={unnamedListInputElement}
+                  placeholder="Add new task..."
+                  value={unnamedListTaskInput}
+                  oninput={(e) => unnamedListTaskInput = e.currentTarget.value}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleUnnamedListCreateTask();
+                    } else if (e.key === 'Escape') {
+                      handleUnnamedListInputEscape(e);
+                    }
+                  }}
+                  class="w-[150px] flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
+                  rows="1"
+                ></textarea>
+                <button
+                  onclick={handleUnnamedListCreateTask}
+                  aria-label="Save new task"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          {:else}
+            <div class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-fit print:hidden mt-2" style="margin-left: 1.5rem;">
+              <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
+                ⋮⋮
+              </span>
+              <input
+                type="checkbox"
+                disabled
+                class="cursor-pointer opacity-0"
+                aria-hidden="true"
+                tabindex="-1"
+              />
+              <span 
+                class="w-[150px] cursor-pointer hover:underline break-words"
+                onclick={handleUnnamedListAddTaskClick}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleUnnamedListAddTaskClick();
+                  }
+                }}
+                role="button"
+                tabindex="0"
+                aria-label="Add a task"
+              >
+                Add a task
+              </span>
+            </div>
           {/if}
         {/if}
       </div>
