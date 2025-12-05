@@ -560,9 +560,9 @@
             }}
             role="button"
             tabindex="0"
-            aria-label="Add new task to {listName}"
+            aria-label="Add your first task to {listName}"
           >
-            Add Task
+            Add your first task
           </span>
         {/if}
       </div>
