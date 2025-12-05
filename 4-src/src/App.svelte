@@ -274,62 +274,35 @@
     try {
       // Pass null as listId to create task in unnamed list (which will be created)
       const taskId = await createTask(null, taskText);
+      unnamedListTaskInput = '';
+      isUnnamedListInputActive = false;
       
-      // Get the listId from the created task
+      // Get the listId from the created task to focus the correct list
       const task = await db.tasks.get(taskId);
       const listId = task?.listId;
       
       if (listId) {
-        // Wait for the new list to appear in liveQuery before hiding the input
-        // This prevents flicker by keeping the input visible until the list appears
-        const checkForList = () => {
-          if ($lists && Array.isArray($lists)) {
-            const listExists = $lists.some(list => list.id === listId);
-            if (listExists) {
-              // List has appeared, now hide the input and focus the new list
-              unnamedListTaskInput = '';
-              isUnnamedListInputActive = false;
-              
-              // Focus moves to creating the next task in the newly created unnamed list
-              // Wait for the list to appear in the DOM and TaskList to render, then activate task input
-              setTimeout(() => {
-                const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-                if (listSection) {
-                  // Find the "Add Task" button and click it to activate the input
-                  const addTaskContainer = listSection.querySelector('.add-task-container');
-                  if (addTaskContainer) {
-                    const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
-                    if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
-                      // Use a small delay to ensure TaskList component is fully rendered
-                      setTimeout(() => {
-                        addTaskSpan.click();
-                      }, 50);
-                    }
-                  }
-                }
-              }, 50);
-            } else {
-              // List not yet in liveQuery, check again soon
-              setTimeout(checkForList, 10);
+        // Focus moves to creating the next task in the newly created unnamed list
+        // Wait for the list to appear in the DOM and TaskList to render, then activate task input
+        setTimeout(() => {
+          const listSection = document.querySelector(`[data-list-id="${listId}"]`);
+          if (listSection) {
+            // Find the "Add Task" button and click it to activate the input
+            const addTaskContainer = listSection.querySelector('.add-task-container');
+            if (addTaskContainer) {
+              const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
+              if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
+                // Use a small delay to ensure TaskList component is fully rendered
+                setTimeout(() => {
+                  addTaskSpan.click();
+                }, 50);
+              }
             }
-          } else {
-            // Lists not loaded yet, check again soon
-            setTimeout(checkForList, 10);
           }
-        };
-        
-        // Start checking for the list to appear
-        checkForList();
-      } else {
-        // No listId, just hide the input
-        unnamedListTaskInput = '';
-        isUnnamedListInputActive = false;
+        }, 150);
       }
     } catch (error) {
       console.error('Error creating task in unnamed list:', error);
-      // On error, still hide the input
-      unnamedListTaskInput = '';
-      isUnnamedListInputActive = false;
     }
   }
 </script>
