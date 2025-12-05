@@ -71,34 +71,43 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
 
 ## Implementation Steps
 
-1. **Edit/Rename Existing Lists**
+1. **Edit/Rename Existing Lists** ✅
    - **Description:** Users can rename existing lists to update their names as needs change
    - **Acceptance Criteria:**
-     - Users can rename lists
-     - List names cannot be empty
-     - Named lists cannot be unnamed
-     - Rename persists in IndexedDB
-     - UI updates reactively after rename
+     - ✅ Users can rename lists
+     - ✅ List names cannot be empty
+     - ✅ Named lists cannot be unnamed
+     - ✅ Rename persists in IndexedDB
+     - ✅ UI updates reactively after rename
    - **Technical Work:**
-     - Add UI for renaming lists using a modal similar to task editing (overlaid with blackout background)
-     - Implement function to update list name in IndexedDB
-     - Validate non-empty name
-     - Update UI reactively after rename
-     - Write tests: unit tests for rename function, integration tests for UI interaction
+     - ✅ Add UI for renaming lists using a modal similar to task editing (overlaid with blackout background)
+     - ✅ Implement function to update list name in IndexedDB
+     - ✅ Validate non-empty name
+     - ✅ Update UI reactively after rename
+     - ✅ Write tests: unit tests for rename function, integration tests for UI interaction
 
 2. **Add New Lists (Non-Empty State)**
-   - **Description:** Users can create new lists when lists already exist
+   - **Description:** Users can create new lists when lists already exist. Users can create named lists explicitly, or add tasks to unnamed lists (which creates an unnamed list if needed).
    - **Acceptance Criteria:**
      - Users can create new lists with a name
+     - Users can add tasks to unnamed lists (creates unnamed list if needed)
      - New lists are assigned appropriate order values
      - List creation persists in IndexedDB
      - New list appears in UI immediately
-     - List name is required (cannot be empty)
+     - List name is optional when creating (can be empty/null for unnamed lists)
+     - Once a list is named, it cannot be unnamed (cannot revert to null/empty)
+     - Named lists cannot have empty string '' as name
+     - When a task is created in an unnamed list (via "Add Task" button), focus moves to task creation within that same list (TaskList component's input), not the bottom "Add Task" button
    - **Technical Work:**
      - Add UI for creating new lists (button + input field or form)
+     - "Create List" button styled to match list headings (h2) size and height to prevent visual jumping
+     - "Add Task" button styled to look like a task item (inside the `<ul>`, at bottom of task list, not draggable)
      - Implement function to add list to IndexedDB
      - Assign appropriate `order` value (append to end: max order + 1)
-     - Set list name (required, cannot be empty)
+     - Support creating lists with or without names (name can be empty/null for new lists)
+     - Validate that named lists cannot be set to empty string ''
+     - Handle adding tasks to unnamed lists (create unnamed list if needed)
+     - After creating task in unnamed list, focus moves to that list's task input (not bottom button)
      - Update UI reactively after creation
      - Write tests: unit tests for create function, integration tests for UI interaction
 
