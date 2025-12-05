@@ -8,171 +8,191 @@ import {
   waitForListSection
 } from '../helpers/appTestHelpers.js'
 
-describe('App - List Creation Modal UX Behaviors', () => {
+describe('App - List Creation (Happy Path - Inline Input)', () => {
   beforeEach(async () => {
     await setupTestData()
   })
 
-  // Helper: Open list create modal by clicking Create List button
-  async function openListCreateModal(user) {
-    const createButton = screen.getByRole('button', { name: /create new list/i })
-    await user.click(createButton)
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument()
+  // Helper: Activate create list input by clicking Create List button
+  async function activateCreateListInput(user) {
+    // Wait for lists to load and button to appear
+    const createButton = await waitFor(() => {
+      return screen.getByRole('button', { name: /create new list/i })
     })
+    await user.click(createButton)
+    
+    // Wait for input to appear
+    await waitFor(() => {
+      const input = screen.getByRole('textbox', { name: /enter list name/i })
+      expect(input).toBeInTheDocument()
+    })
+    
     return screen.getByRole('textbox', { name: /enter list name/i })
   }
 
-  it('Clicking Create List button opens modal', async () => {
+  it('Clicking Create List button reveals inline input', async () => {
     const user = userEvent.setup()
     render(App)
     
-    const modalInput = await openListCreateModal(user)
+    const input = await activateCreateListInput(user)
     
-    // Verify modal has input
-    expect(screen.getByText('Create New List')).toBeInTheDocument()
-    expect(modalInput).toBeInTheDocument()
-    expect(modalInput).toHaveValue('')
+    // Verify input is visible and empty
+    expect(input).toBeInTheDocument()
+    expect(input).toHaveValue('')
+    // Verify no modal/dialog
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('Enter in modal creates named list and closes', async () => {
+  it('Enter in input creates named list and closes input', async () => {
     const user = userEvent.setup()
     render(App)
     
-    const modalInput = await openListCreateModal(user)
-    await user.type(modalInput, 'New List Name')
+    const input = await activateCreateListInput(user)
+    await user.type(input, 'New List Name')
     
     // Press Enter
     await user.keyboard('{Enter}')
     
-    // Wait for modal to close
+    // Wait for input to close
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     })
     
     // Verify list was created
     await waitFor(() => {
       expect(screen.getByText('New List Name')).toBeInTheDocument()
     })
+    
+    // Verify Create List button appears again
+    expect(screen.getByRole('button', { name: /create new list/i })).toBeInTheDocument()
   })
 
-  it('Enter in modal with empty input creates unnamed list and closes', async () => {
+  it('Empty input does not create list', async () => {
     const user = userEvent.setup()
     render(App)
     
-    const modalInput = await openListCreateModal(user)
+    const input = await activateCreateListInput(user)
     // Don't type anything - leave it empty
     
     // Press Enter
     await user.keyboard('{Enter}')
     
-    // Wait for modal to close
+    // Wait for input to close
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     })
     
-    // Verify unnamed list was created (shows as "(Unnamed)")
-    await waitFor(() => {
-      expect(screen.getByText('(Unnamed)')).toBeInTheDocument()
-    })
+    // Verify no new list was created (count should be same)
+    const listSections = document.querySelectorAll('[data-list-id]')
+    const initialCount = listSections.length
+    
+    // Wait a bit to ensure no list appears
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const finalListSections = document.querySelectorAll('[data-list-id]')
+    expect(finalListSections.length).toBe(initialCount)
   })
 
-  it('Create button creates named list and closes', async () => {
+  it('Whitespace-only input does not create list', async () => {
     const user = userEvent.setup()
     render(App)
     
-    const modalInput = await openListCreateModal(user)
-    await user.type(modalInput, 'Created via button')
+    const input = await activateCreateListInput(user)
+    await user.type(input, '   ') // Only spaces
     
-    // Click Create button
-    const createButton = screen.getByRole('button', { name: /create list/i })
-    await user.click(createButton)
+    // Press Enter
+    await user.keyboard('{Enter}')
     
-    // Wait for modal to close
+    // Wait for input to close
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
+    })
+    
+    // Verify no new list was created
+    const listSections = document.querySelectorAll('[data-list-id]')
+    const initialCount = listSections.length
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const finalListSections = document.querySelectorAll('[data-list-id]')
+    expect(finalListSections.length).toBe(initialCount)
+  })
+
+  it('Save button creates named list', async () => {
+    const user = userEvent.setup()
+    render(App)
+    
+    const input = await activateCreateListInput(user)
+    await user.type(input, 'Created via Save button')
+    
+    // Click Save button
+    const saveButton = screen.getByRole('button', { name: /create list/i })
+    await user.click(saveButton)
+    
+    // Wait for input to close
+    await waitFor(() => {
+      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     })
     
     // Verify list was created
     await waitFor(() => {
-      expect(screen.getByText('Created via button')).toBeInTheDocument()
+      expect(screen.getByText('Created via Save button')).toBeInTheDocument()
     })
   })
 
-  it('Create button with empty input creates unnamed list and closes', async () => {
+  it('Escape key cancels and closes input', async () => {
     const user = userEvent.setup()
     render(App)
     
-    const modalInput = await openListCreateModal(user)
-    // Leave input empty
-    
-    // Click Create button
-    const createButton = screen.getByRole('button', { name: /create list/i })
-    await user.click(createButton)
-    
-    // Wait for modal to close
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    })
-    
-    // Verify unnamed list was created
-    await waitFor(() => {
-      expect(screen.getByText('(Unnamed)')).toBeInTheDocument()
-    })
-  })
-
-  it('Escape in modal discards and closes', async () => {
-    const user = userEvent.setup()
-    render(App)
-    
-    const modalInput = await openListCreateModal(user)
-    await user.type(modalInput, 'This should be discarded')
+    const input = await activateCreateListInput(user)
+    await user.type(input, 'This should be discarded')
     
     // Press Escape
     await user.keyboard('{Escape}')
     
-    // Wait for modal to close
+    // Wait for input to close
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     })
     
     // Verify list was NOT created
     expect(screen.queryByText('This should be discarded')).not.toBeInTheDocument()
+    
+    // Verify Create List button appears again
+    expect(screen.getByRole('button', { name: /create new list/i })).toBeInTheDocument()
   })
 
-  it('Click outside modal discards and closes', async () => {
+  it('Click outside input (when empty) cancels and closes', async () => {
     const user = userEvent.setup()
     render(App)
     
-    const modalInput = await openListCreateModal(user)
-    await user.type(modalInput, 'This should be discarded')
+    const input = await activateCreateListInput(user)
+    // Don't type anything
     
-    // Click on backdrop
-    const backdrop = screen.getByRole('dialog')
-    await user.click(backdrop)
+    // Click outside (on the main container)
+    const main = screen.getByRole('main')
+    await user.click(main)
     
-    // Wait for modal to close
+    // Wait for input to close
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     })
     
-    // Verify list was NOT created
-    expect(screen.queryByText('This should be discarded')).not.toBeInTheDocument()
+    // Verify Create List button appears again
+    expect(screen.getByRole('button', { name: /create new list/i })).toBeInTheDocument()
   })
 
   it('List name trims whitespace when creating', async () => {
     const user = userEvent.setup()
     render(App)
     
-    const modalInput = await openListCreateModal(user)
-    await user.type(modalInput, '  Trimmed List  ')
+    const input = await activateCreateListInput(user)
+    await user.type(input, '  Trimmed List  ')
     
     // Press Enter
     await user.keyboard('{Enter}')
     
-    // Wait for modal to close
+    // Wait for input to close
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     })
     
     // Verify list name was trimmed
@@ -182,32 +202,11 @@ describe('App - List Creation Modal UX Behaviors', () => {
     expect(screen.queryByText('  Trimmed List  ')).not.toBeInTheDocument()
   })
 
-  it('Whitespace-only input creates unnamed list', async () => {
-    const user = userEvent.setup()
-    render(App)
-    
-    const modalInput = await openListCreateModal(user)
-    await user.type(modalInput, '   ') // Only spaces
-    
-    // Press Enter
-    await user.keyboard('{Enter}')
-    
-    // Wait for modal to close
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    })
-    
-    // Verify unnamed list was created (whitespace-only becomes unnamed)
-    await waitFor(() => {
-      expect(screen.getByText('(Unnamed)')).toBeInTheDocument()
-    })
-  })
-
   it('New list appears immediately in UI', async () => {
     const user = userEvent.setup()
     render(App)
     
-    // Count initial lists by counting list sections (data-list-id attributes)
+    // Count initial lists
     await waitFor(() => {
       const listSections = document.querySelectorAll('[data-list-id]')
       expect(listSections.length).toBeGreaterThan(0)
@@ -215,13 +214,12 @@ describe('App - List Creation Modal UX Behaviors', () => {
     const initialListSections = document.querySelectorAll('[data-list-id]')
     const initialCount = initialListSections.length
     
-    const modalInput = await openListCreateModal(user)
-    await user.type(modalInput, 'Immediate List')
+    const input = await activateCreateListInput(user)
+    await user.type(input, 'Immediate List')
     await user.keyboard('{Enter}')
     
-    // Wait for modal to close and list to appear
+    // Wait for list to appear
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
       const updatedListSections = document.querySelectorAll('[data-list-id]')
       expect(updatedListSections.length).toBe(initialCount + 1)
     })
@@ -235,21 +233,21 @@ describe('App - List Creation Modal UX Behaviors', () => {
     render(App)
     
     // Create first list
-    let modalInput = await openListCreateModal(user)
-    await user.type(modalInput, 'First New List')
+    let input = await activateCreateListInput(user)
+    await user.type(input, 'First New List')
     await user.keyboard('{Enter}')
     
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     })
     
     // Create second list
-    modalInput = await openListCreateModal(user)
-    await user.type(modalInput, 'Second New List')
+    input = await activateCreateListInput(user)
+    await user.type(input, 'Second New List')
     await user.keyboard('{Enter}')
     
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     })
     
     // Verify both lists exist

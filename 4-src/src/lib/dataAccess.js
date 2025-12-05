@@ -9,6 +9,36 @@ export async function getAllLists() {
 }
 
 /**
+ * Create a new list
+ * @param {string} name - The list name (cannot be empty or whitespace-only)
+ * @returns {Promise<number>} The ID of the created list
+ */
+export async function createList(name) {
+  // Validate: name cannot be empty string '' or whitespace-only
+  const trimmedName = name.trim();
+  if (trimmedName === '') {
+    throw new Error('List name cannot be empty or whitespace-only');
+  }
+  
+  // Get all existing lists to determine the next order value
+  const existingLists = await db.lists.orderBy('order').toArray();
+  
+  // Calculate the next order value (max order + 1, or 0 if no lists)
+  const maxOrder = existingLists.length > 0 
+    ? Math.max(...existingLists.map(l => l.order))
+    : -1;
+  const nextOrder = maxOrder + 1;
+  
+  // Create the list with trimmed name
+  const listId = await db.lists.add({
+    name: trimmedName,
+    order: nextOrder
+  });
+  
+  return listId;
+}
+
+/**
  * Update a list's name
  * @param {number} listId - The ID of the list
  * @param {string} name - The new list name (cannot be empty)

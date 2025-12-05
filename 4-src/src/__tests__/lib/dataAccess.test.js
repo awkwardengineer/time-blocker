@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import db from '../../lib/db.js'
-import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, deleteTask, updateListName } from '../../lib/dataAccess.js'
+import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, deleteTask, updateListName, createList } from '../../lib/dataAccess.js'
 
 describe('dataAccess', () => {
   beforeEach(async () => {
@@ -39,6 +39,53 @@ describe('dataAccess', () => {
       for (let i = 0; i < lists.length - 1; i++) {
         expect(lists[i].order).toBeLessThanOrEqual(lists[i + 1].order)
       }
+    })
+  })
+
+  describe('createList', () => {
+    it('should create a new list with correct properties', async () => {
+      const listId = await createList('New List')
+      
+      expect(listId).toBeDefined()
+      
+      const list = await db.lists.get(listId)
+      expect(list).toBeDefined()
+      expect(list.name).toBe('New List')
+      expect(typeof list.order).toBe('number')
+    })
+    
+    it('should assign order value as max order + 1', async () => {
+      const lists = await getAllLists()
+      const maxOrder = Math.max(...lists.map(l => l.order))
+      
+      const listId = await createList('Last List')
+      const list = await db.lists.get(listId)
+      
+      expect(list.order).toBe(maxOrder + 1)
+    })
+    
+    it('should assign order 0 for first list when no lists exist', async () => {
+      await db.lists.clear()
+      
+      const listId = await createList('First List')
+      const list = await db.lists.get(listId)
+      
+      expect(list.order).toBe(0)
+    })
+    
+    it('should trim whitespace from list name', async () => {
+      const listId = await createList('  Trimmed List  ')
+      const list = await db.lists.get(listId)
+      
+      expect(list.name).toBe('Trimmed List')
+    })
+    
+    it('should throw error when list name is empty string', async () => {
+      await expect(createList('')).rejects.toThrow('List name cannot be empty or whitespace-only')
+    })
+    
+    it('should throw error when list name is only whitespace', async () => {
+      await expect(createList('   ')).rejects.toThrow('List name cannot be empty or whitespace-only')
     })
   })
 

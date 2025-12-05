@@ -108,30 +108,60 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - ✅ Update click-outside handler to work with new structure
      - Write tests: integration tests for button behavior and styling
 
-3. **Add New Lists (Non-Empty State)**
-   - **Description:** Users can create new lists when lists already exist. Users can create named lists explicitly, or add tasks to unnamed lists (which creates an unnamed list if needed).
-   - **Acceptance Criteria:**
-     - Users can create new lists with a name
-     - Users can add tasks to unnamed lists (creates unnamed list if needed)
-     - New lists are assigned appropriate order values
-     - List creation persists in IndexedDB
-     - New list appears in UI immediately
-     - List name is optional when creating (can be empty/null for unnamed lists)
-     - Once a list is named, it cannot be unnamed (cannot revert to null/empty)
-     - Named lists cannot have empty string '' as name
-     - When a task is created in an unnamed list (via "Add Task" button), focus moves to task creation within that same list (TaskList component's input), not the bottom "Add Task" button
-   - **Technical Work:**
-     - Add UI for creating new lists (button + input field or form)
-     - "Create List" button styled to match list headings (h2) size and height to prevent visual jumping
-     - "Add Task" button styled to look like a task item (inside the `<ul>`, at bottom of task list, not draggable)
-     - Implement function to add list to IndexedDB
-     - Assign appropriate `order` value (append to end: max order + 1)
-     - Support creating lists with or without names (name can be empty/null for new lists)
-     - Validate that named lists cannot be set to empty string ''
-     - Handle adding tasks to unnamed lists (create unnamed list if needed)
-     - After creating task in unnamed list, focus moves to that list's task input (not bottom button)
-     - Update UI reactively after creation
-     - Write tests: unit tests for create function, integration tests for UI interaction
+3. **Add New Lists (Non-Empty State)** - Split into two paths
+
+   3a. **Happy Path: Create Named List**
+      - **Description:** User clicks "Create List", an inline input field appears (similar to task creation), user enters a non-empty name (whitespace-only like '  ' is not allowed), then focus moves to creating the first task in that list. After creating the list, the option to create another list should appear.
+      - **Acceptance Criteria:**
+        - Users can click "Create List" button
+        - Clicking reveals an inline input field (similar to task creation, not a modal)
+        - User enters a non-empty name (whitespace-only like '  ' is not allowed)
+        - List is created with the name
+        - New lists are assigned appropriate order values
+        - List creation persists in IndexedDB
+        - New list appears in UI immediately
+        - After list creation, focus moves to creating the first task in that list (TaskList component's input)
+        - After creating the list, the "Create List" button/input appears again (option to create another)
+        - Named lists cannot have empty string '' as name
+        - Whitespace-only names (like '  ') are not allowed (treated as empty)
+        - Input field can be cancelled (Escape key or click outside if empty)
+      - **Technical Work:**
+        - Add "Create List" button styled to match list headings (h2) size and height
+        - When clicked, replace button with inline input field (similar to task creation pattern)
+        - Implement `createList` function to add list to IndexedDB
+        - Assign appropriate `order` value (append to end: max order + 1)
+        - Validate that list name is non-empty (not empty string '', not whitespace-only)
+        - After creating list, focus moves to that list's task input (TaskList component)
+        - Show "Create List" button/input after list creation
+        - Handle cancel (Escape key, click outside if empty)
+        - Update UI reactively after creation
+        - Write tests: unit tests for create function, integration tests for UI interaction and focus management
+
+   3b. **Complicated Path: Create Unnamed List via Task Creation**
+      - **Description:** There should be a section for unnamed lists with a button to "Add a task". If the user clicks this and creates a task, an unnamed list is created, the list name should show as "Unnamed list", and the option to create another list should appear.
+      - **Acceptance Criteria:**
+        - When lists exist, there's a section/area for "unnamed list" creation
+        - Section has a button to "Add a task"
+        - User clicks "Add a task" button
+        - User creates a task (enters task text)
+        - An unnamed list is created automatically (if needed)
+        - List name displays as "Unnamed list" (not "(Unnamed)")
+        - New lists are assigned appropriate order values
+        - List creation persists in IndexedDB
+        - New list appears in UI immediately
+        - After creating the task, focus stays in the task input (for sequential task creation)
+        - After creating the list, the "Create List" button appears (option to create another)
+        - Unnamed lists have `name` set to `null` in database
+      - **Technical Work:**
+        - Add "unnamed list" section/area in UI (when lists exist)
+        - Add "Add a task" button in unnamed list section
+        - Implement logic to create unnamed list when first task is added
+        - Update `createTask` function to handle creating unnamed list if needed
+        - Display unnamed lists with name "Unnamed list" (when `name` is `null`)
+        - After task creation, focus stays in task input (not bottom button)
+        - Show "Create List" button after unnamed list is created
+        - Update UI reactively after creation
+        - Write tests: unit tests for unnamed list creation, integration tests for UI interaction
 
 ---
 
