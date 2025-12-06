@@ -332,15 +332,22 @@
         
         setTimeout(() => {
           // Try to find next task to focus (first remaining task in list)
-          const nextTarget = findNextFocusTarget(listId);
-          if (nextTarget) {
-            nextTarget.focus();
-          } else {
-            // Fallback: focus the "Add Task" button
-            // Use more retries when list becomes empty (DOM structure changes)
-            focusAddTaskButton(listId, 40, 10);
-          }
-        }, 10);
+          // Use retry logic to handle DOM updates after archiving
+          const tryFocusNextTask = (attempts = 0) => {
+            const nextTarget = findNextFocusTarget(listId);
+            if (nextTarget) {
+              nextTarget.focus();
+            } else if (attempts < 20) {
+              // Retry up to 20 times (200ms total) to wait for DOM updates
+              setTimeout(() => tryFocusNextTask(attempts + 1), 10);
+            } else {
+              // Fallback: focus the "Add Task" button
+              // Use more retries when list becomes empty (DOM structure changes)
+              focusAddTaskButton(listId, 40, 10);
+            }
+          };
+          tryFocusNextTask();
+        }, 20);
       }
     } catch (error) {
       console.error('Error archiving task:', error);
