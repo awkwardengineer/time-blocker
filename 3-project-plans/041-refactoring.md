@@ -175,6 +175,7 @@ Right now, all the textareas use the same hardcoded `160px` max height. But when
 
 ### 8. Extract Modal Positioning Logic
 **Priority: Low**  
+**Status: ⏸️ POSTPONED**  
 **Files:** `4-src/src/components/TaskEditModal.svelte`, `4-src/src/components/ListEditModal.svelte`
 
 **Problem:**
@@ -191,6 +192,9 @@ Right now, all the textareas use the same hardcoded `160px` max height. But when
 - [ ] Both modals use it
 - [ ] Tests still pass
 - [ ] Modal positioning unchanged
+
+**Why Postponed (ELI5):**
+Modal positioning logic may change significantly when we add styling later. Different modals might need different positioning strategies, offsets, or placement options based on the final design. If we extract this utility now, we'd likely need to refactor it again after styling is complete. It's better to wait until the styling is finalized before extracting shared positioning logic.
 
 ---
 
