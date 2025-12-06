@@ -1,6 +1,20 @@
 import db from './db.js';
 
 /**
+ * Calculate the next order value for a collection of items.
+ * Returns max order + 1, or 0 if the collection is empty.
+ * @param {Array<{order: number}>} items - Array of items with order property
+ * @returns {number} The next order value
+ */
+function getNextOrderValue(items) {
+  if (items.length === 0) {
+    return 0;
+  }
+  const maxOrder = Math.max(...items.map(item => item.order));
+  return maxOrder + 1;
+}
+
+/**
  * Fetch all lists ordered by their order field
  * @returns {Promise<Array>} Array of list objects
  */
@@ -22,12 +36,7 @@ export async function createList(name) {
   
   // Get all existing lists to determine the next order value
   const existingLists = await db.lists.orderBy('order').toArray();
-  
-  // Calculate the next order value (max order + 1, or 0 if no lists)
-  const maxOrder = existingLists.length > 0 
-    ? Math.max(...existingLists.map(l => l.order))
-    : -1;
-  const nextOrder = maxOrder + 1;
+  const nextOrder = getNextOrderValue(existingLists);
   
   // Create the list with trimmed name
   const listId = await db.lists.add({
@@ -45,12 +54,7 @@ export async function createList(name) {
 export async function createUnnamedList() {
   // Get all existing lists to determine the next order value
   const existingLists = await db.lists.orderBy('order').toArray();
-  
-  // Calculate the next order value (max order + 1, or 0 if no lists)
-  const maxOrder = existingLists.length > 0 
-    ? Math.max(...existingLists.map(l => l.order))
-    : -1;
-  const nextOrder = maxOrder + 1;
+  const nextOrder = getNextOrderValue(existingLists);
   
   // Create the list with name set to null
   const listId = await db.lists.add({
@@ -148,11 +152,7 @@ export async function createTask(listId, text) {
     .filter(task => task.status !== 'archived')
     .sortBy('order');
   
-  // Calculate the next order value (max order + 1, or 0 if no tasks)
-  const maxOrder = existingTasks.length > 0 
-    ? Math.max(...existingTasks.map(t => t.order))
-    : -1;
-  const nextOrder = maxOrder + 1;
+  const nextOrder = getNextOrderValue(existingTasks);
   
   // Create the task
   // Note: text can be empty string for blank tasks (whitespace-only input creates blank tasks)
@@ -227,11 +227,7 @@ export async function restoreTask(taskId) {
     .filter(t => t.status !== 'archived' && t.id !== taskId)
     .sortBy('order');
   
-  // Calculate the next order value (max order + 1, or 0 if no tasks)
-  const maxOrder = existingTasks.length > 0 
-    ? Math.max(...existingTasks.map(t => t.order))
-    : -1;
-  const nextOrder = maxOrder + 1;
+  const nextOrder = getNextOrderValue(existingTasks);
   
   // Update task status and order
   return await db.tasks.update(taskId, {
