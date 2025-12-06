@@ -200,7 +200,8 @@
       await tick();
       // Wait for DOM to actually update (similar to waitFor in tests)
       // tick() schedules updates, but DOM updates happen in next microtask
-      await new Promise(resolve => setTimeout(resolve, 0));
+      // Use a small delay to ensure bindable prop updates propagate and DOM re-renders
+      await new Promise(resolve => setTimeout(resolve, 10));
       return;
     }
     
