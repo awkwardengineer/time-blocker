@@ -121,10 +121,10 @@ Right now, all the textareas use the same hardcoded `160px` max height. But when
 - Update `handleArchiveTask` to orchestrate these
 
 **Acceptance Criteria:**
-- [ ] Function split into focused utilities
-- [ ] Tests still pass
-- [ ] Focus behavior unchanged
-- [ ] Code is more testable
+- ✅ Function split into focused utilities
+- ✅ Tests still pass
+- ✅ Focus behavior unchanged
+- ✅ Code is more testable
 
 ---
 
