@@ -44,10 +44,10 @@ Improve code maintainability, reduce duplication, and eliminate magic numbers by
 - Use in all 3 locations
 
 **Acceptance Criteria:**
-- [ ] Utility function created
-- [ ] All 3 instances replaced
-- [ ] Tests still pass
-- [ ] Behavior unchanged
+- [x] Utility function created
+- [x] All 3 instances replaced
+- [x] Tests still pass
+- [x] Behavior unchanged
 
 ---
 

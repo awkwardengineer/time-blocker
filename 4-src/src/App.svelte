@@ -5,9 +5,10 @@
   import db from './lib/db.js';
   import TaskList from './components/TaskList.svelte';
   import ArchivedView from './components/ArchivedView.svelte';
+  import { useClickOutside } from './lib/useClickOutside.js';
   
   // Constants for retry mechanism
-  const MAX_RETRY_ATTEMPTS = 20; // Maximum attempts to find element
+  const MAX_RETRY_ATTEMPTS = 25; // Maximum attempts to find element
   const RETRY_INTERVAL = 10; // Milliseconds between retry attempts
   
   // Reactive query for lists - automatically updates when lists change
@@ -125,35 +126,27 @@
   $effect(() => {
     if (!isCreateListInputActive) return;
     
-    function handleDocumentClick(e) {
-      // Check if click is on the input field itself
-      if (createListInputElement && createListInputElement.contains(e.target)) {
-        return; // Click is on input, don't close
+    return useClickOutside(
+      createListInputElement,
+      () => {
+        // Only close if still active (prevents race conditions with programmatic closes)
+        if (isCreateListInputActive) {
+          isCreateListInputActive = false;
+          createListInput = '';
+        }
+      },
+      {
+        checkIgnoreClick: (e) => {
+          // Check if click is on a Save button
+          const saveButton = e.target.closest('button');
+          return saveButton && saveButton.textContent?.trim() === 'Save';
+        },
+        shouldClose: () => {
+          // Only close if input hasn't changed (no content)
+          return !createListInput || createListInput.trim() === '';
+        }
       }
-      
-      // Check if click is on a Save button (if we add one)
-      const saveButton = e.target.closest('button');
-      if (saveButton && saveButton.textContent?.trim() === 'Save') {
-        return; // Let Save button handle the click
-      }
-      
-      // Click is outside input
-      // Only close if input hasn't changed (no content)
-      if (!createListInput || createListInput.trim() === '') {
-        isCreateListInputActive = false;
-        createListInput = '';
-      }
-    }
-    
-    // Add click listener after a brief delay to avoid immediate trigger
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('click', handleDocumentClick);
-    }, 0);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('click', handleDocumentClick);
-    };
+    );
   });
   
   // Focus input when it becomes active
@@ -213,35 +206,27 @@
   $effect(() => {
     if (!isUnnamedListInputActive) return;
     
-    function handleDocumentClick(e) {
-      // Check if click is on the input field itself
-      if (unnamedListInputElement && unnamedListInputElement.contains(e.target)) {
-        return; // Click is on input, don't close
+    return useClickOutside(
+      unnamedListInputElement,
+      () => {
+        // Only close if still active (prevents race conditions with programmatic closes)
+        if (isUnnamedListInputActive) {
+          isUnnamedListInputActive = false;
+          unnamedListTaskInput = '';
+        }
+      },
+      {
+        checkIgnoreClick: (e) => {
+          // Check if click is on a Save button
+          const saveButton = e.target.closest('button');
+          return saveButton && saveButton.textContent?.trim() === 'Save';
+        },
+        shouldClose: () => {
+          // Only close if input hasn't changed (no content)
+          return !unnamedListTaskInput || unnamedListTaskInput.trim() === '';
+        }
       }
-      
-      // Check if click is on a Save button
-      const saveButton = e.target.closest('button');
-      if (saveButton && saveButton.textContent?.trim() === 'Save') {
-        return; // Let Save button handle the click
-      }
-      
-      // Click is outside input
-      // Only close if input hasn't changed (no content)
-      if (!unnamedListTaskInput || unnamedListTaskInput.trim() === '') {
-        isUnnamedListInputActive = false;
-        unnamedListTaskInput = '';
-      }
-    }
-    
-    // Add click listener after a brief delay to avoid immediate trigger
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('click', handleDocumentClick);
-    }, 0);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('click', handleDocumentClick);
-    };
+    );
   });
   
   // Focus input when it becomes active

@@ -5,6 +5,7 @@
   import TaskEditModal from './TaskEditModal.svelte';
   import ListEditModal from './ListEditModal.svelte';
   import AddTaskInput from './AddTaskInput.svelte';
+  import { useClickOutside } from '../lib/useClickOutside.js';
   
   let { listId, listName, newTaskInput, onInputChange } = $props();
   
@@ -133,44 +134,56 @@
   $effect(() => {
     if (!isInputActive) return;
     
-    function handleDocumentClick(e) {
-      // Find the list section and the input container
-      const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-      if (!listSection) return;
-      
-      // Find the add-task-container div
-      const addTaskContainer = listSection.querySelector('.add-task-container');
-      if (!addTaskContainer) return;
-      
-      // Check if click is on the Save button - don't close, let Save handle it
-      const saveButton = addTaskContainer.querySelector('button');
-      if (saveButton && saveButton.contains(e.target)) {
-        return; // Let Save button handle the click
+    return useClickOutside(
+      // Function that returns the textarea element (found dynamically)
+      () => {
+        const listSection = document.querySelector(`[data-list-id="${listId}"]`);
+        if (!listSection) return null;
+        const addTaskContainer = listSection.querySelector('.add-task-container');
+        if (!addTaskContainer) return null;
+        return addTaskContainer.querySelector('textarea');
+      },
+      () => {
+        // Only close if still active (prevents race conditions with programmatic closes)
+        if (isInputActive) {
+          isInputActive = false;
+          onInputChange('');
+        }
+      },
+      {
+        checkIgnoreClick: (e) => {
+          // Find the list section and the input container
+          const listSection = document.querySelector(`[data-list-id="${listId}"]`);
+          if (!listSection) return false;
+          
+          const addTaskContainer = listSection.querySelector('.add-task-container');
+          if (!addTaskContainer) return false;
+          
+          // Check if click is on the Save button - don't close, let Save handle it
+          const saveButton = addTaskContainer.querySelector('button');
+          if (saveButton && saveButton.contains(e.target)) {
+            return true; // Ignore this click
+          }
+          
+          return false;
+        },
+        shouldClose: () => {
+          // Only close if input hasn't changed (no content)
+          // Check both reactive state and actual DOM element value for reliability
+          const listSection = document.querySelector(`[data-list-id="${listId}"]`);
+          if (listSection) {
+            const addTaskContainer = listSection.querySelector('.add-task-container');
+            if (addTaskContainer) {
+              const textarea = addTaskContainer.querySelector('textarea');
+              if (textarea && textarea.value.trim() !== '') {
+                return false; // Has content, don't close
+              }
+            }
+          }
+          return !newTaskInput || newTaskInput.trim() === '';
+        }
       }
-      
-      // Check if click is on the textarea field itself
-      const textareaField = addTaskContainer.querySelector('textarea');
-      if (textareaField && textareaField.contains(e.target)) {
-        return; // Click is on textarea, don't close
-      }
-      
-      // Click is outside input (could be anywhere else)
-      // Only close if input hasn't changed (no content)
-      if (!newTaskInput || newTaskInput.trim() === '') {
-        isInputActive = false;
-        onInputChange('');
-      }
-    }
-    
-    // Add click listener after a brief delay to avoid immediate trigger
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('click', handleDocumentClick);
-    }, 0);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('click', handleDocumentClick);
-    };
+    );
   });
   
   async function handleCreateTask() {
