@@ -7,6 +7,7 @@
   import ListEditModal from './ListEditModal.svelte';
   import AddTaskInput from './AddTaskInput.svelte';
   import { useClickOutside } from '../lib/useClickOutside.js';
+  import { isEmpty, normalizeInput } from '../lib/inputValidation.js';
   
   let { listId, listName, newTaskInput, onInputChange } = $props();
   
@@ -198,13 +199,16 @@
       if (addTaskContainer) {
         const textarea = addTaskContainer.querySelector('textarea');
         if (textarea) {
-          inputValue = textarea.value || '';
+          inputValue = (textarea.value || '').toString();
         }
       }
     }
     
+    // Ensure inputValue is a string
+    inputValue = (inputValue || '').toString();
+    
     // Check if input is empty string "" - exit task creation
-    if (inputValue === '') {
+    if (isEmpty(inputValue)) {
       isInputActive = false;
       onInputChange('');
       // Wait for Svelte's reactive updates to complete
@@ -216,17 +220,7 @@
     }
     
     // Check if input contains only whitespace (e.g., " ", "      ")
-    const trimmedValue = inputValue.trim();
-    const isWhitespaceOnly = trimmedValue === '' && inputValue.length > 0;
-    
-    let taskText;
-    if (isWhitespaceOnly) {
-      // Create blank task (empty text)
-      taskText = '';
-    } else {
-      // Create normal task with content
-      taskText = trimmedValue;
-    }
+    const { text: taskText } = normalizeInput(inputValue);
     
     try {
       await createTask(listId, taskText);

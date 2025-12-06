@@ -6,6 +6,7 @@
   import TaskList from './components/TaskList.svelte';
   import ArchivedView from './components/ArchivedView.svelte';
   import { useClickOutside } from './lib/useClickOutside.js';
+  import { isEmpty, normalizeInput } from './lib/inputValidation.js';
   
   // Constants for retry mechanism
   const MAX_RETRY_ATTEMPTS = 25; // Maximum attempts to find element
@@ -162,15 +163,15 @@
     const inputValue = createListInput || '';
     
     // Check if input is empty string "" - exit list creation
-    if (inputValue === '') {
+    if (isEmpty(inputValue)) {
       isCreateListInputActive = false;
       createListInput = '';
       return;
     }
     
     // Check if input contains only whitespace (e.g., " ", "      ")
-    const trimmedValue = inputValue.trim();
-    if (trimmedValue === '') {
+    const { text: normalizedText, isBlank } = normalizeInput(inputValue);
+    if (isBlank) {
       // Whitespace-only, don't create
       isCreateListInputActive = false;
       createListInput = '';
@@ -178,7 +179,7 @@
     }
     
     try {
-      const listId = await createList(trimmedValue);
+      const listId = await createList(normalizedText);
       createListInput = '';
       isCreateListInputActive = false;
       
@@ -262,24 +263,14 @@
     const inputValue = unnamedListTaskInput || '';
     
     // Check if input is empty string "" - exit task creation
-    if (inputValue === '') {
+    if (isEmpty(inputValue)) {
       isUnnamedListInputActive = false;
       unnamedListTaskInput = '';
       return;
     }
     
     // Check if input contains only whitespace (e.g., " ", "      ")
-    const trimmedValue = inputValue.trim();
-    const isWhitespaceOnly = trimmedValue === '' && inputValue.length > 0;
-    
-    let taskText;
-    if (isWhitespaceOnly) {
-      // Create blank task (empty text)
-      taskText = '';
-    } else {
-      // Create normal task with content
-      taskText = trimmedValue;
-    }
+    const { text: taskText } = normalizeInput(inputValue);
     
     try {
       // Pass null as listId to create task in unnamed list (which will be created)
