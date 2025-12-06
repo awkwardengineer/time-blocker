@@ -242,9 +242,93 @@
     }
   }
   
+  /**
+   * Pure archiving logic - just archives the task.
+   * @param {number} taskId - The ID of the task to archive
+   * @returns {Promise<void>}
+   */
+  async function archiveTask(taskId) {
+    await updateTaskStatus(taskId, 'archived');
+    // No need to reload - liveQuery will update automatically!
+  }
+  
+  /**
+   * Finds the next logical focus target after archiving a task.
+   * Tries next sibling, then previous sibling, then returns null for fallback.
+   * @param {number} listId - The ID of the list
+   * @param {HTMLElement} currentElement - The element that was focused before archiving
+   * @returns {HTMLElement|null} The next focus target, or null if none found
+   */
+  function findNextFocusTarget(listId, currentElement) {
+    if (!currentElement || !(currentElement instanceof HTMLElement)) {
+      return null;
+    }
+    
+    // Try to find the next task element (sibling or next in list)
+    const taskCard = currentElement.closest('li');
+    if (!taskCard) {
+      return null;
+    }
+    
+    // Try next sibling first
+    const nextTaskCard = taskCard.nextElementSibling;
+    if (nextTaskCard) {
+      const nextTaskText = nextTaskCard.querySelector('span[role="button"]');
+      if (nextTaskText && nextTaskText instanceof HTMLElement) {
+        return nextTaskText;
+      }
+    }
+    
+    // If no next task, try previous task
+    const prevTaskCard = taskCard.previousElementSibling;
+    if (prevTaskCard) {
+      const prevTaskText = prevTaskCard.querySelector('span[role="button"]');
+      if (prevTaskText && prevTaskText instanceof HTMLElement) {
+        return prevTaskText;
+      }
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Focuses the "Add Task" button with retry logic.
+   * Useful when list becomes empty and button needs time to appear in DOM.
+   * @param {number} listId - The ID of the list
+   * @param {number} maxAttempts - Maximum number of retry attempts (default: 20)
+   * @param {number} retryInterval - Milliseconds between retry attempts (default: 10)
+   * @returns {Promise<void>}
+   */
+  function focusAddTaskButton(listId, maxAttempts = 20, retryInterval = 10) {
+    const listSection = document.querySelector(`[data-list-id="${listId}"]`);
+    if (!listSection) {
+      return;
+    }
+    
+    const tryFocus = (attempts = 0) => {
+      const addTaskContainer = listSection.querySelector('.add-task-container');
+      if (addTaskContainer) {
+        const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
+        if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
+          addTaskSpan.focus();
+          return;
+        }
+      }
+      
+      // Retry if we haven't exceeded max attempts
+      if (attempts < maxAttempts) {
+        setTimeout(() => tryFocus(attempts + 1), retryInterval);
+      }
+    };
+    
+    tryFocus();
+  }
+  
   async function handleArchiveTask(taskId) {
     try {
-      await updateTaskStatus(taskId, 'archived');
+      // Archive the task
+      await archiveTask(taskId);
+      
       // Close modal if this task was being edited
       if (editingTaskId === taskId) {
         const taskElement = editingTaskElement; // Store reference before clearing
@@ -255,56 +339,20 @@
         editingTaskElement = null;
         
         // Focus management: after archiving, focus should go to next logical element
-        // Find the next task in the list, or the "Add Task" button if no tasks remain
+        // Wait for Svelte's reactive updates to complete (especially important when list becomes empty)
+        await tick();
         setTimeout(() => {
-          if (taskElement && taskElement instanceof HTMLElement) {
-            // Try to find the next task element (sibling or next in list)
-            const taskCard = taskElement.closest('li');
-            if (taskCard) {
-              const nextTaskCard = taskCard.nextElementSibling;
-              if (nextTaskCard) {
-                const nextTaskText = nextTaskCard.querySelector('span[role="button"]');
-                if (nextTaskText && nextTaskText instanceof HTMLElement) {
-                  nextTaskText.focus();
-                  return;
-                }
-              }
-              // If no next task, try previous task
-              const prevTaskCard = taskCard.previousElementSibling;
-              if (prevTaskCard) {
-                const prevTaskText = prevTaskCard.querySelector('span[role="button"]');
-                if (prevTaskText && prevTaskText instanceof HTMLElement) {
-                  prevTaskText.focus();
-                  return;
-                }
-              }
-            }
+          // Try to find next task to focus
+          const nextTarget = findNextFocusTarget(listId, taskElement);
+          if (nextTarget) {
+            nextTarget.focus();
+          } else {
             // Fallback: focus the "Add Task" button
-            // When list becomes empty, wait for the button to appear in DOM
-            const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-            if (listSection) {
-              // Use a retry mechanism to wait for the button to appear (especially when transitioning to empty state)
-              const tryFocusAddTask = (attempts = 0) => {
-                const addTaskContainer = listSection.querySelector('.add-task-container');
-                if (addTaskContainer) {
-                  const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
-                  if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
-                    addTaskSpan.focus();
-                    return;
-                  }
-                }
-                // Retry up to 10 times (100ms total wait)
-                if (attempts < 10) {
-                  setTimeout(() => tryFocusAddTask(attempts + 1), 10);
-                }
-              };
-              tryFocusAddTask();
-              return;
-            }
+            // Use more retries when list becomes empty (DOM structure changes)
+            focusAddTaskButton(listId, 30, 10);
           }
-        }, 0);
+        }, 10);
       }
-      // No need to reload - liveQuery will update automatically!
     } catch (error) {
       console.error('Error archiving task:', error);
     }
@@ -403,27 +451,15 @@
     
     // If focus wasn't handled by handleArchiveTask (e.g., modal already closed),
     // handle it here by finding the Add Task button
-    // Use a retry mechanism to wait for the button to appear (especially when transitioning to empty state)
-    const tryFocusAddTask = (attempts = 0) => {
+    setTimeout(() => {
       const activeElement = document.activeElement;
       const listSection = document.querySelector(`[data-list-id="${listId}"]`);
       if (listSection && (!activeElement || !listSection.contains(activeElement))) {
         // Focus wasn't set, so focus the Add Task button
-        const addTaskContainer = listSection.querySelector('.add-task-container');
-        if (addTaskContainer) {
-          const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
-          if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
-            addTaskSpan.focus();
-            return;
-          }
-        }
+        // Use more retries (20) to account for DOM updates when list becomes empty
+        focusAddTaskButton(listId, 20, 10);
       }
-      // Retry up to 20 times (200ms total wait) to account for DOM updates when list becomes empty
-      if (attempts < 20) {
-        setTimeout(() => tryFocusAddTask(attempts + 1), 10);
-      }
-    };
-    setTimeout(() => tryFocusAddTask(), 10);
+    }, 10);
   }
   
   function handleListNameClick(event) {
