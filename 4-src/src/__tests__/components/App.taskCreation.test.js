@@ -38,14 +38,20 @@ describe('App - Task Creation UX Behaviors', () => {
     const input = await openTaskInput(user, workSection, 'Work')
     expect(input).toBeInTheDocument()
     
-    // Press Enter on empty input (input should be empty by default)
+    // Verify input is empty (should be empty by default)
+    expect(input).toHaveValue('')
+    
+    // Press Enter on empty input
     await user.keyboard('{Enter}')
     
     // Wait for input to disappear and button to reappear
+    // waitFor actively polls (checks every ~50ms) and returns immediately when condition is true
+    // The timeout is just the maximum wait time, not a fixed delay
+    // Using 2000ms to handle timing issues when running in full test suite (default is 1000ms)
     await waitFor(() => {
       expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
       expect(within(workSection).getByRole('button', { name: /add new task to work/i })).toBeInTheDocument()
-    })
+    }, { timeout: 2000 })
   })
 
   it('Enter key creates task (including blank tasks with whitespace) and automatically opens new input for sequential creation', async () => {
