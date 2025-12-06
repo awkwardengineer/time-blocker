@@ -94,10 +94,10 @@ Right now, all the textareas use the same hardcoded `160px` max height. But when
   - `normalizeInput(input: string): { text: string, isBlank: boolean }`
 
 **Acceptance Criteria:**
-- [ ] Utility functions created
-- [ ] All instances replaced
-- [ ] Tests still pass
-- [ ] Validation behavior unchanged
+- ✅ Utility functions created
+- ✅ All instances replaced
+- ✅ Tests still pass
+- ✅ Validation behavior unchanged
 
 ---
 
