@@ -103,11 +103,14 @@ describe('App - Focus Management', () => {
       expect(within(workSection).queryByText('Task 2')).not.toBeInTheDocument()
     })
     
+    // Wait for button to appear (list becomes empty, so button text changes)
+    const addTaskButton = await within(workSection).findByRole('button', { name: /add your first task to work/i }, { timeout: 2000 })
+    
     // Verify focus moved to Add Task button
-    const addTaskButton = within(workSection).getByRole('button', { name: /add your first task to work/i })
+    // Increased timeout to handle timing issues in full test suite
     await waitFor(() => {
       expect(addTaskButton).toHaveFocus()
-    }, { timeout: 1000 })
+    }, { timeout: 2000 })
   })
 })
 

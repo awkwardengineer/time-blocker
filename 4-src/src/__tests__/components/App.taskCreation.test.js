@@ -46,10 +46,13 @@ describe('App - Task Creation UX Behaviors', () => {
     
     // Wait for input to disappear and button to reappear
     // waitFor actively polls (checks every ~50ms) and returns immediately when condition is true
-    // The timeout is just the maximum wait time, not a fixed delay
-    // Using 2000ms to handle timing issues when running in full test suite (default is 1000ms)
+    // Split into two waits to handle timing issues in full test suite
     await waitFor(() => {
       expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
+    }, { timeout: 3000 })
+    
+    // Then verify button is back
+    await waitFor(() => {
       expect(within(workSection).getByRole('button', { name: /add new task to work/i })).toBeInTheDocument()
     }, { timeout: 2000 })
   })

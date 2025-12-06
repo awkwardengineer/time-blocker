@@ -341,6 +341,9 @@
         // Focus management: after archiving, focus should go to next logical element
         // Wait for Svelte's reactive updates to complete (especially important when list becomes empty)
         await tick();
+        // Additional small delay to ensure DOM has updated (especially when list becomes empty)
+        await new Promise(resolve => setTimeout(resolve, 10));
+        
         setTimeout(() => {
           // Try to find next task to focus
           const nextTarget = findNextFocusTarget(listId, taskElement);
@@ -349,7 +352,7 @@
           } else {
             // Fallback: focus the "Add Task" button
             // Use more retries when list becomes empty (DOM structure changes)
-            focusAddTaskButton(listId, 30, 10);
+            focusAddTaskButton(listId, 40, 10);
           }
         }, 10);
       }
