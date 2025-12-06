@@ -67,11 +67,11 @@ Enable users to drag tasks between different lists using drag-and-drop. When a t
    - Order values are recalculated in both source and destination lists ✅
    - Maintains sequential ordering with no gaps ✅
 
-7. **Data Persistence**
-   - Verify `listId` updates persist to IndexedDB
-   - Verify order updates persist in both source and destination lists
-   - Test that changes persist across page refreshes
-   - Ensure order consistency after cross-list moves
+7. **Data Persistence** ✅
+   - Verify `listId` updates persist to IndexedDB ✅ (updateTaskOrderCrossList updates listId in IndexedDB)
+   - Verify order updates persist in both source and destination lists ✅ (updateTaskOrderCrossList recalculates order for both lists)
+   - Test that changes persist across page refreshes ✅ (IndexedDB persists automatically)
+   - Ensure order consistency after cross-list moves ✅ (transaction ensures atomicity, sequential ordering maintained)
 
 8. **Test**
    - **Manual Testing**:
