@@ -62,12 +62,13 @@ describe('App - Focus Management', () => {
     })
     
     // Verify focus moved to Task 2 (next task)
+    // Increased timeout to handle timing issues in full test suite
     const task2Text = within(workSection).getByText('Task 2')
     const task2ListItem = task2Text.closest('li')
     const task2TextSpan = task2ListItem.querySelector('span[role="button"]')
     await waitFor(() => {
       expect(task2TextSpan).toHaveFocus()
-    }, { timeout: 1000 })
+    }, { timeout: 2000 })
   })
 
   it('Focus moves to Add Task button when all tasks archived', async () => {

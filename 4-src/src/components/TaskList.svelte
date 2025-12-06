@@ -254,37 +254,22 @@
   
   /**
    * Finds the next logical focus target after archiving a task.
-   * Tries next sibling, then previous sibling, then returns null for fallback.
+   * Tries to find the first remaining task in the list.
    * @param {number} listId - The ID of the list
-   * @param {HTMLElement} currentElement - The element that was focused before archiving
    * @returns {HTMLElement|null} The next focus target, or null if none found
    */
-  function findNextFocusTarget(listId, currentElement) {
-    if (!currentElement || !(currentElement instanceof HTMLElement)) {
+  function findNextFocusTarget(listId) {
+    const listSection = document.querySelector(`[data-list-id="${listId}"]`);
+    if (!listSection) {
       return null;
     }
     
-    // Try to find the next task element (sibling or next in list)
-    const taskCard = currentElement.closest('li');
-    if (!taskCard) {
-      return null;
-    }
-    
-    // Try next sibling first
-    const nextTaskCard = taskCard.nextElementSibling;
-    if (nextTaskCard) {
-      const nextTaskText = nextTaskCard.querySelector('span[role="button"]');
-      if (nextTaskText && nextTaskText instanceof HTMLElement) {
-        return nextTaskText;
-      }
-    }
-    
-    // If no next task, try previous task
-    const prevTaskCard = taskCard.previousElementSibling;
-    if (prevTaskCard) {
-      const prevTaskText = prevTaskCard.querySelector('span[role="button"]');
-      if (prevTaskText && prevTaskText instanceof HTMLElement) {
-        return prevTaskText;
+    // Find the first remaining task in the list
+    const firstTaskCard = listSection.querySelector('li[data-id]');
+    if (firstTaskCard) {
+      const firstTaskText = firstTaskCard.querySelector('span[role="button"]');
+      if (firstTaskText && firstTaskText instanceof HTMLElement) {
+        return firstTaskText;
       }
     }
     
@@ -345,8 +330,8 @@
         await new Promise(resolve => setTimeout(resolve, 10));
         
         setTimeout(() => {
-          // Try to find next task to focus
-          const nextTarget = findNextFocusTarget(listId, taskElement);
+          // Try to find next task to focus (first remaining task in list)
+          const nextTarget = findNextFocusTarget(listId);
           if (nextTarget) {
             nextTarget.focus();
           } else {
