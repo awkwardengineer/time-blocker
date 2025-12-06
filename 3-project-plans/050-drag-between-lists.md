@@ -12,6 +12,10 @@ Enable users to drag tasks between different lists using drag-and-drop. When a t
 - [ ] Cross-list dragging only works for unchecked/checked tasks (archived tasks excluded)
 - [ ] Task order persists in IndexedDB
 - [ ] Task order persists across page refreshes
+- [ ] Keyboard navigation: Moving down from last task in list moves to first position of next list
+- [ ] Keyboard navigation: Moving up from first task in list moves to last position of previous list
+- [ ] Keyboard navigation: Moving down from last task in last list creates new unnamed list
+- [ ] Visual feedback provided when crossing list boundaries via keyboard
 - [ ] No formatting/styling focus - just functional implementation
 
 ## Implementation Steps
@@ -49,13 +53,27 @@ Enable users to drag tasks between different lists using drag-and-drop. When a t
    - Moving last task from a list (list becomes empty) ✅ (handled - source list has 0 tasks, no order recalculation needed)
    - Moving task between lists with different task counts ✅ (handled - orders recalculated independently for each list)
 
-6. **Data Persistence**
+6. **Keyboard Cross-List Movement** ✅
+   - **Approach**: Seamless List Boundary Crossing ✅
+   - When a task is focused and user presses "move down" key (e.g., `Ctrl+Shift+Down` or library's default) ✅
+   - If task is at last position in current list → automatically move to first position of next list ✅
+   - If task is at first position and user presses "move up" → move to last position of previous list ✅
+   - Provide visual feedback when crossing list boundaries (highlight next/previous list or brief indicator) (deferred - functionality works without it)
+   - Handle edge cases: ✅
+     - Moving down from last task in last list → create new unnamed list and move task there ✅
+     - Moving up from first task in first list → no action (already at top) ✅
+   - Works seamlessly with existing keyboard drag-and-drop navigation (no mode switching required) ✅
+   - Task's `listId` is updated in IndexedDB when crossing boundaries ✅
+   - Order values are recalculated in both source and destination lists ✅
+   - Maintains sequential ordering with no gaps ✅
+
+7. **Data Persistence**
    - Verify `listId` updates persist to IndexedDB
    - Verify order updates persist in both source and destination lists
    - Test that changes persist across page refreshes
    - Ensure order consistency after cross-list moves
 
-7. **Test**
+8. **Test**
    - **Manual Testing**:
      - Drag task from one list to another, verify `listId` updates
      - Verify order is maintained in both source and destination lists
@@ -64,6 +82,10 @@ Enable users to drag tasks between different lists using drag-and-drop. When a t
      - Move last task from a list, verify source list order handling
      - Test edge cases (moving to same list, moving between lists with different counts)
      - Verify archived tasks cannot be moved between lists
+     - Keyboard navigation: Move task down from last position, verify it moves to next list
+     - Keyboard navigation: Move task up from first position, verify it moves to previous list
+     - Keyboard navigation: Move task down from last position in last list, verify new list is created
+     - Keyboard navigation: Verify visual feedback when crossing list boundaries
    - **Automated Tests**:
      - Unit tests: Cross-list move logic (update `listId`, calculate order values)
      - Unit tests: Order updates in both source and destination lists
@@ -80,6 +102,7 @@ Enable users to drag tasks between different lists using drag-and-drop. When a t
 - Drop position: Insert at drop position or append to end (implementation decision)
 - Requires: [[031-task-reordering]] (drag-and-drop infrastructure)
 - Requires: [[040-list-crud-ordering]] (list management)
+- **Future milestone**: [[070-multiple-columns]] will extend this functionality to work across columns - ensure drag-and-drop and keyboard navigation can work seamlessly across column boundaries
 - No formatting concerns - basic HTML/UI is fine
 - Mobile compatibility: Use touch-friendly drag-and-drop (already implemented in 031)
 

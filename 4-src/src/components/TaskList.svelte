@@ -2,7 +2,7 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
-  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskOrderCrossList, updateTaskText, updateListName } from '../lib/dataAccess.js';
+  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskOrderCrossList, updateTaskText, updateListName, createUnnamedList } from '../lib/dataAccess.js';
   import TaskEditModal from './TaskEditModal.svelte';
   import ListEditModal from './ListEditModal.svelte';
   import AddTaskInput from './AddTaskInput.svelte';
@@ -10,7 +10,7 @@
   import { isEmpty, normalizeInput } from '../lib/inputValidation.js';
   import { TASK_WIDTH } from '../lib/constants.js';
   
-  let { listId, listName, newTaskInput, onInputChange } = $props();
+  let { listId, listName, newTaskInput, onInputChange, allLists = [] } = $props();
   
   // Create liveQuery at top level - capture listId in closure
   // This creates the query once and it will automatically update when database changes
@@ -60,12 +60,14 @@
   });
   
   // Add capture-phase keyboard handler to prevent drag library from intercepting Enter on task text
+  // Also handles cross-list movement when tasks are at boundaries
   $effect(() => {
     if (!ulElement) return;
     
-    function handleKeydownCapture(e) {
-      // If Enter/Space is pressed on task text span (has data-no-drag attribute), handle it here
+    async function handleKeydownCapture(e) {
       const target = e.target;
+      
+      // Handle Enter/Space on task text for editing
       if ((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.hasAttribute('data-no-drag')) {
         e.preventDefault();
         e.stopImmediatePropagation(); // Stop ALL handlers including drag library
@@ -92,6 +94,62 @@
             editModalOpen = true;
           }
         }
+        return;
+      }
+      
+      // Handle cross-list movement at boundaries
+      // svelte-dnd-action uses Space to start dragging, then Arrow keys to move
+      // We need to intercept when at boundaries
+      // Check for any arrow key combination that might be used for navigation
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        // Find the focused task - check if any task element has focus
+        const activeElement = document.activeElement;
+        if (!activeElement) return;
+        
+        // Find the task li element that contains the focused element
+        const focusedLi = activeElement.closest('li[data-id]');
+        if (!focusedLi || !ulElement.contains(focusedLi)) return;
+        
+        const taskIdAttr = focusedLi.getAttribute('data-id');
+        if (!taskIdAttr) return;
+        
+        const taskId = parseInt(taskIdAttr);
+        const task = draggableTasks.find(t => t.id === taskId);
+        if (!task) return;
+        
+        const taskIndex = draggableTasks.findIndex(t => t.id === taskId);
+        const isFirst = taskIndex === 0;
+        const isLast = taskIndex === draggableTasks.length - 1;
+        
+        // Check if we're at a boundary and trying to move in that direction
+        // Only intercept if we're actually at the boundary
+        if (e.key === 'ArrowDown' && isLast) {
+          // Move to next list - prevent default and handle cross-list movement
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          
+          const currentListIndex = allLists.findIndex(l => l.id === listId);
+          if (currentListIndex < allLists.length - 1) {
+            // Move to next list
+            const nextListId = allLists[currentListIndex + 1].id;
+            await moveTaskToNextList(taskId, nextListId);
+          } else {
+            // Last list - create new unnamed list
+            await moveTaskToNewList(taskId);
+          }
+        } else if (e.key === 'ArrowUp' && isFirst) {
+          // Move to previous list - prevent default and handle cross-list movement
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          
+          const currentListIndex = allLists.findIndex(l => l.id === listId);
+          if (currentListIndex > 0) {
+            // Move to previous list
+            const prevListId = allLists[currentListIndex - 1].id;
+            await moveTaskToPreviousList(taskId, prevListId);
+          }
+          // If at first list, do nothing (already at top)
+        }
       }
     }
     
@@ -102,12 +160,112 @@
     };
   });
   
+  // Move task to next list (first position)
+  async function moveTaskToNextList(taskId, nextListId) {
+    try {
+      // Get all tasks from next list
+      const nextListTasks = await getTasksForList(nextListId);
+      // Create new array with this task at the beginning
+      const newTasks = [{ id: taskId }, ...nextListTasks];
+      await updateTaskOrderCrossList(nextListId, newTasks);
+    } catch (error) {
+      console.error('Error moving task to next list:', error);
+    }
+  }
+  
+  // Move task to previous list (last position)
+  async function moveTaskToPreviousList(taskId, prevListId) {
+    try {
+      // Get all tasks from previous list
+      const prevListTasks = await getTasksForList(prevListId);
+      // Create new array with this task at the end
+      const newTasks = [...prevListTasks, { id: taskId }];
+      await updateTaskOrderCrossList(prevListId, newTasks);
+    } catch (error) {
+      console.error('Error moving task to previous list:', error);
+    }
+  }
+  
+  // Move task to new unnamed list
+  async function moveTaskToNewList(taskId) {
+    try {
+      const newListId = await createUnnamedList();
+      // New list is empty, so just this task
+      await updateTaskOrderCrossList(newListId, [{ id: taskId }]);
+    } catch (error) {
+      console.error('Error moving task to new list:', error);
+    }
+  }
+  
   // Handle drag events - consider event for visual reordering only
   function handleConsider(event) {
     // Update local state for visual feedback during drag
     // No database updates here - prevents liveQuery interference
     draggableTasks = event.detail.items;
   }
+  
+  // Add document-level keyboard listener for cross-list boundary movement
+  // This runs before svelte-dnd-action handlers
+  $effect(() => {
+    if (!ulElement) return;
+    
+    async function handleDocumentKeydown(e) {
+      // Only handle arrow keys
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      
+      // Check if focus is within this list
+      const activeElement = document.activeElement;
+      if (!activeElement) return;
+      
+      const focusedLi = activeElement.closest('li[data-id]');
+      if (!focusedLi || !ulElement.contains(focusedLi)) return;
+      
+      const taskIdAttr = focusedLi.getAttribute('data-id');
+      if (!taskIdAttr) return;
+      
+      const taskId = parseInt(taskIdAttr);
+      const task = draggableTasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      const taskIndex = draggableTasks.findIndex(t => t.id === taskId);
+      const isFirst = taskIndex === 0;
+      const isLast = taskIndex === draggableTasks.length - 1;
+      
+      // Check if we're at a boundary and trying to move in that direction
+      if (e.key === 'ArrowDown' && isLast) {
+        // Move to next list
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+        
+        const currentListIndex = allLists.findIndex(l => l.id === listId);
+        if (currentListIndex < allLists.length - 1) {
+          const nextListId = allLists[currentListIndex + 1].id;
+          await moveTaskToNextList(taskId, nextListId);
+        } else {
+          await moveTaskToNewList(taskId);
+        }
+      } else if (e.key === 'ArrowUp' && isFirst) {
+        // Move to previous list
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+        
+        const currentListIndex = allLists.findIndex(l => l.id === listId);
+        if (currentListIndex > 0) {
+          const prevListId = allLists[currentListIndex - 1].id;
+          await moveTaskToPreviousList(taskId, prevListId);
+        }
+      }
+    }
+    
+    // Use capture phase to intercept before svelte-dnd-action
+    document.addEventListener('keydown', handleDocumentKeydown, true);
+    
+    return () => {
+      document.removeEventListener('keydown', handleDocumentKeydown, true);
+    };
+  });
   
   // Handle drag events - finalize event for database updates
   async function handleFinalize(event) {

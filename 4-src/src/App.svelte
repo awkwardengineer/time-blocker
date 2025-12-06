@@ -347,6 +347,7 @@
               listName={list.name ?? 'Unnamed list'}
               newTaskInput={newTaskInputs[list.id] || ''}
               onInputChange={(value) => handleInputChange(list.id, value)}
+              allLists={$lists}
             />
           {/each}
           
