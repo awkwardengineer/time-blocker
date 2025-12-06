@@ -2,7 +2,7 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
-  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateListName } from '../lib/dataAccess.js';
+  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskOrderCrossList, updateTaskText, updateListName } from '../lib/dataAccess.js';
   import TaskEditModal from './TaskEditModal.svelte';
   import ListEditModal from './ListEditModal.svelte';
   import AddTaskInput from './AddTaskInput.svelte';
@@ -115,9 +115,9 @@
     draggableTasks = event.detail.items;
     
     // Update database with new order values
-    // Calculate sequential order values (0, 1, 2, 3...) based on new positions
+    // Supports both same-list reordering and cross-list moves
     try {
-      await updateTaskOrder(listId, event.detail.items);
+      await updateTaskOrderCrossList(listId, event.detail.items);
       // liveQuery will automatically update the UI after database changes
     } catch (error) {
       console.error('Error updating task order:', error);
@@ -522,78 +522,77 @@
     {listName}
   </h2>
   {#if tasksQuery && $tasksQuery !== undefined}
-    {#if $tasksQuery.length === 0}
-      <AddTaskInput
-        bind:isInputActive={isInputActive}
-        bind:containerElement={addTaskContainerElement}
-        bind:textareaElement={addTaskTextareaElement}
-        inputValue={newTaskInput}
-        onInputChange={onInputChange}
-        onSave={handleCreateTask}
-        onEscape={handleInputEscape}
-        onActivate={handleAddTaskClick}
-        buttonText="Add your first task"
-        placeholder="Add new task..."
-        ariaLabel="Add your first task to {listName}"
-        marginLeft={true}
-      />
-    {:else}
-      <div class="task-list-wrapper">
-        <ul 
-          bind:this={ulElement}
-          use:dndzone={{ 
-            items: draggableTasks,
-            type: `list-${listId}` // Unique type per list - prevents cross-list dragging
-            // TODO (milestone 050): Remove type or use shared type to enable cross-list dragging
-          }}
-          onconsider={handleConsider}
-          onfinalize={handleFinalize}
-          class="space-y-2"
-        >
-          {#each draggableTasks as task (task.id)}
-            <li data-id={task.id} class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-fit">
-              <span 
-                class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
-                title="Drag to reorder"
-                tabindex="-1"
-                aria-hidden="true"
+    <div class="task-list-wrapper">
+      <ul 
+        bind:this={ulElement}
+        use:dndzone={{ 
+          items: draggableTasks,
+          type: 'task' // Shared type for all lists - enables cross-list dragging
+        }}
+        onconsider={handleConsider}
+        onfinalize={handleFinalize}
+        class="space-y-2 {draggableTasks.length === 0 ? 'empty-drop-zone' : ''}"
+      >
+        {#each draggableTasks as task (task.id)}
+          <li data-id={task.id} class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-fit">
+            <span 
+              class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
+              title="Drag to reorder"
+              tabindex="-1"
+              aria-hidden="true"
+            >
+              ⋮⋮
+            </span>
+            <input
+              type="checkbox"
+              checked={task.status === 'checked'}
+              onchange={() => handleToggleTaskStatus(task.id, task.status)}
+              class="cursor-pointer"
+              aria-label={`Mark task "${task.text || 'blank task'}" as ${task.status === 'checked' ? 'unchecked' : 'checked'}`}
+            />
+            <span 
+              class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words' : 'cursor-pointer hover:underline break-words'}
+              style="width: {TASK_WIDTH}px;"
+              onclick={(e) => handleTaskTextClick(task.id, task.text, e)}
+              role="button"
+              tabindex="0"
+              contenteditable="false"
+              data-no-drag="true"
+              aria-label={`Edit task: ${task.text || 'blank task'}`}
+              onkeydown={(e) => handleTaskTextKeydown(task.id, task.text, e)}
+            >
+              {task.text || '\u00A0'}
+            </span>
+            {#if task.status === 'checked'}
+              <button 
+                onclick={() => handleArchiveTask(task.id)}
+                class="px-2 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+                aria-label={`Archive task: ${task.text || 'blank task'}`}
               >
-                ⋮⋮
-              </span>
-              <input
-                type="checkbox"
-                checked={task.status === 'checked'}
-                onchange={() => handleToggleTaskStatus(task.id, task.status)}
-                class="cursor-pointer"
-                aria-label={`Mark task "${task.text || 'blank task'}" as ${task.status === 'checked' ? 'unchecked' : 'checked'}`}
-              />
-              <span 
-                class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words' : 'cursor-pointer hover:underline break-words'}
-                style="width: {TASK_WIDTH}px;"
-                onclick={(e) => handleTaskTextClick(task.id, task.text, e)}
-                role="button"
-                tabindex="0"
-                contenteditable="false"
-                data-no-drag="true"
-                aria-label={`Edit task: ${task.text || 'blank task'}`}
-                onkeydown={(e) => handleTaskTextKeydown(task.id, task.text, e)}
-              >
-                {task.text || '\u00A0'}
-              </span>
-              {#if task.status === 'checked'}
-                <button 
-                  onclick={() => handleArchiveTask(task.id)}
-                  class="px-2 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
-                  aria-label={`Archive task: ${task.text || 'blank task'}`}
-                >
-                  Archive
-                </button>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-        
-        <!-- Add Task button - styled like a task item, positioned to align with list items -->
+                Archive
+              </button>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+      
+      <!-- Add Task button - styled like a task item, positioned to align with list items -->
+      {#if draggableTasks.length === 0}
+        <AddTaskInput
+          bind:isInputActive={isInputActive}
+          bind:containerElement={addTaskContainerElement}
+          bind:textareaElement={addTaskTextareaElement}
+          inputValue={newTaskInput}
+          onInputChange={onInputChange}
+          onSave={handleCreateTask}
+          onEscape={handleInputEscape}
+          onActivate={handleAddTaskClick}
+          buttonText="Add your first task"
+          placeholder="Add new task..."
+          ariaLabel="Add your first task to {listName}"
+          marginLeft={true}
+        />
+      {:else}
         <AddTaskInput
           bind:isInputActive={isInputActive}
           bind:containerElement={addTaskContainerElement}
@@ -608,8 +607,8 @@
           ariaLabel="Add new task to {listName}"
           marginLeft={true}
         />
-      </div>
-    {/if}
+      {/if}
+    </div>
   {:else}
     <p>Loading tasks...</p>
     <!-- Add Task button - show during loading too -->
@@ -634,6 +633,11 @@
   .task-list-wrapper ul {
     margin: 0;
     padding-left: 1.5rem; /* Standard ul indentation */
+  }
+  
+  .task-list-wrapper ul.empty-drop-zone {
+    min-height: 0;
+    padding-bottom: 0.5rem; /* Small padding for drop zone, but minimal visual gap */
   }
   
   .task-list-wrapper .add-task-container {

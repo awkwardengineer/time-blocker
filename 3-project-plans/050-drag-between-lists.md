@@ -16,38 +16,38 @@ Enable users to drag tasks between different lists using drag-and-drop. When a t
 
 ## Implementation Steps
 
-1. **Extend Drag-and-Drop Implementation**
-   - Remove or modify the `type` parameter restriction from milestone [[031-task-reordering]] (currently `type: 'list-${listId}'` prevents cross-list dragging)
-   - Either remove `type` entirely or use a shared `type` value for all lists to enable cross-list dragging
-   - Configure drop zones for each list (already done in 031)
-   - Allow dragging between different list drop zones
-   - Prevent dragging archived tasks between lists
+1. **Extend Drag-and-Drop Implementation** ✅
+   - Remove or modify the `type` parameter restriction from milestone [[031-task-reordering]] (currently `type: 'list-${listId}'` prevents cross-list dragging) ✅
+   - Either remove `type` entirely or use a shared `type` value for all lists to enable cross-list dragging ✅
+   - Configure drop zones for each list (already done in 031) ✅
+   - Allow dragging between different list drop zones ✅
+   - Prevent dragging archived tasks between lists ✅ (archived tasks are filtered out from draggableTasks)
 
-2. **Implement Cross-List Drop Logic**
-   - Detect when task is dropped in a different list
-   - Calculate new `order` value for task in destination list
-   - Update `order` values for tasks in destination list (shift existing tasks if inserting)
-   - Update `order` values for remaining tasks in source list (close gap left by moved task)
-   - Update task's `listId` in IndexedDB
-   - Maintain sequential ordering in both lists (no gaps)
+2. **Implement Cross-List Drop Logic** ✅
+   - Detect when task is dropped in a different list ✅
+   - Calculate new `order` value for task in destination list ✅
+   - Update `order` values for tasks in destination list (shift existing tasks if inserting) ✅
+   - Update `order` values for remaining tasks in source list (close gap left by moved task) ✅
+   - Update task's `listId` in IndexedDB ✅
+   - Maintain sequential ordering in both lists (no gaps) ✅
 
-3. **Handle Drop Position**
-   - Determine drop position within destination list (insert at position or append to end)
-   - Calculate appropriate `order` value based on drop position
-   - Shift existing tasks in destination list if inserting at specific position
-   - Handle edge cases (dropping at beginning, middle, end of list)
+3. **Handle Drop Position** ✅
+   - Determine drop position within destination list (insert at position or append to end) ✅ (handled by svelte-dnd-action - items array reflects drop position)
+   - Calculate appropriate `order` value based on drop position ✅ (array index becomes order value)
+   - Shift existing tasks in destination list if inserting at specific position ✅ (order recalculated for all tasks in destination)
+   - Handle edge cases (dropping at beginning, middle, end of list) ✅ (sequential ordering handles all positions)
 
-4. **Update Source List Order**
-   - When task is moved, recalculate `order` values for remaining tasks in source list
-   - Close gap left by moved task (e.g., if task with order 2 is moved, tasks 3, 4, 5 become 2, 3, 4)
-   - Maintain sequential ordering (no gaps)
+4. **Update Source List Order** ✅
+   - When task is moved, recalculate `order` values for remaining tasks in source list ✅
+   - Close gap left by moved task (e.g., if task with order 2 is moved, tasks 3, 4, 5 become 2, 3, 4) ✅
+   - Maintain sequential ordering (no gaps) ✅
 
-5. **Handle Edge Cases**
-   - Moving task to empty list (order = 0)
-   - Moving task to list with single task
-   - Moving task to same list (should this be prevented or handled gracefully?)
-   - Moving last task from a list (list becomes empty)
-   - Moving task between lists with different task counts
+5. **Handle Edge Cases** ✅
+   - Moving task to empty list (order = 0) ✅ (handled - first task gets order 0)
+   - Moving task to list with single task ✅ (handled - order recalculated correctly)
+   - Moving task to same list (should this be prevented or handled gracefully?) ✅ (handled gracefully - treated as reorder within same list)
+   - Moving last task from a list (list becomes empty) ✅ (handled - source list has 0 tasks, no order recalculation needed)
+   - Moving task between lists with different task counts ✅ (handled - orders recalculated independently for each list)
 
 6. **Data Persistence**
    - Verify `listId` updates persist to IndexedDB

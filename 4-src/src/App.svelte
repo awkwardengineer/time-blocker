@@ -1,7 +1,8 @@
 <script>
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
-  import { getAllLists, createList, createTask } from './lib/dataAccess.js';
+  import { dndzone } from 'svelte-dnd-action';
+  import { getAllLists, createList, createTask, createUnnamedList, updateTaskOrderCrossList } from './lib/dataAccess.js';
   import db from './lib/db.js';
   import TaskList from './components/TaskList.svelte';
   import ArchivedView from './components/ArchivedView.svelte';
@@ -24,6 +25,10 @@
   let isUnnamedListInputActive = $state(false);
   let unnamedListTaskInput = $state('');
   let unnamedListInputElement = $state(null);
+  
+  // State for drop zone on "Create new list" section
+  let createListDropZoneItems = $state([]);
+  let createListDropZoneElement = $state(null);
   
   // Initialize inputs when lists first load (only once)
   $effect(() => {
@@ -287,6 +292,36 @@
       console.error('Error creating task in unnamed list:', error);
     }
   }
+  
+  // Handle drag events for "Create new list" drop zone - consider event for visual feedback
+  function handleCreateListConsider(event) {
+    // Update local state for visual feedback during drag
+    createListDropZoneItems = event.detail.items;
+  }
+  
+  // Handle drag events for "Create new list" drop zone - finalize event to create list and move task
+  async function handleCreateListFinalize(event) {
+    // Update local state for immediate visual feedback
+    createListDropZoneItems = event.detail.items;
+    
+    // If a task was dropped, create an unnamed list and move the task to it
+    if (event.detail.items && event.detail.items.length > 0) {
+      try {
+        // Create an unnamed list
+        const newListId = await createUnnamedList();
+        
+        // Move the dropped task(s) to the new list
+        await updateTaskOrderCrossList(newListId, event.detail.items);
+        
+        // Reset the drop zone items
+        createListDropZoneItems = [];
+      } catch (error) {
+        console.error('Error creating list from dropped task:', error);
+        // Reset on error
+        createListDropZoneItems = [];
+      }
+    }
+  }
 </script>
 
 <main class="min-h-screen flex flex-col items-center justify-center bg-gray-50 print:bg-white print:min-h-0 print:gap-0 print:py-0 gap-4 py-8">
@@ -356,6 +391,47 @@
               Create new list
             </h2>
           {/if}
+          
+          <!-- Drop zone for creating new list from dragged task -->
+          <div class="create-list-drop-zone print:hidden">
+            <ul
+              bind:this={createListDropZoneElement}
+              use:dndzone={{
+                items: createListDropZoneItems,
+                type: 'task' // Shared type for all lists - enables cross-list dragging
+              }}
+              onconsider={handleCreateListConsider}
+              onfinalize={handleCreateListFinalize}
+              class="create-list-drop-zone-ul"
+            >
+              {#each createListDropZoneItems as task (task.id)}
+                <li data-id={task.id} class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-fit">
+                  <span 
+                    class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
+                    title="Drag to reorder"
+                    tabindex="-1"
+                    aria-hidden="true"
+                  >
+                    ⋮⋮
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={task.status === 'checked'}
+                    disabled
+                    class="cursor-pointer opacity-50"
+                    aria-hidden="true"
+                    tabindex="-1"
+                  />
+                  <span 
+                    class={task.status === 'checked' ? 'line-through break-words' : 'break-words'}
+                    style="width: {TASK_WIDTH}px;"
+                  >
+                    {task.text || '\u00A0'}
+                  </span>
+                </li>
+              {/each}
+            </ul>
+          </div>
           
           <!-- Add task button for creating unnamed list (task 3b) -->
           {#if isUnnamedListInputActive}
@@ -454,6 +530,18 @@
   
   .create-list-input::placeholder {
     opacity: 0.5;
+  }
+  
+  .create-list-drop-zone {
+    position: relative;
+  }
+  
+  .create-list-drop-zone-ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    min-height: 0;
+    padding-bottom: 0.5rem; /* Small padding for drop zone */
   }
   
   @media print {

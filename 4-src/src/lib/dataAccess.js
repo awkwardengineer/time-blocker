@@ -272,6 +272,68 @@ export async function updateTaskOrder(listId, reorderedTasks) {
 }
 
 /**
+ * Update task order with support for cross-list moves
+ * Handles both same-list reordering and cross-list dragging
+ * @param {number} destinationListId - The ID of the list where tasks were dropped
+ * @param {Array<{id: number}>} newTasks - Array of tasks in their new order in the destination list (must include id field)
+ * @returns {Promise<void>}
+ */
+export async function updateTaskOrderCrossList(destinationListId, newTasks) {
+  if (!newTasks || newTasks.length === 0) {
+    // If destination list is now empty, we still need to update source lists
+    // Get all tasks that might have been moved out
+    // But actually, if newTasks is empty, there's nothing to do
+    return;
+  }
+  
+  const taskIds = newTasks.map(t => t.id);
+  const currentTasks = await db.tasks.bulkGet(taskIds);
+  
+  // Filter out any tasks that don't exist
+  const validTasks = currentTasks.filter(t => t !== undefined);
+  if (validTasks.length === 0) {
+    return; // No valid tasks
+  }
+  
+  // Identify tasks that changed lists (moved from another list to this one)
+  const movedTasks = validTasks.filter(t => t.listId !== destinationListId);
+  const sourceListIds = new Set(movedTasks.map(t => t.listId));
+  
+  // Update all tasks in a transaction for atomicity
+  await db.transaction('rw', db.tasks, async () => {
+    // Step 1: Update listId and order for tasks in destination list
+    for (let index = 0; index < newTasks.length; index++) {
+      const taskId = newTasks[index].id;
+      const currentTask = validTasks.find(t => t.id === taskId);
+      if (!currentTask) continue;
+      
+      const updates = { order: index };
+      // Update listId if task moved from another list
+      if (currentTask.listId !== destinationListId) {
+        updates.listId = destinationListId;
+      }
+      
+      await db.tasks.update(taskId, updates);
+    }
+    
+    // Step 2: Recalculate order for source lists (tasks that were moved out)
+    for (const sourceListId of sourceListIds) {
+      // Get all remaining tasks in the source list (excluding archived)
+      const remainingTasks = await db.tasks
+        .where('listId')
+        .equals(sourceListId)
+        .filter(task => task.status !== 'archived')
+        .sortBy('order');
+      
+      // Recalculate sequential order values (0, 1, 2, 3...)
+      for (let index = 0; index < remainingTasks.length; index++) {
+        await db.tasks.update(remainingTasks[index].id, { order: index });
+      }
+    }
+  });
+}
+
+/**
  * Permanently delete a task from the database
  * This is a destructive operation - use with caution
  * @param {number} taskId - The ID of the task to delete
