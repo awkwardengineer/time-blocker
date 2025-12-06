@@ -142,10 +142,10 @@ Right now, all the textareas use the same hardcoded `160px` max height. But when
 - Replace all hard-coded values
 
 **Acceptance Criteria:**
-- [ ] Constants file created
-- [ ] All magic numbers replaced
-- [ ] Tests still pass
-- [ ] Visual appearance unchanged
+- ✅ Constants file created
+- ✅ All magic numbers replaced
+- ✅ Tests still pass
+- ✅ Visual appearance unchanged
 
 ---
 

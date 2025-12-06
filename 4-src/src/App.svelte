@@ -7,10 +7,7 @@
   import ArchivedView from './components/ArchivedView.svelte';
   import { useClickOutside } from './lib/useClickOutside.js';
   import { isEmpty, normalizeInput } from './lib/inputValidation.js';
-  
-  // Constants for retry mechanism
-  const MAX_RETRY_ATTEMPTS = 25; // Maximum attempts to find element
-  const RETRY_INTERVAL = 10; // Milliseconds between retry attempts
+  import { MAX_RETRY_ATTEMPTS, RETRY_INTERVAL_MS, PRINT_CONTAINER_WIDTH, PRINT_CONTAINER_HEIGHT, SPACING_4, MAX_TEXTAREA_HEIGHT, TASK_WIDTH } from './lib/constants.js';
   
   // Reactive query for lists - automatically updates when lists change
   let lists = liveQuery(() => getAllLists());
@@ -79,19 +76,19 @@
     for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
       const listSection = document.querySelector(`[data-list-id="${listId}"]`);
       if (!listSection) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
+        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL_MS));
         continue;
       }
       
       const addTaskContainer = listSection.querySelector('.add-task-container');
       if (!addTaskContainer) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
+        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL_MS));
         continue;
       }
       
       const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
       if (!addTaskSpan || !(addTaskSpan instanceof HTMLElement)) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
+        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL_MS));
         continue;
       }
       
@@ -238,7 +235,7 @@
         // Auto-resize textarea to fit content
         if (unnamedListInputElement instanceof HTMLTextAreaElement) {
           unnamedListInputElement.style.height = 'auto';
-          unnamedListInputElement.style.height = `${Math.min(unnamedListInputElement.scrollHeight, 160)}px`;
+          unnamedListInputElement.style.height = `${Math.min(unnamedListInputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
         }
       }, 0);
     }
@@ -249,7 +246,7 @@
     if (unnamedListInputElement && unnamedListInputElement instanceof HTMLTextAreaElement) {
       const resizeTextarea = () => {
         unnamedListInputElement.style.height = 'auto';
-        unnamedListInputElement.style.height = `${Math.min(unnamedListInputElement.scrollHeight, 160)}px`;
+        unnamedListInputElement.style.height = `${Math.min(unnamedListInputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
       };
       
       unnamedListInputElement.addEventListener('input', resizeTextarea);
@@ -293,7 +290,7 @@
 </script>
 
 <main class="min-h-screen flex flex-col items-center justify-center bg-gray-50 print:bg-white print:min-h-0 print:gap-0 print:py-0 gap-4 py-8">
-  <div class="w-[1056px] flex justify-end print:hidden">
+  <div class="flex justify-end print:hidden" style="width: {PRINT_CONTAINER_WIDTH}px;">
     <button
       onclick={handlePrint}
       class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -301,7 +298,7 @@
       Print
     </button>
   </div>
-  <div class="w-[1056px] h-[816px] bg-gray-400 print:bg-gray-400 border-2 border-gray-300 shadow-lg print:shadow-none print:border-0 print:mx-auto relative">
+  <div class="bg-gray-400 print:bg-gray-400 border-2 border-gray-300 shadow-lg print:shadow-none print:border-0 print:mx-auto relative" style="width: {PRINT_CONTAINER_WIDTH}px; height: {PRINT_CONTAINER_HEIGHT}px;">
     <div class="absolute inset-[16px] border border-red-600" style="border-color: rgb(220, 38, 38);">
       <div class="w-full h-full p-4 overflow-auto">
         {#if $lists === undefined || $lists === null}
@@ -387,7 +384,8 @@
                       handleUnnamedListInputEscape(e);
                     }
                   }}
-                  class="w-[150px] flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
+                  class="flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
+                  style="width: {TASK_WIDTH}px;"
                   rows="1"
                 ></textarea>
                 <button
@@ -411,7 +409,8 @@
                 tabindex="-1"
               />
               <span 
-                class="w-[150px] cursor-pointer hover:underline break-words"
+                class="cursor-pointer hover:underline break-words"
+                style="width: {TASK_WIDTH}px;"
                 onclick={handleUnnamedListAddTaskClick}
                 onkeydown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {

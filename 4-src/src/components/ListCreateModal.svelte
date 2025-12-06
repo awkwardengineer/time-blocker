@@ -1,4 +1,6 @@
 <script>
+  import { SPACING_4 } from '../lib/constants.js';
+  
   let { isOpen, buttonPosition, onSave, onCancel } = $props();
   
   let listName = $state('');
@@ -15,7 +17,7 @@
     if (buttonPosition) {
       const modalPaddingTop = 24; // p-6 = 1.5rem = 24px
       const titleHeight = 24; // Approximate h3 height
-      const titleMarginBottom = 16; // mb-4 = 1rem = 16px
+      const titleMarginBottom = SPACING_4; // mb-4 = 1rem = 16px
       const inputPaddingTop = 8; // py-2 = 0.5rem = 8px
       const offsetToInputTop = modalPaddingTop + titleHeight + titleMarginBottom + inputPaddingTop;
       

@@ -8,6 +8,7 @@
   import AddTaskInput from './AddTaskInput.svelte';
   import { useClickOutside } from '../lib/useClickOutside.js';
   import { isEmpty, normalizeInput } from '../lib/inputValidation.js';
+  import { TASK_WIDTH } from '../lib/constants.js';
   
   let { listId, listName, newTaskInput, onInputChange } = $props();
   
@@ -577,7 +578,8 @@
                 aria-label={`Mark task "${task.text || 'blank task'}" as ${task.status === 'checked' ? 'unchecked' : 'checked'}`}
               />
               <span 
-                class={task.status === 'checked' ? 'line-through w-[150px] cursor-pointer hover:underline break-words' : 'w-[150px] cursor-pointer hover:underline break-words'}
+                class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words' : 'cursor-pointer hover:underline break-words'}
+                style="width: {TASK_WIDTH}px;"
                 onclick={(e) => handleTaskTextClick(task.id, task.text, e)}
                 role="button"
                 tabindex="0"

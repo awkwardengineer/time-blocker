@@ -1,4 +1,6 @@
 <script>
+  import { MAX_TEXTAREA_HEIGHT, TASK_WIDTH } from '../lib/constants.js';
+  
   let {
     isInputActive = $bindable(false),
     inputValue = '',
@@ -23,7 +25,7 @@
         // Auto-resize textarea to fit content
         if (inputElement instanceof HTMLTextAreaElement) {
           inputElement.style.height = 'auto';
-          inputElement.style.height = `${Math.min(inputElement.scrollHeight, 160)}px`; // max-h-[10rem] = 160px
+          inputElement.style.height = `${Math.min(inputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`; // max-h-[10rem] = 160px
         }
       }, 0);
     }
@@ -34,7 +36,7 @@
     if (inputElement && inputElement instanceof HTMLTextAreaElement) {
       const resizeTextarea = () => {
         inputElement.style.height = 'auto';
-        inputElement.style.height = `${Math.min(inputElement.scrollHeight, 160)}px`;
+        inputElement.style.height = `${Math.min(inputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
       };
       
       inputElement.addEventListener('input', resizeTextarea);
@@ -83,7 +85,8 @@
         value={inputValue}
         oninput={(e) => onInputChange?.(e.currentTarget.value)}
         onkeydown={handleKeydown}
-        class="w-[150px] flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
+        class="flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
+        style="width: {TASK_WIDTH}px;"
         rows="1"
       ></textarea>
       <button
@@ -105,7 +108,8 @@
       tabindex="-1"
     />
     <span 
-      class="w-[150px] cursor-pointer hover:underline break-words"
+      class="cursor-pointer hover:underline break-words"
+      style="width: {TASK_WIDTH}px;"
       onclick={onActivate}
       onkeydown={handleButtonKeydown}
       role="button"

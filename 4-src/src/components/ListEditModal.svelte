@@ -1,4 +1,6 @@
 <script>
+  import { SPACING_4 } from '../lib/constants.js';
+  
   let { isOpen, listId, listName, listPosition, onSave, onCancel } = $props();
   
   let editedName = $state(listName || '');
@@ -23,13 +25,13 @@
     // We want the input field's top edge to align with the list name's top edge
     const modalPaddingTop = 24; // p-6 = 1.5rem = 24px
     const titleHeight = 24; // Approximate h3 height
-    const titleMarginBottom = 16; // mb-4 = 1rem = 16px
+    const titleMarginBottom = SPACING_4; // mb-4 = 1rem = 16px
     const inputPaddingTop = 8; // py-2 = 0.5rem = 8px
     const offsetToInputTop = modalPaddingTop + titleHeight + titleMarginBottom + inputPaddingTop - 8; // Reduced by 8px to shift down
     
     // Position modal so input aligns with list name
     const top = listPosition.top - offsetToInputTop;
-    const left = listPosition.left - 16; // Small shift left to account for padding
+    const left = listPosition.left - SPACING_4; // Small shift left to account for padding
     // Match the list name width plus padding on both sides (24px each = 48px)
     const width = Math.max(listPosition.width + 48, 300); // Minimum width of 300px
     

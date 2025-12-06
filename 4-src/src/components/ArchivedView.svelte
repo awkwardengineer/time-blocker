@@ -2,6 +2,7 @@
   import { liveQuery } from 'dexie';
   import { getArchivedTasks, restoreTask, deleteTask, getAllLists } from '../lib/dataAccess.js';
   import ConfirmationModal from './ConfirmationModal.svelte';
+  import { PRINT_CONTAINER_WIDTH } from '../lib/constants.js';
   
   // Create liveQuery for archived tasks
   let archivedTasksQuery = $state(null);
@@ -63,7 +64,7 @@
   }
 </script>
 
-<div class="w-[1056px] mt-8 print:hidden">
+<div class="mt-8 print:hidden" style="width: {PRINT_CONTAINER_WIDTH}px;">
   <h2 class="text-xl font-semibold mb-4">Archived Tasks</h2>
   {#if archivedTasksQuery && $archivedTasksQuery}
     {#if $archivedTasksQuery.length === 0}

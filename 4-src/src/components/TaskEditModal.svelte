@@ -1,4 +1,6 @@
 <script>
+  import { MAX_TEXTAREA_HEIGHT, TASK_WIDTH, SPACING_4 } from '../lib/constants.js';
+  
   let { isOpen, taskId, taskText, taskPosition, onSave, onCancel, onArchive } = $props();
   
   let editedText = $state(taskText || '');
@@ -23,7 +25,7 @@
     // We want the input field's top edge to align with the task text's top edge
     const modalPaddingTop = 24; // p-6 = 1.5rem = 24px
     const titleHeight = 24; // Approximate h3 height
-    const titleMarginBottom = 16; // mb-4 = 1rem = 16px
+    const titleMarginBottom = SPACING_4; // mb-4 = 1rem = 16px
     const inputPaddingTop = 8; // py-2 = 0.5rem = 8px
     const offsetToInputTop = modalPaddingTop + titleHeight + titleMarginBottom + inputPaddingTop - 8; // Reduced by 8px to shift down
     
@@ -31,8 +33,8 @@
     // Small offset to account for checkbox alignment
     const checkboxOffset = 10; // Small adjustment for checkbox alignment
     const top = taskPosition.top - offsetToInputTop;
-    const left = taskPosition.left - 16 + checkboxOffset; // Small shift right to align with text
-    // Match the task text width (150px) plus padding on both sides (24px each = 48px)
+    const left = taskPosition.left - SPACING_4 + checkboxOffset; // Small shift right to align with text
+    // Match the task text width plus padding on both sides (24px each = 48px)
     const width = taskPosition.width + 48; // Add padding on both sides (24px each)
     
     return `background-color: white; z-index: 10000; top: ${top}px; left: ${left}px; width: ${width}px;`;
@@ -55,7 +57,7 @@
         // Auto-resize textarea to fit content
         if (inputElement instanceof HTMLTextAreaElement) {
           inputElement.style.height = 'auto';
-          inputElement.style.height = `${Math.min(inputElement.scrollHeight, 160)}px`; // max-h-[10rem] = 160px
+          inputElement.style.height = `${Math.min(inputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`; // max-h-[10rem] = 160px
         }
       }, 0);
     }
@@ -66,7 +68,7 @@
     if (inputElement && inputElement instanceof HTMLTextAreaElement) {
       const resizeTextarea = () => {
         inputElement.style.height = 'auto';
-        inputElement.style.height = `${Math.min(inputElement.scrollHeight, 160)}px`;
+        inputElement.style.height = `${Math.min(inputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
       };
       
       inputElement.addEventListener('input', resizeTextarea);
@@ -157,7 +159,8 @@
         <textarea
           bind:this={inputElement}
           bind:value={editedText}
-          class="task-input w-[150px] flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="task-input flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style="width: {TASK_WIDTH}px;"
           placeholder="Task text..."
           onkeydown={handleKeydown}
           aria-label="Edit task text"
