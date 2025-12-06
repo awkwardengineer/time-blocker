@@ -1,5 +1,6 @@
 <script>
   import { liveQuery } from 'dexie';
+  import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
   import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateListName } from '../lib/dataAccess.js';
   import TaskEditModal from './TaskEditModal.svelte';
@@ -187,12 +188,30 @@
   });
   
   async function handleCreateTask() {
-    const inputValue = newTaskInput || '';
+    // Read value directly from DOM element (more reliable than prop)
+    // Similar to how useClickOutside checks the value
+    const listSection = document.querySelector(`[data-list-id="${listId}"]`);
+    let inputValue = newTaskInput || '';
+    
+    if (listSection) {
+      const addTaskContainer = listSection.querySelector('.add-task-container');
+      if (addTaskContainer) {
+        const textarea = addTaskContainer.querySelector('textarea');
+        if (textarea) {
+          inputValue = textarea.value || '';
+        }
+      }
+    }
     
     // Check if input is empty string "" - exit task creation
     if (inputValue === '') {
       isInputActive = false;
       onInputChange('');
+      // Wait for Svelte's reactive updates to complete
+      await tick();
+      // Wait for DOM to actually update (similar to waitFor in tests)
+      // tick() schedules updates, but DOM updates happen in next microtask
+      await new Promise(resolve => setTimeout(resolve, 0));
       return;
     }
     

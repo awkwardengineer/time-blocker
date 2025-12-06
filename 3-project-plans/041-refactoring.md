@@ -44,15 +44,16 @@ Improve code maintainability, reduce duplication, and eliminate magic numbers by
 - Use in all 3 locations
 
 **Acceptance Criteria:**
-- [x] Utility function created
-- [x] All 3 instances replaced
-- [x] Tests still pass
-- [x] Behavior unchanged
+- ✅ Utility function created
+- ✅ All 3 instances replaced
+- ✅ Tests still pass
+- ✅ Behavior unchanged
 
 ---
 
 ### 3. Extract Textarea Auto-Resize Utility
 **Priority: Medium**  
+**Status: ⏸️ POSTPONED**  
 **Files:** `4-src/src/App.svelte`, `4-src/src/components/TaskList.svelte`, `4-src/src/components/TaskEditModal.svelte`
 
 **Problem:**
@@ -70,6 +71,9 @@ Improve code maintainability, reduce duplication, and eliminate magic numbers by
 - [ ] All instances replaced
 - [ ] Tests still pass
 - [ ] Textarea behavior unchanged
+
+**Why Postponed (ELI5):**
+Right now, all the textareas use the same hardcoded `160px` max height. But when we add styling later, different textareas might need different sizes (like a small input vs. a big modal textarea). If we extract this utility now with a fixed size, we'd have to change it later anyway. It's like buying shoes for a kid who's still growing - better to wait until they're done growing (styling is done) before buying the perfect pair (extracting the utility). Plus, the duplication isn't causing problems right now, so there's no rush.
 
 ---
 
@@ -189,7 +193,8 @@ Improve code maintainability, reduce duplication, and eliminate magic numbers by
 ## Implementation Order
 
 1. **Start with high-priority items** (1-2) - biggest impact, most duplication
-2. **Then medium-priority** (3-5) - good improvements, manageable scope
+2. **Then medium-priority** (4-5) - good improvements, manageable scope
+   - ⏸️ Task 3 (auto-resize utility) postponed - sizes will change with styling
 3. **Finish with low-priority** (6-8) - polish and optimization
 
 ## Testing Strategy
@@ -205,4 +210,5 @@ Improve code maintainability, reduce duplication, and eliminate magic numbers by
 - No breaking changes to public APIs
 - Keep commits focused (one refactoring task per commit when possible)
 - Document any new utilities/components created
+- TODO: Check back on GitHub deployments which are failing
 
