@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import db from '../../lib/db.js'
-import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, deleteTask, updateListName, createList, createUnnamedList } from '../../lib/dataAccess.js'
+import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, updateTaskOrderCrossList, deleteTask, updateListName, createList, createUnnamedList } from '../../lib/dataAccess.js'
 
 describe('dataAccess', () => {
   beforeEach(async () => {
@@ -645,6 +645,232 @@ describe('dataAccess', () => {
       expect(persistedTasks[1].order).toBe(1)
       expect(persistedTasks[2].id).toBe(reorderedTasks[2].id)
       expect(persistedTasks[2].order).toBe(2)
+    })
+  })
+
+  describe('updateTaskOrderCrossList', () => {
+    it('should move task from one list to another and update listId', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1) // Second list
+      const list2 = lists.find(l => l.order === 0) // First list
+      const tasks1 = await getTasksForList(list1.id)
+      const tasks2 = await getTasksForList(list2.id)
+      
+      // Move first task from list1 to list2
+      const movedTask = tasks1[0]
+      const newTasks = [...tasks2, movedTask]
+      
+      await updateTaskOrderCrossList(list2.id, newTasks)
+      
+      // Verify task moved to list2
+      const updatedTasks2 = await getTasksForList(list2.id)
+      expect(updatedTasks2.length).toBe(2)
+      expect(updatedTasks2[1].id).toBe(movedTask.id)
+      expect(updatedTasks2[1].listId).toBe(list2.id)
+      expect(updatedTasks2[1].order).toBe(1)
+      
+      // Verify task removed from list1
+      const updatedTasks1 = await getTasksForList(list1.id)
+      expect(updatedTasks1.length).toBe(2)
+      expect(updatedTasks1.find(t => t.id === movedTask.id)).toBeUndefined()
+    })
+    
+    it('should recalculate order in destination list when inserting task', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const list2 = lists.find(l => l.order === 0)
+      const tasks1 = await getTasksForList(list1.id)
+      const tasks2 = await getTasksForList(list2.id)
+      
+      // Move task from list1 to middle of list2
+      const movedTask = tasks1[0]
+      const newTasks = [tasks2[0], movedTask] // Insert at position 1
+      
+      await updateTaskOrderCrossList(list2.id, newTasks)
+      
+      // Verify order in destination list
+      const updatedTasks2 = await getTasksForList(list2.id)
+      expect(updatedTasks2.length).toBe(2)
+      expect(updatedTasks2[0].id).toBe(tasks2[0].id)
+      expect(updatedTasks2[0].order).toBe(0)
+      expect(updatedTasks2[1].id).toBe(movedTask.id)
+      expect(updatedTasks2[1].order).toBe(1)
+    })
+    
+    it('should recalculate order in source list after task is moved out', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const list2 = lists.find(l => l.order === 0)
+      const tasks1 = await getTasksForList(list1.id)
+      const tasks2 = await getTasksForList(list2.id)
+      
+      // Move middle task from list1 (which has 3 tasks: order 0, 1, 2)
+      const movedTask = tasks1[1] // Task with order 1
+      const newTasks = [...tasks2, movedTask]
+      
+      await updateTaskOrderCrossList(list2.id, newTasks)
+      
+      // Verify order recalculated in source list (no gaps)
+      const updatedTasks1 = await getTasksForList(list1.id)
+      expect(updatedTasks1.length).toBe(2)
+      // Remaining tasks should have sequential order (0, 1)
+      expect(updatedTasks1[0].order).toBe(0)
+      expect(updatedTasks1[1].order).toBe(1)
+      // Verify no gaps
+      for (let i = 0; i < updatedTasks1.length; i++) {
+        expect(updatedTasks1[i].order).toBe(i)
+      }
+    })
+    
+    it('should handle same-list reordering (no listId change)', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const tasks1 = await getTasksForList(list1.id)
+      
+      // Reorder within same list
+      const reorderedTasks = [tasks1[1], tasks1[0], tasks1[2]]
+      
+      await updateTaskOrderCrossList(list1.id, reorderedTasks)
+      
+      // Verify order updated but listId unchanged
+      const updatedTasks = await getTasksForList(list1.id)
+      expect(updatedTasks.length).toBe(3)
+      expect(updatedTasks[0].id).toBe(reorderedTasks[0].id)
+      expect(updatedTasks[0].listId).toBe(list1.id)
+      expect(updatedTasks[0].order).toBe(0)
+      expect(updatedTasks[1].id).toBe(reorderedTasks[1].id)
+      expect(updatedTasks[1].order).toBe(1)
+      expect(updatedTasks[2].id).toBe(reorderedTasks[2].id)
+      expect(updatedTasks[2].order).toBe(2)
+    })
+    
+    it('should handle moving task to empty list', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const list3 = lists.find(l => l.order === 2) // Third list (empty)
+      const tasks1 = await getTasksForList(list1.id)
+      
+      // Move task to empty list
+      const movedTask = tasks1[0]
+      const newTasks = [movedTask]
+      
+      await updateTaskOrderCrossList(list3.id, newTasks)
+      
+      // Verify task in empty list
+      const updatedTasks3 = await getTasksForList(list3.id)
+      expect(updatedTasks3.length).toBe(1)
+      expect(updatedTasks3[0].id).toBe(movedTask.id)
+      expect(updatedTasks3[0].listId).toBe(list3.id)
+      expect(updatedTasks3[0].order).toBe(0)
+    })
+    
+    it('should handle moving last task from a list', async () => {
+      const lists = await getAllLists()
+      const list2 = lists.find(l => l.order === 0) // Has 1 task
+      const list3 = lists.find(l => l.order === 2) // Empty
+      const tasks2 = await getTasksForList(list2.id)
+      
+      // Move the only task from list2
+      const movedTask = tasks2[0]
+      const newTasks = [movedTask]
+      
+      await updateTaskOrderCrossList(list3.id, newTasks)
+      
+      // Verify source list is now empty
+      const updatedTasks2 = await getTasksForList(list2.id)
+      expect(updatedTasks2.length).toBe(0)
+      
+      // Verify task in destination
+      const updatedTasks3 = await getTasksForList(list3.id)
+      expect(updatedTasks3.length).toBe(1)
+      expect(updatedTasks3[0].id).toBe(movedTask.id)
+    })
+    
+    it('should handle multiple tasks moved from same source list', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const list2 = lists.find(l => l.order === 0)
+      const tasks1 = await getTasksForList(list1.id)
+      const tasks2 = await getTasksForList(list2.id)
+      
+      // Move two tasks from list1 to list2
+      const movedTask1 = tasks1[0]
+      const movedTask2 = tasks1[1]
+      const newTasks = [...tasks2, movedTask1, movedTask2]
+      
+      await updateTaskOrderCrossList(list2.id, newTasks)
+      
+      // Verify both tasks in destination
+      const updatedTasks2 = await getTasksForList(list2.id)
+      expect(updatedTasks2.length).toBe(3)
+      expect(updatedTasks2[1].id).toBe(movedTask1.id)
+      expect(updatedTasks2[1].listId).toBe(list2.id)
+      expect(updatedTasks2[2].id).toBe(movedTask2.id)
+      expect(updatedTasks2[2].listId).toBe(list2.id)
+      
+      // Verify source list order recalculated
+      const updatedTasks1 = await getTasksForList(list1.id)
+      expect(updatedTasks1.length).toBe(1)
+      expect(updatedTasks1[0].order).toBe(0)
+    })
+    
+    it('should handle empty array gracefully', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      
+      // Should not throw error
+      await expect(updateTaskOrderCrossList(list1.id, [])).resolves.not.toThrow()
+    })
+    
+    it('should persist cross-list moves to IndexedDB', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const list2 = lists.find(l => l.order === 0)
+      const tasks1 = await getTasksForList(list1.id)
+      const tasks2 = await getTasksForList(list2.id)
+      
+      // Move task between lists
+      const movedTask = tasks1[0]
+      const newTasks = [...tasks2, movedTask]
+      await updateTaskOrderCrossList(list2.id, newTasks)
+      
+      // Close and reopen database to verify persistence
+      db.close()
+      await db.open()
+      
+      // Verify move persisted
+      const persistedTasks2 = await getTasksForList(list2.id)
+      expect(persistedTasks2.length).toBe(2)
+      expect(persistedTasks2[1].id).toBe(movedTask.id)
+      expect(persistedTasks2[1].listId).toBe(list2.id)
+      
+      const persistedTasks1 = await getTasksForList(list1.id)
+      expect(persistedTasks1.length).toBe(2)
+      expect(persistedTasks1.find(t => t.id === movedTask.id)).toBeUndefined()
+    })
+    
+    it('should maintain sequential ordering with no gaps after cross-list move', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      const list2 = lists.find(l => l.order === 0)
+      const tasks1 = await getTasksForList(list1.id)
+      const tasks2 = await getTasksForList(list2.id)
+      
+      // Move task from list1 to list2
+      const movedTask = tasks1[1] // Middle task
+      const newTasks = [...tasks2, movedTask]
+      await updateTaskOrderCrossList(list2.id, newTasks)
+      
+      // Verify both lists have sequential ordering
+      const updatedTasks1 = await getTasksForList(list1.id)
+      for (let i = 0; i < updatedTasks1.length; i++) {
+        expect(updatedTasks1[i].order).toBe(i)
+      }
+      
+      const updatedTasks2 = await getTasksForList(list2.id)
+      for (let i = 0; i < updatedTasks2.length; i++) {
+        expect(updatedTasks2[i].order).toBe(i)
+      }
     })
   })
 
