@@ -65,9 +65,15 @@ describe('App', () => {
       expect(screen.getByText('Empty')).toBeInTheDocument()
     })
     
+    // Wait for tasks to finish loading (the "Loading tasks..." message should disappear)
+    await waitFor(() => {
+      expect(screen.queryByText('Loading tasks...')).not.toBeInTheDocument()
+    })
+    
+    // When a list has no tasks, it shows the "Add your first task" button
     await waitFor(() => {
       expect(
-        screen.getByText('No tasks yet for Empty. Add your first task.')
+        screen.getByRole('button', { name: /add your first task to empty/i })
       ).toBeInTheDocument()
     })
   })

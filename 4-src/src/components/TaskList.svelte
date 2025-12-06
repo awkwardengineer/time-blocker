@@ -284,19 +284,26 @@
               }
             }
             // Fallback: focus the "Add Task" button
+            // When list becomes empty, wait for the button to appear in DOM
             const listSection = document.querySelector(`[data-list-id="${listId}"]`);
             if (listSection) {
-              const addTaskContainer = listSection.querySelector('.add-task-container');
-              if (addTaskContainer) {
-                const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
-                if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
-                  // Use a slightly longer delay to ensure DOM has updated (especially when transitioning to empty state)
-                  setTimeout(() => {
+              // Use a retry mechanism to wait for the button to appear (especially when transitioning to empty state)
+              const tryFocusAddTask = (attempts = 0) => {
+                const addTaskContainer = listSection.querySelector('.add-task-container');
+                if (addTaskContainer) {
+                  const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
+                  if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
                     addTaskSpan.focus();
-                  }, 10);
-                  return;
+                    return;
+                  }
                 }
-              }
+                // Retry up to 10 times (100ms total wait)
+                if (attempts < 10) {
+                  setTimeout(() => tryFocusAddTask(attempts + 1), 10);
+                }
+              };
+              tryFocusAddTask();
+              return;
             }
           }
         }, 0);
@@ -400,8 +407,8 @@
     
     // If focus wasn't handled by handleArchiveTask (e.g., modal already closed),
     // handle it here by finding the Add Task button
-    setTimeout(() => {
-      // Check if focus was already set (by checking if a task element has focus)
+    // Use a retry mechanism to wait for the button to appear (especially when transitioning to empty state)
+    const tryFocusAddTask = (attempts = 0) => {
       const activeElement = document.activeElement;
       const listSection = document.querySelector(`[data-list-id="${listId}"]`);
       if (listSection && (!activeElement || !listSection.contains(activeElement))) {
@@ -411,10 +418,16 @@
           const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
           if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
             addTaskSpan.focus();
+            return;
           }
         }
       }
-    }, 50);
+      // Retry up to 20 times (200ms total wait) to account for DOM updates when list becomes empty
+      if (attempts < 20) {
+        setTimeout(() => tryFocusAddTask(attempts + 1), 10);
+      }
+    };
+    setTimeout(() => tryFocusAddTask(), 10);
   }
   
   function handleListNameClick(event) {
