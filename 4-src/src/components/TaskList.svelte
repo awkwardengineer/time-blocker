@@ -36,6 +36,11 @@
   let editingListPosition = $state(null); // { top, left, width, height }
   let listNameElement = $state(null); // Reference to the h2 element for focus return
   
+  // Reactive references to DOM elements (replaces document.querySelector calls)
+  let listSectionElement = $state(null); // Reference to the main list section div
+  let addTaskContainerElement = $state(null); // Reference to the add-task-container
+  let addTaskTextareaElement = $state(null); // Reference to the add-task textarea
+  
   $effect(() => {
     // Create query once when listId is available
     if (listId && !tasksQuery) {
@@ -138,13 +143,9 @@
     if (!isInputActive) return;
     
     return useClickOutside(
-      // Function that returns the textarea element (found dynamically)
+      // Function that returns the textarea element (using reactive reference)
       () => {
-        const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-        if (!listSection) return null;
-        const addTaskContainer = listSection.querySelector('.add-task-container');
-        if (!addTaskContainer) return null;
-        return addTaskContainer.querySelector('textarea');
+        return addTaskTextareaElement;
       },
       () => {
         // Only close if still active (prevents race conditions with programmatic closes)
@@ -154,16 +155,13 @@
         }
       },
       {
+        ignoreElements: [],
         checkIgnoreClick: (e) => {
-          // Find the list section and the input container
-          const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-          if (!listSection) return false;
-          
-          const addTaskContainer = listSection.querySelector('.add-task-container');
-          if (!addTaskContainer) return false;
+          // Use reactive reference to the add-task container
+          if (!addTaskContainerElement) return false;
           
           // Check if click is on the Save button - don't close, let Save handle it
-          const saveButton = addTaskContainer.querySelector('button');
+          const saveButton = addTaskContainerElement.querySelector('button');
           if (saveButton && saveButton.contains(e.target)) {
             return true; // Ignore this click
           }
@@ -173,15 +171,8 @@
         shouldClose: () => {
           // Only close if input hasn't changed (no content)
           // Check both reactive state and actual DOM element value for reliability
-          const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-          if (listSection) {
-            const addTaskContainer = listSection.querySelector('.add-task-container');
-            if (addTaskContainer) {
-              const textarea = addTaskContainer.querySelector('textarea');
-              if (textarea && textarea.value.trim() !== '') {
-                return false; // Has content, don't close
-              }
-            }
+          if (addTaskTextareaElement && addTaskTextareaElement.value.trim() !== '') {
+            return false; // Has content, don't close
           }
           return !newTaskInput || newTaskInput.trim() === '';
         }
@@ -192,17 +183,10 @@
   async function handleCreateTask() {
     // Read value directly from DOM element (more reliable than prop)
     // Similar to how useClickOutside checks the value
-    const listSection = document.querySelector(`[data-list-id="${listId}"]`);
     let inputValue = newTaskInput || '';
     
-    if (listSection) {
-      const addTaskContainer = listSection.querySelector('.add-task-container');
-      if (addTaskContainer) {
-        const textarea = addTaskContainer.querySelector('textarea');
-        if (textarea) {
-          inputValue = (textarea.value || '').toString();
-        }
-      }
+    if (addTaskTextareaElement) {
+      inputValue = (addTaskTextareaElement.value || '').toString();
     }
     
     // Ensure inputValue is a string
@@ -256,17 +240,16 @@
   /**
    * Finds the next logical focus target after archiving a task.
    * Tries to find the first remaining task in the list.
-   * @param {number} listId - The ID of the list
+   * Uses reactive reference to ulElement instead of querying DOM.
    * @returns {HTMLElement|null} The next focus target, or null if none found
    */
-  function findNextFocusTarget(listId) {
-    const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-    if (!listSection) {
+  function findNextFocusTarget() {
+    if (!ulElement) {
       return null;
     }
     
     // Find the first remaining task in the list
-    const firstTaskCard = listSection.querySelector('li[data-id]');
+    const firstTaskCard = ulElement.querySelector('li[data-id]');
     if (firstTaskCard) {
       const firstTaskText = firstTaskCard.querySelector('span[role="button"]');
       if (firstTaskText && firstTaskText instanceof HTMLElement) {
@@ -280,21 +263,19 @@
   /**
    * Focuses the "Add Task" button with retry logic.
    * Useful when list becomes empty and button needs time to appear in DOM.
-   * @param {number} listId - The ID of the list
+   * Uses reactive reference instead of querying DOM.
    * @param {number} maxAttempts - Maximum number of retry attempts (default: 20)
    * @param {number} retryInterval - Milliseconds between retry attempts (default: 10)
    * @returns {Promise<void>}
    */
-  function focusAddTaskButton(listId, maxAttempts = 20, retryInterval = 10) {
-    const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-    if (!listSection) {
+  function focusAddTaskButton(maxAttempts = 20, retryInterval = 10) {
+    if (!listSectionElement) {
       return;
     }
     
     const tryFocus = (attempts = 0) => {
-      const addTaskContainer = listSection.querySelector('.add-task-container');
-      if (addTaskContainer) {
-        const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
+      if (addTaskContainerElement) {
+        const addTaskSpan = addTaskContainerElement.querySelector('span[role="button"]');
         if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
           addTaskSpan.focus();
           return;
@@ -334,7 +315,7 @@
           // Try to find next task to focus (first remaining task in list)
           // Use retry logic to handle DOM updates after archiving
           const tryFocusNextTask = (attempts = 0) => {
-            const nextTarget = findNextFocusTarget(listId);
+            const nextTarget = findNextFocusTarget();
             if (nextTarget) {
               nextTarget.focus();
             } else if (attempts < 20) {
@@ -343,7 +324,7 @@
             } else {
               // Fallback: focus the "Add Task" button
               // Use more retries when list becomes empty (DOM structure changes)
-              focusAddTaskButton(listId, 40, 10);
+              focusAddTaskButton(40, 10);
             }
           };
           tryFocusNextTask();
@@ -449,11 +430,10 @@
     // handle it here by finding the Add Task button
     setTimeout(() => {
       const activeElement = document.activeElement;
-      const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-      if (listSection && (!activeElement || !listSection.contains(activeElement))) {
+      if (listSectionElement && (!activeElement || !listSectionElement.contains(activeElement))) {
         // Focus wasn't set, so focus the Add Task button
         // Use more retries (20) to account for DOM updates when list becomes empty
-        focusAddTaskButton(listId, 20, 10);
+        focusAddTaskButton(20, 10);
       }
     }, 10);
   }
@@ -529,7 +509,7 @@
   }
 </script>
 
-<div data-list-id={listId}>
+<div bind:this={listSectionElement} data-list-id={listId}>
   <h2 
     onclick={handleListNameClick}
     onkeydown={handleListNameKeydown}
@@ -544,6 +524,8 @@
     {#if $tasksQuery.length === 0}
       <AddTaskInput
         bind:isInputActive={isInputActive}
+        bind:containerElement={addTaskContainerElement}
+        bind:textareaElement={addTaskTextareaElement}
         inputValue={newTaskInput}
         onInputChange={onInputChange}
         onSave={handleCreateTask}
@@ -613,6 +595,8 @@
         <!-- Add Task button - styled like a task item, positioned to align with list items -->
         <AddTaskInput
           bind:isInputActive={isInputActive}
+          bind:containerElement={addTaskContainerElement}
+          bind:textareaElement={addTaskTextareaElement}
           inputValue={newTaskInput}
           onInputChange={onInputChange}
           onSave={handleCreateTask}
@@ -630,6 +614,8 @@
     <!-- Add Task button - show during loading too -->
     <AddTaskInput
       bind:isInputActive={isInputActive}
+      bind:containerElement={addTaskContainerElement}
+      bind:textareaElement={addTaskTextareaElement}
       inputValue={newTaskInput}
       onInputChange={onInputChange}
       onSave={handleCreateTask}

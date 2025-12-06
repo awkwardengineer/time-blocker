@@ -149,23 +149,27 @@ Right now, all the textareas use the same hardcoded `160px` max height. But when
 
 ---
 
-### 7. Cache DOM Queries
+### 7. Replace DOM Queries with Reactive References
 **Priority: Low**  
-**Files:** `4-src/src/components/TaskList.svelte`
+**Status: ✅ COMPLETED**  
+**Files:** `4-src/src/components/TaskList.svelte`, `4-src/src/components/AddTaskInput.svelte`
 
 **Problem:**
-- `document.querySelector('[data-list-id="${listId}"]')` called multiple times
-- Could be cached or use reactive references
+- `document.querySelector('[data-list-id="${listId}"]')` called multiple times (7 instances)
+- Traditional caching could cause stale references if DOM changes
 
 **Solution:**
-- Use Svelte bindings where possible
-- Cache query results in variables
-- Consider using `$effect` to maintain references
+- Use Svelte reactive references (`bind:this`) instead of querying DOM
+- Added reactive references: `listSectionElement`, `addTaskContainerElement`, `addTaskTextareaElement`
+- Exposed container and textarea elements from `AddTaskInput` component via bindable props
+- Updated all functions to use reactive references instead of `listId` parameter
+- Used existing `ulElement` reference for finding tasks (tasks are in `<ul>`, not directly in list section)
 
 **Acceptance Criteria:**
-- [ ] DOM queries optimized
-- [ ] Tests still pass
-- [ ] Performance improved (if measurable)
+- ✅ DOM queries replaced with reactive references
+- ✅ Tests still pass (117/117)
+- ✅ No stale reference issues - Svelte automatically maintains references
+- ✅ Cleaner code - direct element access instead of repeated queries
 
 ---
 
@@ -203,6 +207,29 @@ Right now, all the textareas use the same hardcoded `160px` max height. But when
 - Verify no visual/behavioral changes
 - Check for performance regressions (if applicable)
 - Ensure accessibility is maintained
+
+## Regression Fixes
+
+### Regression: Enter key on Archive/Cancel buttons triggers Save
+**Priority: High**  
+**Status: ✅ FIXED**  
+**Files:** `4-src/src/components/TaskEditModal.svelte`
+
+**Problem:**
+- When focus is on Archive or Cancel button in task edit modal, pressing Enter triggers Save instead of the button's action
+- The `handleKeydown` function on backdrop/textarea handles all Enter presses globally
+- Buttons should handle their own Enter key behavior (default button behavior)
+
+**Solution:**
+- Check if active element is the textarea before handling Enter in `handleKeydown`
+- Only trigger save on Enter when focus is on the textarea
+- Let buttons handle their own Enter key behavior (native button behavior - buttons automatically click on Enter)
+
+**Acceptance Criteria:**
+- ✅ Enter on Archive button archives the task (button's natural behavior)
+- ✅ Enter on Cancel button cancels and closes modal (button's natural behavior)
+- ✅ Enter on textarea still saves (existing behavior preserved)
+- ✅ All tests pass (117/117)
 
 ## Notes
 

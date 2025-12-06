@@ -11,10 +11,19 @@
     buttonText = 'Add Task',
     placeholder = 'Add new task...',
     ariaLabel,
-    marginLeft = false
+    marginLeft = false,
+    containerElement = $bindable(null),
+    textareaElement = $bindable(null)
   } = $props();
   
   let inputElement = $state(null);
+  let containerRef = $state(null);
+  
+  // Expose container and textarea elements to parent via bindable props
+  $effect(() => {
+    containerElement = containerRef;
+    textareaElement = inputElement;
+  });
   
   // Focus textarea when it becomes active and auto-resize
   $effect(() => {
@@ -64,6 +73,7 @@
 </script>
 
 <div 
+  bind:this={containerRef}
   class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-fit print:hidden add-task-container add-task-button mt-2"
   style={marginLeft ? "margin-left: 1.5rem;" : ""}
 >

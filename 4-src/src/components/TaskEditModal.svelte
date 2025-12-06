@@ -122,8 +122,14 @@
     if (e.key === 'Escape') {
       handleCancel();
     } else if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSave();
+      // Only handle Enter if focus is on the textarea
+      // Let buttons handle their own Enter key behavior (default button behavior)
+      const activeElement = document.activeElement;
+      if (activeElement === inputElement) {
+        e.preventDefault();
+        handleSave();
+      }
+      // If focus is on a button, let it handle Enter naturally (don't prevent default)
     }
   }
   
