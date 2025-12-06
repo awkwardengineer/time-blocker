@@ -4,6 +4,7 @@
   import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateListName } from '../lib/dataAccess.js';
   import TaskEditModal from './TaskEditModal.svelte';
   import ListEditModal from './ListEditModal.svelte';
+  import AddTaskInput from './AddTaskInput.svelte';
   
   let { listId, listName, newTaskInput, onInputChange } = $props();
   
@@ -17,7 +18,6 @@
   
   // State for Add Task button/input toggle
   let isInputActive = $state(false);
-  let inputElement = $state(null);
   
   // State for task edit modal
   let editModalOpen = $state(false);
@@ -171,36 +171,6 @@
       clearTimeout(timeoutId);
       document.removeEventListener('click', handleDocumentClick);
     };
-  });
-  
-  // Focus textarea when it becomes active and auto-resize
-  $effect(() => {
-    if (isInputActive && inputElement) {
-      // Small delay to ensure textarea is rendered
-      setTimeout(() => {
-        inputElement?.focus();
-        // Auto-resize textarea to fit content
-        if (inputElement instanceof HTMLTextAreaElement) {
-          inputElement.style.height = 'auto';
-          inputElement.style.height = `${Math.min(inputElement.scrollHeight, 160)}px`; // max-h-[10rem] = 160px
-        }
-      }, 0);
-    }
-  });
-  
-  // Auto-resize textarea as content changes
-  $effect(() => {
-    if (inputElement && inputElement instanceof HTMLTextAreaElement) {
-      const resizeTextarea = () => {
-        inputElement.style.height = 'auto';
-        inputElement.style.height = `${Math.min(inputElement.scrollHeight, 160)}px`;
-      };
-      
-      inputElement.addEventListener('input', resizeTextarea);
-      return () => {
-        inputElement.removeEventListener('input', resizeTextarea);
-      };
-    }
   });
   
   async function handleCreateTask() {
@@ -514,70 +484,18 @@
   </h2>
   {#if tasksQuery && $tasksQuery !== undefined}
     {#if $tasksQuery.length === 0}
-      <div class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-fit print:hidden add-task-container add-task-button mt-2" style="margin-left: 1.5rem;">
-        {#if isInputActive}
-          <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
-            ⋮⋮
-          </span>
-          <input
-            type="checkbox"
-            disabled
-            class="cursor-pointer opacity-0"
-            aria-hidden="true"
-            tabindex="-1"
-          />
-          <div class="flex gap-2">
-            <textarea
-              bind:this={inputElement}
-              placeholder="Add new task..."
-              value={newTaskInput}
-              oninput={(e) => onInputChange(e.currentTarget.value)}
-              onkeydown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault(); // Prevent form submission if inside a form
-                  handleCreateTask();
-                } else if (e.key === 'Escape') {
-                  handleInputEscape(e);
-                }
-              }}
-              class="w-[150px] flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
-              rows="1"
-            ></textarea>
-            <button
-              onclick={handleCreateTask}
-              aria-label="Save new task"
-            >
-              Save
-            </button>
-          </div>
-        {:else}
-          <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
-            ⋮⋮
-          </span>
-          <input
-            type="checkbox"
-            disabled
-            class="cursor-pointer opacity-0"
-            aria-hidden="true"
-            tabindex="-1"
-          />
-          <span 
-            class="w-[150px] cursor-pointer hover:underline break-words"
-            onclick={handleAddTaskClick}
-            onkeydown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleAddTaskClick();
-              }
-            }}
-            role="button"
-            tabindex="0"
-            aria-label="Add your first task to {listName}"
-          >
-            Add your first task
-          </span>
-        {/if}
-      </div>
+      <AddTaskInput
+        bind:isInputActive={isInputActive}
+        inputValue={newTaskInput}
+        onInputChange={onInputChange}
+        onSave={handleCreateTask}
+        onEscape={handleInputEscape}
+        onActivate={handleAddTaskClick}
+        buttonText="Add your first task"
+        placeholder="Add new task..."
+        ariaLabel="Add your first task to {listName}"
+        marginLeft={true}
+      />
     {:else}
       <div class="task-list-wrapper">
         <ul 
@@ -634,139 +552,35 @@
         </ul>
         
         <!-- Add Task button - styled like a task item, positioned to align with list items -->
-        <div class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-fit print:hidden add-task-container add-task-button mt-2">
-        {#if isInputActive}
-          <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
-            ⋮⋮
-          </span>
-          <input
-            type="checkbox"
-            disabled
-            class="cursor-pointer opacity-0"
-            aria-hidden="true"
-            tabindex="-1"
-          />
-          <div class="flex gap-2">
-            <textarea
-              bind:this={inputElement}
-              placeholder="Add new task..."
-              value={newTaskInput}
-              oninput={(e) => onInputChange(e.currentTarget.value)}
-              onkeydown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault(); // Prevent form submission if inside a form
-                  handleCreateTask();
-                } else if (e.key === 'Escape') {
-                  handleInputEscape(e);
-                }
-              }}
-              class="w-[150px] flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
-              rows="1"
-            ></textarea>
-            <button
-              onclick={handleCreateTask}
-              aria-label="Save new task"
-            >
-              Save
-            </button>
-          </div>
-        {:else}
-          <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
-            ⋮⋮
-          </span>
-          <input
-            type="checkbox"
-            disabled
-            class="cursor-pointer opacity-0"
-            aria-hidden="true"
-            tabindex="-1"
-          />
-          <span 
-            class="w-[150px] cursor-pointer hover:underline break-words"
-            onclick={handleAddTaskClick}
-            onkeydown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleAddTaskClick();
-              }
-            }}
-            role="button"
-            tabindex="0"
-            aria-label="Add new task to {listName}"
-          >
-            Add Task
-          </span>
-        {/if}
-        </div>
+        <AddTaskInput
+          bind:isInputActive={isInputActive}
+          inputValue={newTaskInput}
+          onInputChange={onInputChange}
+          onSave={handleCreateTask}
+          onEscape={handleInputEscape}
+          onActivate={handleAddTaskClick}
+          buttonText="Add Task"
+          placeholder="Add new task..."
+          ariaLabel="Add new task to {listName}"
+          marginLeft={true}
+        />
       </div>
     {/if}
   {:else}
     <p>Loading tasks...</p>
     <!-- Add Task button - show during loading too -->
-    <div class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-fit print:hidden add-task-container add-task-button mt-2" style="margin-left: 1.5rem;">
-      {#if isInputActive}
-        <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
-          ⋮⋮
-        </span>
-        <input
-          type="checkbox"
-          disabled
-          class="cursor-pointer opacity-0"
-          aria-hidden="true"
-          tabindex="-1"
-        />
-        <div class="flex gap-2">
-          <textarea
-            bind:this={inputElement}
-            placeholder="Add new task..."
-            value={newTaskInput}
-            oninput={(e) => onInputChange(e.currentTarget.value)}
-            onkeydown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault(); // Prevent form submission if inside a form
-                handleCreateTask();
-              } else if (e.key === 'Escape') {
-                handleInputEscape(e);
-              }
-            }}
-            class="w-[150px] flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
-            rows="1"
-          ></textarea>
-          <button
-            onclick={handleCreateTask}
-            aria-label="Save new task"
-          >
-            Save
-          </button>
-        </div>
-      {:else}
-        <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
-          ⋮⋮
-        </span>
-        <input
-          type="checkbox"
-          disabled
-          class="cursor-pointer opacity-0"
-          aria-hidden="true"
-          tabindex="-1"
-        />
-        <span 
-          class="w-[150px] cursor-pointer hover:underline break-words"
-          onclick={handleAddTaskClick}
-          onkeydown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleAddTaskClick();
-            }
-          }}
-          role="button"
-          tabindex="0"
-          aria-label="Add new task to {listName}"
-        >
-          Add Task
-        </span>
-      {/if}
-    </div>
+    <AddTaskInput
+      bind:isInputActive={isInputActive}
+      inputValue={newTaskInput}
+      onInputChange={onInputChange}
+      onSave={handleCreateTask}
+      onEscape={handleInputEscape}
+      onActivate={handleAddTaskClick}
+      buttonText="Add Task"
+      placeholder="Add new task..."
+      ariaLabel="Add new task to {listName}"
+      marginLeft={true}
+    />
   {/if}
 </div>
 
@@ -781,14 +595,6 @@
   }
   
   @media print {
-    .task-input-container {
-      visibility: hidden;
-    }
-    
-    .task-input-container textarea {
-      visibility: hidden;
-    }
-    
     .drag-handle {
       visibility: hidden;
     }
