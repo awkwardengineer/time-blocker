@@ -21,3 +21,11 @@
 - Avoid fluff phrases like "That's a great idea!" or excessive pleasantries
 - Be direct and concise
 
+## Merging Workflow
+- Before merging a branch:
+  1. Run tests: `cd 4-src && npm test`
+  2. If tests pass, mark tasks as complete in project plans (using ✅ checkmark emojis)
+  3. Commit any documentation updates
+  4. Merge the branch into master
+  5. Push to origin
+
