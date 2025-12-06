@@ -1,9 +1,14 @@
 <script>
   import { liveQuery } from 'dexie';
+  import { tick } from 'svelte';
   import { getAllLists, createList, createTask } from './lib/dataAccess.js';
   import db from './lib/db.js';
   import TaskList from './components/TaskList.svelte';
   import ArchivedView from './components/ArchivedView.svelte';
+  
+  // Constants for retry mechanism
+  const MAX_RETRY_ATTEMPTS = 20; // Maximum attempts to find element
+  const RETRY_INTERVAL = 10; // Milliseconds between retry attempts
   
   // Reactive query for lists - automatically updates when lists change
   let lists = liveQuery(() => getAllLists());
@@ -58,6 +63,43 @@
   
   function handlePrint() {
     window.print();
+  }
+  
+  /**
+   * Activates the "Add Task" input for a newly created list.
+   * Uses retry mechanism to wait for component initialization instead of fixed delays.
+   */
+  async function activateAddTaskInput(listId) {
+    // Wait for Svelte to process reactive updates (component added to DOM)
+    await tick();
+    
+    // Retry mechanism to find the element (waits for component to fully initialize)
+    for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
+      const listSection = document.querySelector(`[data-list-id="${listId}"]`);
+      if (!listSection) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
+        continue;
+      }
+      
+      const addTaskContainer = listSection.querySelector('.add-task-container');
+      if (!addTaskContainer) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
+        continue;
+      }
+      
+      const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
+      if (!addTaskSpan || !(addTaskSpan instanceof HTMLElement)) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
+        continue;
+      }
+      
+      // Element found and ready - click it immediately
+      addTaskSpan.click();
+      return; // Success!
+    }
+    
+    // If we get here, we couldn't find the element
+    console.warn(`Could not activate Add Task input for list ${listId} after ${MAX_RETRY_ATTEMPTS} attempts`);
   }
   
   function handleCreateListClick() {
@@ -148,25 +190,8 @@
       isCreateListInputActive = false;
       
       // Focus moves to creating the first task in that list
-      // Wait for the list to appear in the DOM and TaskList to render, then activate task input
-      setTimeout(() => {
-        const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-        if (listSection) {
-          // Find the "Add Task" button and click it to activate the input
-          const addTaskContainer = listSection.querySelector('.add-task-container');
-          if (addTaskContainer) {
-            const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
-            if (addTaskSpan) {
-              // Use a small delay to ensure TaskList component is fully rendered
-              setTimeout(() => {
-                addTaskSpan.click();
-              }, 50);
-            }
-          }
-        }
-      }, 150);
-      
       // Lists will update automatically via liveQuery
+      await activateAddTaskInput(listId);
     } catch (error) {
       console.error('Error creating list:', error);
     }
@@ -283,23 +308,7 @@
       
       if (listId) {
         // Focus moves to creating the next task in the newly created unnamed list
-        // Wait for the list to appear in the DOM and TaskList to render, then activate task input
-        setTimeout(() => {
-          const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-          if (listSection) {
-            // Find the "Add Task" button and click it to activate the input
-            const addTaskContainer = listSection.querySelector('.add-task-container');
-            if (addTaskContainer) {
-              const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
-              if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
-                // Use a small delay to ensure TaskList component is fully rendered
-                setTimeout(() => {
-                  addTaskSpan.click();
-                }, 50);
-              }
-            }
-          }
-        }, 150);
+        await activateAddTaskInput(listId);
       }
     } catch (error) {
       console.error('Error creating task in unnamed list:', error);
