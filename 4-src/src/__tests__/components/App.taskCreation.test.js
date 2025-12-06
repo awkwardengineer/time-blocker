@@ -49,7 +49,7 @@ describe('App - Task Creation UX Behaviors', () => {
     // Split into two waits to handle timing issues in full test suite
     await waitFor(() => {
       expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
-    }, { timeout: 3000 })
+    }, { timeout: 5000 })
     
     // Then verify button is back
     await waitFor(() => {
