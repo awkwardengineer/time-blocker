@@ -44,8 +44,12 @@ describe('App - Task Creation UX Behaviors', () => {
     // Press Enter on empty input
     await user.keyboard('{Enter}')
     
-    // Wait for button to reappear (positive assertion first - more reliable)
-    // Use a longer timeout and check for either the button text or aria-label
+    // First wait for input to disappear (ensures state has updated)
+    await waitFor(() => {
+      expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
+    }, { timeout: 10000 })
+    
+    // Then wait for button to reappear (positive assertion)
     await waitFor(() => {
       // Try to find button by aria-label (more reliable)
       const button = within(workSection).queryByRole('button', { name: /add new task to work/i })
@@ -57,10 +61,7 @@ describe('App - Task Creation UX Behaviors', () => {
         expect(button).toBeInTheDocument()
       }
     }, { timeout: 10000 })
-    
-    // Then verify input is gone (negative assertion - after positive succeeds)
-    expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
-  })
+  }, 15000)
 
   it('Enter key creates task (including blank tasks with whitespace) and automatically opens new input for sequential creation', async () => {
     const user = userEvent.setup()

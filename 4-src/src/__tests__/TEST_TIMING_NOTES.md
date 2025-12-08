@@ -65,18 +65,80 @@ expect(within(section).queryByPlaceholderText('Add new task...')).not.toBeInTheD
 
 ### App.taskCreation.test.js - "Enter key on empty string"
 
-**Issue**: Test checks for textarea to disappear before checking for button to appear. In CI, the DOM may not have updated yet when checking for textarea removal, even with `tick()` and delays in the implementation.
+**Issue**: Test times out when checking for textarea to disappear after pressing Enter on empty input. The test fails in CI/deployment but passes when run in isolation. The DOM may not have updated yet when checking for textarea removal, even with `tick()` and delays in the implementation.
 
-**Root Cause**: Bindable prop updates in Svelte 5 may not propagate synchronously, especially in CI environments. The `isInputActive = false` update in the parent component may not immediately cause the child component to re-render.
+**Root Cause**: Bindable prop updates in Svelte 5 may not propagate synchronously, especially in CI environments or when multiple tests run together. The `isInputActive = false` update in the parent component may not immediately cause the child component to re-render. Test isolation issues may also contribute when all tests run together.
 
-**Fixes Applied**: 
-1. Increased delay in implementation from 0ms to 10ms (commit b3fee26)
-2. Increased test timeout from 3000ms to 5000ms for the first waitFor check
+**Fixes Applied** (December 2024):
+1. **Test timeout**: Increased test timeout from default 5000ms to 15000ms to allow `waitFor` with 10000ms timeout to complete
+2. **Test structure**: Modified test to wait for input to disappear first, then check for button to appear (sequential waitFor calls)
+3. **Implementation delays**: Enhanced state update handling in `TaskList.svelte`:
+   - Added multiple `tick()` calls (2 ticks) to ensure reactive updates propagate
+   - Added `requestAnimationFrame` to wait for DOM updates
+   - Increased delay from 10ms to 200ms to account for test environment timing differences
+4. **Test assertion order**: Changed from checking button first to checking input disappearance first, then button appearance
 
-**Status**: Fixed with increased timeouts. Monitor CI for continued flakiness. If it persists, consider:
-- Further increasing the delay in implementation
-- Using a different approach to ensure state updates (e.g., using `$effect` to watch for state changes)
-- Making the test more resilient by checking for button appearance first
+**Current Status**: 
+- ✅ Test passes when run in isolation
+- ⚠️ May still fail when all tests run together (test isolation issue)
+- The code changes should make the test more reliable overall
+
+**If issues persist**:
+- Consider further increasing delays in implementation (currently 200ms)
+- Investigate test isolation - ensure `beforeEach` properly resets state
+- Consider using `$effect` to watch for state changes instead of relying on timing
+- May need to add explicit waits in test setup/teardown
+
+## Test Isolation Issues
+
+**Pattern**: Tests that pass in isolation but fail when all tests run together.
+
+**Symptoms**:
+- Test passes when run individually: `npm test -- path/to/test.js -t "test name"`
+- Test fails when run with all tests: `npm test -- path/to/test.js`
+- State updates don't propagate as expected
+- DOM elements don't update when they should
+
+**Common Causes**:
+1. **State pollution**: Previous tests leave state that affects subsequent tests
+2. **Async operations**: Unfinished async operations from previous tests interfere
+3. **Timing differences**: Test environment behaves differently under load
+4. **Resource cleanup**: Test setup/teardown doesn't properly reset state
+
+**Solutions**:
+1. **Ensure proper cleanup**: Make sure `beforeEach`/`afterEach` properly reset all state
+2. **Increase delays**: If timing is the issue, increase delays in implementation (not just test timeouts)
+3. **Use multiple ticks**: Use multiple `tick()` calls to ensure all reactive updates propagate
+4. **Add requestAnimationFrame**: Wait for DOM updates with `requestAnimationFrame` before delays
+5. **Sequential waitFor**: When checking for state changes, use sequential `waitFor` calls (wait for old state to disappear, then new state to appear)
+
+**Example Fix Pattern**:
+```javascript
+// In implementation
+async function handleStateChange() {
+  isActive = false;
+  await tick();
+  await tick(); // Multiple ticks for reactive updates
+  await new Promise(resolve => requestAnimationFrame(resolve)); // Wait for DOM
+  await new Promise(resolve => setTimeout(resolve, 200)); // Additional delay
+}
+
+// In test
+it('test name', async () => {
+  // ... setup ...
+  await action();
+  
+  // Wait for old state to disappear
+  await waitFor(() => {
+    expect(oldElement).not.toBeInTheDocument();
+  }, { timeout: 10000 });
+  
+  // Then wait for new state to appear
+  await waitFor(() => {
+    expect(newElement).toBeInTheDocument();
+  }, { timeout: 10000 });
+}, 15000); // Increased test timeout
+```
 
 ## Recommendations
 
@@ -85,6 +147,8 @@ expect(within(section).queryByPlaceholderText('Add new task...')).not.toBeInTheD
 3. **Verify negative assertions after positive**: If you need to verify something is gone, do it after confirming the new state exists
 4. **Document flaky tests**: Keep this file updated with any timing issues discovered
 5. **Monitor CI failures**: If a test fails in CI but passes locally, it's likely a timing issue
+6. **Test in isolation and together**: Always test both ways - run individual tests and all tests together
+7. **Use multiple ticks and delays**: When dealing with bindable props, use multiple `tick()` calls and `requestAnimationFrame` + delays
 
 ## Related Files
 
