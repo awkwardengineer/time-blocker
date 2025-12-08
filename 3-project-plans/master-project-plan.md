@@ -25,6 +25,7 @@ This document outlines the incremental development milestones for building the P
 | 050 | [[050-drag-between-lists\|Drag Between Lists]] | Pending | Move tasks between lists | Task drag and drop between lists. Update task's list association in IndexedDB. Maintain order within destination list. |
 | 060 | [[060-styling-polish\|Styling & Polish]] | Pending | Visual design, empty state appearance, print layout | Visual design implementation, empty state appearance (polish the functional empty states), print layout styling, responsive design |
 | 070 | [[070-multiple-columns\|Multiple Columns]] | Pending | Multi-column layout for lists | Display lists in multiple columns (2-3 columns). Extends milestone 050 - drag-and-drop and keyboard navigation must work across columns. |
+| 074 | [[074-empty-state-test-fix\|Fix Empty State Test Issues]] | Pending | Fix test environment issue | Fix `document is not defined` error preventing empty state tests from running. Address issue in `activateAddTaskInput` function. |
 | 075 | [[075-tab-drag-bug\|Fix Tab Key Not Canceling Drag Mode]] | Pending | Bug fix for Tab key behavior | Fix bug where pressing Tab while in drag mode (after pressing Enter) does not cancel drag mode. May be upstream issue in svelte-dnd-action library. |
 | 076 | [[076-keyboard-cross-list-tests\|Keyboard Cross-List Movement Tests]] | ✅ DONE | Test coverage for keyboard navigation | Add comprehensive integration tests for keyboard-based cross-list movement functionality. |
 
