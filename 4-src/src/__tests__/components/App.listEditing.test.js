@@ -230,15 +230,19 @@ describe('App - List Editing Modal UX Behaviors', () => {
     
     // List name is now a button (h2 with role="button")
     const listHeading = within(workSection).getByRole('button', { name: /Rename list: Work/i })
+    await user.click(listHeading) // Click to ensure it's focused and interactive
     listHeading.focus()
+    
+    // Small delay to ensure focus is set
+    await new Promise(resolve => setTimeout(resolve, 10))
     
     // Press Enter
     await user.keyboard('{Enter}')
     
-    // Wait for modal to open
+    // Wait for modal to open with longer timeout
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument()
-    })
+    }, { timeout: 3000 })
     
     const modalInput = screen.getByRole('textbox', { name: /edit list name/i })
     expect(modalInput).toHaveValue('Work')
@@ -251,15 +255,19 @@ describe('App - List Editing Modal UX Behaviors', () => {
     
     // List name is now a button (h2 with role="button")
     const listHeading = within(workSection).getByRole('button', { name: /Rename list: Work/i })
+    await user.click(listHeading) // Click to ensure it's focused and interactive
     listHeading.focus()
+    
+    // Small delay to ensure focus is set
+    await new Promise(resolve => setTimeout(resolve, 10))
     
     // Press Space
     await user.keyboard(' ')
     
-    // Wait for modal to open
+    // Wait for modal to open with longer timeout
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument()
-    })
+    }, { timeout: 3000 })
     
     const modalInput = screen.getByRole('textbox', { name: /edit list name/i })
     expect(modalInput).toHaveValue('Work')

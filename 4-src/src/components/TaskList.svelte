@@ -617,6 +617,7 @@
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation(); // Prevent dndzone from intercepting
       
       const h2Element = event.currentTarget;
       if (h2Element) {

@@ -42,8 +42,9 @@ describe('App', () => {
     // Wait for lists to appear (data has started loading)
     await waitFor(() => {
       expect(screen.getByText('Work')).toBeInTheDocument()
-      expect(screen.getByText('Personal')).toBeInTheDocument()
     })
+    const personalSection = await waitForListSection('Personal')
+    expect(within(personalSection).getByText('Personal')).toBeInTheDocument()
     
     // Wait for tasks to load and be displayed
     await waitFor(() => {

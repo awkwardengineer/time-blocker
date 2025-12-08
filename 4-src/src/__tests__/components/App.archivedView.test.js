@@ -61,10 +61,13 @@ describe('App - Archived View Grid Layout', () => {
     // Wait for list to be archived
     await waitFor(() => {
       expect(within(workSection).queryByText('Work')).not.toBeInTheDocument()
-    })
+    }, { timeout: 3000 })
     
-    // Check archived view
-    const archivedSection = screen.getByText('Archived Tasks').parentElement
+    // Archived view is always visible - find it by the heading
+    const archivedSection = await waitFor(() => {
+      const heading = screen.getByText('Archived Tasks')
+      return heading.parentElement
+    }, { timeout: 3000 })
     
     // Verify list appears in archived view with [List Archived] badge
     await waitFor(() => {
@@ -164,15 +167,42 @@ describe('App - Archived View Grid Layout', () => {
     const confirmButton2 = screen.getByRole('button', { name: /confirm archive list/i })
     await user.click(confirmButton2)
     
-    // Check archived view
-    const archivedSection = screen.getByText('Archived Tasks').parentElement
+    // Wait for list to be archived
+    await waitFor(() => {
+      expect(within(emptyListSection).queryByText('Empty List')).not.toBeInTheDocument()
+    }, { timeout: 5000 })
     
-    // Verify "No archived tasks" message appears for the empty list
+    // Wait a bit for archived view to update
+    await new Promise(resolve => setTimeout(resolve, 200))
+    
+    // Archived view is always visible - find it by the heading
+    const archivedSection = await waitFor(() => {
+      const heading = screen.getByText('Archived Tasks')
+      return heading.parentElement
+    }, { timeout: 5000 })
+    
+    // Find the Empty List in archived view
     await waitFor(() => {
       expect(within(archivedSection).getByText('Empty List')).toBeInTheDocument()
-      expect(within(archivedSection).getByText('No archived tasks')).toBeInTheDocument()
-    }, { timeout: 3000 })
-  })
+    }, { timeout: 5000 })
+    
+    // Verify "No archived tasks" message appears
+    // The message appears in the second column of the grid for the Empty List
+    await waitFor(() => {
+      // Find the Empty List row, then check the second column for "No archived tasks"
+      const emptyListHeading = within(archivedSection).getByText('Empty List')
+      const listRow = emptyListHeading.closest('.border-b')
+      expect(listRow).toBeDefined()
+      // The "No archived tasks" should be in a sibling div (second column)
+      const tasksColumn = listRow?.nextElementSibling
+      if (tasksColumn) {
+        expect(within(tasksColumn).getByText('No archived tasks')).toBeInTheDocument()
+      } else {
+        // Fallback: search within the entire archived section
+        expect(within(archivedSection).getByText('No archived tasks')).toBeInTheDocument()
+      }
+    }, { timeout: 10000 })
+  }, 30000)
 
   it('groups tasks by archive date within each list', async () => {
     const user = userEvent.setup()

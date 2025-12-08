@@ -4,7 +4,17 @@ import { screen, waitFor, within } from '@testing-library/svelte'
 
 export function getListSection(name) {
   // List name is now a button (h2 with role="button"), so find by text instead
-  const listNameElement = screen.getByText(name)
+  // But if the name appears in both main view and archived view, we need to find the one in main view
+  // Main view sections have data-list-id attribute
+  const allMatches = screen.getAllByText(name)
+  // Find the one that's inside a section with data-list-id (main view)
+  const listNameElement = allMatches.find(el => {
+    const section = el.closest('[data-list-id]')
+    return section !== null
+  })
+  if (!listNameElement) {
+    throw new Error(`Could not find list section for "${name}" in main view`)
+  }
   return listNameElement.parentElement
 }
 
