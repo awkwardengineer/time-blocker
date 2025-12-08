@@ -73,26 +73,26 @@ Enable users to drag tasks between different lists using drag-and-drop. When a t
    - Test that changes persist across page refreshes ✅ (IndexedDB persists automatically)
    - Ensure order consistency after cross-list moves ✅ (transaction ensures atomicity, sequential ordering maintained)
 
-8. **Test**
+8. **Test** ✅
    - **Manual Testing**:
-     - Drag task from one list to another, verify `listId` updates
-     - Verify order is maintained in both source and destination lists
-     - Refresh page, verify task appears in correct list with correct order
-     - Move task to empty list, verify order handling
-     - Move last task from a list, verify source list order handling
-     - Test edge cases (moving to same list, moving between lists with different counts)
-     - Verify archived tasks cannot be moved between lists
-     - Keyboard navigation: Move task down from last position, verify it moves to next list
-     - Keyboard navigation: Move task up from first position, verify it moves to previous list
-     - Keyboard navigation: Move task down from last position in last list, verify new list is created
-     - Keyboard navigation: Verify visual feedback when crossing list boundaries
+     - Drag task from one list to another, verify `listId` updates ✅
+     - Verify order is maintained in both source and destination lists ✅
+     - Refresh page, verify task appears in correct list with correct order ✅
+     - Move task to empty list, verify order handling ✅
+     - Move last task from a list, verify source list order handling ✅
+     - Test edge cases (moving to same list, moving between lists with different counts) ✅
+     - Verify archived tasks cannot be moved between lists ✅
+     - Keyboard navigation: Move task down from last position, verify it moves to next list ✅
+     - Keyboard navigation: Move task up from first position, verify it moves to previous list ✅
+     - Keyboard navigation: Move task down from last position in last list, verify new list is created ✅
+     - Keyboard navigation: Verify visual feedback when crossing list boundaries ✅
    - **Automated Tests**:
-     - Unit tests: Cross-list move logic (update `listId`, calculate order values)
-     - Unit tests: Order updates in both source and destination lists
-     - Unit tests: Order persistence in IndexedDB
-     - Integration tests: UI drag-and-drop between lists
-     - Integration tests: Order persists after page refresh
-     - Test order consistency after cross-list moves
+     - Unit tests: Cross-list move logic (update `listId`, calculate order values) ✅
+     - Unit tests: Order updates in both source and destination lists ✅
+     - Unit tests: Order persistence in IndexedDB ✅
+     - Integration tests: UI drag-and-drop between lists ✅
+     - Integration tests: Order persists after page refresh ✅
+     - Test order consistency after cross-list moves ✅
 
 ## Quick Notes
 - Database schema: Uses existing `listId` and `order` fields from [[020-mock-data-display]]

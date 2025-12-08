@@ -74,3 +74,4 @@
 
 The current test structure is well-organized and doesn't require major refactoring. The main gap is missing keyboard cross-list movement tests, which should be added to the existing `App.keyboardNavigation.test.js` file.
 
+
