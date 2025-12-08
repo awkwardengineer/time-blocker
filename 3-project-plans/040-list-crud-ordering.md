@@ -170,9 +170,15 @@ Since we already have lists, we'll start with editing and adding new lists, then
 >
 > **Restoring an archived task:**
 > - Only individual tasks can be restored (no bulk restore)
-> - If the task's original list is archived:
+> - If the task's original list is archived (but still exists in database):
 >   - Detect that the list is archived
->   - Prompt: "This task's list is archived. Restore to an unnamed list?"
+>   - Prompt: "This task's list is archived. Restore the list, or restore to an unnamed list?"
+>   - Option 1: Restore the list (clears list's `archivedAt`, restores task to original list)
+>   - Option 2: Restore to an unnamed list (creates new unnamed list or uses existing one)
+>   - Option 3: Cancel restore
+> - If the task's original list was deleted (no longer exists in database):
+>   - Detect that the list doesn't exist
+>   - Prompt: "This task's list no longer exists. Restore to an unnamed list?"
 >   - If yes: Restore task to a new unnamed list (or existing unnamed list if one exists)
 >   - If no: Cancel restore
 > - If the task's original list is active:
@@ -188,7 +194,7 @@ Since we already have lists, we'll start with editing and adding new lists, then
 ---
 
 4. **Archive Lists**
-   - **Description:** Archive a list by setting `archivedAt` timestamp on the list and archiving all active tasks individually. The archive button is available via the list title edit modal. Show confirmation prompt before archiving.
+   - **Description:** Archive a list by setting `archivedAt` timestamp on the list and archiving all active tasks individually. The archive button is available via the list title edit modal. Show confirmation prompt before archiving. Archived lists remain in the database with their name preserved.
    - **Acceptance Criteria:**
      - Users can archive lists via the list title edit modal
      - Archive button/action is available in the list edit modal
@@ -197,6 +203,7 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - List archiving sets `archivedAt` timestamp
      - All active tasks (unchecked/checked) in the list are archived individually with `archivedAt` timestamps
      - Archived lists are hidden from main page display
+     - Archived lists remain in the database with their name preserved (not deleted)
      - List archiving persists in IndexedDB
      - UI updates reactively after archiving
    - **Technical Work:**
@@ -226,12 +233,18 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - Write tests: integration tests for empty state display and interactions
 
 6. **Restore Archived Tasks (Individual Only)**
-   - **Description:** Only individual tasks can be restored. If the task's original list is archived, prompt to restore to an unnamed list. If the list is active, restore normally.
+   - **Description:** Only individual tasks can be restored. If the task's original list is archived (but exists), prompt to restore the list or restore to an unnamed list. If the list was deleted, prompt to restore to an unnamed list. If the list is active, restore normally.
    - **Acceptance Criteria:**
      - Only individual tasks can be restored (no bulk restore)
-     - If task's original list is archived:
+     - If task's original list is archived (but still exists in database):
        - Detect that the list is archived
-       - Show prompt: "This task's list is archived. Restore to an unnamed list?"
+       - Show prompt: "This task's list is archived. Restore the list, or restore to an unnamed list?"
+       - Option 1: Restore the list (clears list's `archivedAt`, restores task to original list)
+       - Option 2: Restore to an unnamed list (creates new unnamed list or uses existing one)
+       - Option 3: Cancel restore
+     - If task's original list was deleted (no longer exists in database):
+       - Detect that the list doesn't exist
+       - Show prompt: "This task's list no longer exists. Restore to an unnamed list?"
        - If yes: Restore task to a new unnamed list (or existing unnamed list if one exists)
        - If no: Cancel restore
      - If task's original list is active:
@@ -239,28 +252,34 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - Restore persists in IndexedDB
      - UI updates reactively after restoration
    - **Technical Work:**
-     - Update restore task function to check if list is archived
-     - Show prompt modal when list is archived
+     - Update restore task function to check if list exists and if it's archived
+     - Show prompt modal when list is archived (with options to restore list or restore to unnamed list)
+     - Show prompt modal when list doesn't exist (with option to restore to unnamed list)
+     - Implement logic to restore list (clear `archivedAt`)
      - Implement logic to restore task to unnamed list (create if needed)
      - Update UI to inform user of what happened
-     - Write tests: integration tests for restore task flow with archived list prompt
+     - Write tests: integration tests for restore task flow with archived list prompt and deleted list prompt
 
 8. **Archived Tasks View UI Updates**
-   - **Description:** Show list name for each task and badge indicator `[List Archived]` or `[List Active]` next to the list name. Display archived list titles in the archive area with a badge to signify they are list titles (not tasks).
+   - **Description:** Display archived lists and tasks in a grid layout. First column shows list names with badge indicators. Second column shows tasks for each list. Show all lists that are archived OR have archived tasks. If a list has no archived tasks, show "No archived tasks" in the second column.
    - **Acceptance Criteria:**
-     - List name is shown for each archived task (already implemented)
-     - Badge indicator shows `[List Archived]` or `[List Active]` next to list name
-     - List titles are viewable in the archive area
-     - List titles have a badge to signify they are list titles (to distinguish from tasks)
-     - Badge helps users understand list status and distinguish between archived lists and archived tasks
+     - Grid layout with 2 columns: list names (left) and tasks (right)
+     - Show all lists that are archived (even if no tasks)
+     - Show all lists that have archived tasks (even if list is active)
+     - List names show badge indicator: `[List Archived]` or `[List Active]`
+     - If list is archived, show archive date next to badge
+     - If list has no archived tasks, show "No archived tasks" in second column
+     - Tasks are grouped by archive date within each list
+     - Lists are sorted by order, then by name
+     - Tasks are sorted by archive date (newest first)
    - **Technical Work:**
-     - Update archived tasks view to check list status
-     - Display archived list titles in the archive area
-     - Add badge indicator component/UI element for list titles
-     - Add badge indicator component/UI element for task list status
-     - Display badge next to list name in archived view
-     - Display badge on list titles to indicate they are lists
-     - Write tests: integration tests for badge display and list status checking
+     - Update archived tasks view to use grid layout
+     - Filter lists to show: archived lists OR lists with archived tasks
+     - Group tasks by list, then by archive date
+     - Display list names in first column with badges
+     - Display tasks in second column (or "No archived tasks" message)
+     - Ensure alignment between list names and their tasks
+     - Write tests: integration tests for grid layout and list/task display
 
 9. **Sort/Reorder Lists**
    - **Description:** Users can reorder lists via drag-and-drop or buttons to prioritize and organize their lists

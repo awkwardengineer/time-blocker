@@ -2,7 +2,7 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
-  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskOrderCrossList, updateTaskText, updateListName, createUnnamedList } from '../lib/dataAccess.js';
+  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskOrderCrossList, updateTaskText, updateListName, createUnnamedList, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
   import TaskEditModal from './TaskEditModal.svelte';
   import ListEditModal from './ListEditModal.svelte';
   import AddTaskInput from './AddTaskInput.svelte';
@@ -666,6 +666,18 @@
       }, 0);
     }
   }
+  
+  async function handleListArchive(listId) {
+    try {
+      // Archive all tasks in the list first
+      await archiveAllTasksInList(listId);
+      // Then archive the list itself
+      await archiveList(listId);
+      // No need to reload - liveQuery in App.svelte will update automatically!
+    } catch (error) {
+      console.error('Error archiving list:', error);
+    }
+  }
 </script>
 
 <div bind:this={listSectionElement} data-list-id={listId}>
@@ -826,5 +838,6 @@
   listPosition={editingListPosition}
   onSave={handleListSave}
   onCancel={handleListEditCancel}
+  onArchive={handleListArchive}
 />
 

@@ -16,9 +16,21 @@ function getNextOrderValue(items) {
 
 /**
  * Fetch all lists ordered by their order field
+ * Only returns lists where archivedAt is null (excludes archived lists)
  * @returns {Promise<Array>} Array of list objects
  */
 export async function getAllLists() {
+  // Filter for lists where archivedAt is null or undefined (active lists)
+  // This handles both existing lists (which may not have the field) and new lists
+  const allLists = await db.lists.orderBy('order').toArray();
+  return allLists.filter(list => list.archivedAt == null); // == null matches both null and undefined
+}
+
+/**
+ * Fetch all lists including archived ones, ordered by their order field
+ * @returns {Promise<Array>} Array of list objects (both active and archived)
+ */
+export async function getAllListsIncludingArchived() {
   return await db.lists.orderBy('order').toArray();
 }
 
@@ -41,7 +53,8 @@ export async function createList(name) {
   // Create the list with trimmed name
   const listId = await db.lists.add({
     name: trimmedName,
-    order: nextOrder
+    order: nextOrder,
+    archivedAt: null
   });
   
   return listId;
@@ -59,7 +72,8 @@ export async function createUnnamedList() {
   // Create the list with name set to null
   const listId = await db.lists.add({
     name: null,
-    order: nextOrder
+    order: nextOrder,
+    archivedAt: null
   });
   
   return listId;
@@ -341,5 +355,44 @@ export async function updateTaskOrderCrossList(destinationListId, newTasks) {
  */
 export async function deleteTask(taskId) {
   await db.tasks.delete(taskId);
+}
+
+/**
+ * Archive a list by setting its archivedAt timestamp
+ * @param {number} listId - The ID of the list to archive
+ * @returns {Promise<number>} The number of lists updated (should be 1)
+ */
+export async function archiveList(listId) {
+  const archivedAt = Date.now();
+  return await db.lists.update(listId, { archivedAt });
+}
+
+/**
+ * Archive all active tasks (unchecked/checked) in a list
+ * Sets archivedAt timestamp on each task and updates status to 'archived'
+ * @param {number} listId - The ID of the list
+ * @returns {Promise<number>} The number of tasks archived
+ */
+export async function archiveAllTasksInList(listId) {
+  const archivedAt = Date.now();
+  
+  // Get all active tasks in the list
+  const activeTasks = await db.tasks
+    .where('listId')
+    .equals(listId)
+    .filter(task => task.status === 'unchecked' || task.status === 'checked')
+    .toArray();
+  
+  // Archive each task
+  const updatePromises = activeTasks.map(task =>
+    db.tasks.update(task.id, {
+      status: 'archived',
+      archivedAt: archivedAt
+    })
+  );
+  
+  await Promise.all(updatePromises);
+  
+  return activeTasks.length;
 }
 
