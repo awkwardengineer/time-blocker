@@ -339,7 +339,90 @@
         {#if $lists === undefined || $lists === null}
           <p>Loading...</p>
         {:else if Array.isArray($lists) && $lists.length === 0}
-          <p>No lists found</p>
+          <!-- Empty State: Create Your First List -->
+          <div class="print:hidden">
+            {#if isCreateListInputActive}
+              <h2>
+                <div class="flex items-center gap-2">
+                  <input
+                    bind:this={createListInputElement}
+                    bind:value={createListInput}
+                    type="text"
+                    class="create-list-input cursor-pointer hover:underline"
+                    placeholder="List name..."
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleCreateList();
+                      } else if (e.key === 'Escape') {
+                        handleCreateListInputEscape(e);
+                      }
+                    }}
+                    aria-label="Enter list name"
+                  />
+                  <button
+                    onclick={handleCreateList}
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                    aria-label="Create list"
+                  >
+                    Save
+                  </button>
+                </div>
+              </h2>
+            {:else}
+              <h2 
+                onclick={handleCreateListClick}
+                onkeydown={handleCreateListKeydown}
+                role="button"
+                tabindex="0"
+                class="cursor-pointer hover:underline"
+                aria-label="Create your first list"
+              >
+                Create Your First List
+              </h2>
+            {/if}
+            
+            <!-- Add your first task button -->
+            {#if !isUnnamedListInputActive}
+              <div class="mt-4">
+                <span
+                  class="inline-block px-4 py-2 bg-gray-100 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 text-sm"
+                  style="width: {TASK_WIDTH}px;"
+                  onclick={handleUnnamedListAddTaskClick}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleUnnamedListAddTaskClick();
+                    }
+                  }}
+                  role="button"
+                  tabindex="0"
+                  aria-label="Add your first task"
+                >
+                  Add your first task
+                </span>
+              </div>
+            {:else}
+              <div class="mt-4">
+                <textarea
+                  bind:this={unnamedListInputElement}
+                  bind:value={unnamedListTaskInput}
+                  class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  style="width: {TASK_WIDTH}px; max-height: {MAX_TEXTAREA_HEIGHT}px;"
+                  placeholder="Add new task..."
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleUnnamedListCreateTask();
+                    } else if (e.key === 'Escape') {
+                      handleUnnamedListInputEscape(e);
+                    }
+                  }}
+                  aria-label="Enter task text"
+                ></textarea>
+              </div>
+            {/if}
+          </div>
         {:else if Array.isArray($lists)}
           {#each $lists as list}
             <TaskList
@@ -497,9 +580,9 @@
                 }}
                 role="button"
                 tabindex="0"
-                aria-label="Add a task"
+                aria-label="Add your first task"
               >
-                Add a task
+                Add your first task
               </span>
             </div>
           {/if}

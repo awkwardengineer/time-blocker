@@ -193,43 +193,43 @@ Since we already have lists, we'll start with editing and adding new lists, then
 
 ---
 
-4. **Archive Lists**
+4. **Archive Lists** ✅
    - **Description:** Archive a list by setting `archivedAt` timestamp on the list and archiving all active tasks individually. The archive button is available via the list title edit modal. Show confirmation prompt before archiving. Archived lists remain in the database with their name preserved.
    - **Acceptance Criteria:**
-     - Users can archive lists via the list title edit modal
-     - Archive button/action is available in the list edit modal
-     - Confirmation prompt appears: "Archive this list? This will archive all tasks in the list."
-     - User must confirm before list is archived
-     - List archiving sets `archivedAt` timestamp
-     - All active tasks (unchecked/checked) in the list are archived individually with `archivedAt` timestamps
-     - Archived lists are hidden from main page display
-     - Archived lists remain in the database with their name preserved (not deleted)
-     - List archiving persists in IndexedDB
-     - UI updates reactively after archiving
+     - ✅ Users can archive lists via the list title edit modal
+     - ✅ Archive button/action is available in the list edit modal
+     - ✅ Confirmation prompt appears: "Archive this list? This will archive all tasks in the list."
+     - ✅ User must confirm before list is archived
+     - ✅ List archiving sets `archivedAt` timestamp
+     - ✅ All active tasks (unchecked/checked) in the list are archived individually with `archivedAt` timestamps
+     - ✅ Archived lists are hidden from main page display
+     - ✅ Archived lists remain in the database with their name preserved (not deleted)
+     - ✅ List archiving persists in IndexedDB
+     - ✅ UI updates reactively after archiving
    - **Technical Work:**
-     - Add `archivedAt` field to lists table (database migration)
-     - Add archive button/action to the list title edit modal (ListEditModal component)
-     - Show confirmation modal before archiving
-     - Implement function to archive list (set `archivedAt` timestamp)
-     - Implement function to archive all active tasks in a list (set `archivedAt` on each task)
-     - Filter lists in main view: only show lists where `archivedAt` is null
-     - Update data access functions to filter by `archivedAt`
-     - Update UI reactively after archiving
+     - ✅ Add `archivedAt` field to lists table (database migration)
+     - ✅ Add archive button/action to the list title edit modal (ListEditModal component)
+     - ✅ Show confirmation modal before archiving (using state switching in same modal)
+     - ✅ Implement function to archive list (set `archivedAt` timestamp)
+     - ✅ Implement function to archive all active tasks in a list (set `archivedAt` on each task)
+     - ✅ Filter lists in main view: only show lists where `archivedAt` is null
+     - ✅ Update data access functions to filter by `archivedAt`
+     - ✅ Update UI reactively after archiving
      - Write tests: unit tests for archive functions, integration tests for UI interaction and confirmation prompt
 
-5. **Empty State (Creating Lists When No Lists Exist)**
+5. **Empty State (Creating Lists When No Lists Exist)** ✅
    - **Description:** Handle empty list state behavior - when no lists exist, provide buttons to "name a list" or "add a task" to get started
    - **Acceptance Criteria:**
-     - Empty state is displayed when no active lists exist
-     - Empty state shows buttons: "Name a list" and "Add a task"
-     - Clicking "name a list" creates a new list
-     - Clicking "add a task" creates an unnamed list with a task
-     - Empty state doesn't break functionality
+     - ✅ Empty state is displayed when no active lists exist
+     - ✅ Empty state shows buttons: "Create Your First List" and "Add your first task"
+     - ✅ Clicking "Create Your First List" creates a new list
+     - ✅ Clicking "Add your first task" creates an unnamed list with a task
+     - ✅ Empty state doesn't break functionality
    - **Technical Work:**
-     - Detect when no active lists exist (where `archivedAt` is null and `deletedAt` is null)
-     - Display empty state UI with buttons
-     - Implement empty state list creation flow
-     - Handle edge case: creating first list
+     - ✅ Detect when no active lists exist (where `archivedAt` is null and `deletedAt` is null)
+     - ✅ Display empty state UI with buttons
+     - ✅ Implement empty state list creation flow
+     - ✅ Handle edge case: creating first list
      - Write tests: integration tests for empty state display and interactions
 
 6. **Restore Archived Tasks (Individual Only)**
