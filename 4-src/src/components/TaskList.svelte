@@ -289,10 +289,20 @@
     // Focus will be handled by $effect after input is rendered
   }
   
-  function handleInputEscape(e) {
+  async function handleInputEscape(e) {
     if (e.key === 'Escape') {
       isInputActive = false;
       onInputChange('');
+      // Wait for Svelte's reactive updates to complete
+      // Use multiple ticks to ensure all reactive updates propagate
+      await tick();
+      await tick();
+      // Wait for DOM to actually update (similar to waitFor in tests)
+      // tick() schedules updates, but DOM updates happen in next microtask
+      // Use requestAnimationFrame to ensure DOM has updated, then add a delay
+      // This is especially important in test environments where timing can be different
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
   

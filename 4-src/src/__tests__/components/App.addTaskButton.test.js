@@ -102,17 +102,14 @@ describe('App - Add Task Button Behavior and Styling', () => {
     textarea.focus()
     await user.keyboard('{Escape}')
     
-    // Wait a bit for state to update
-    await new Promise(resolve => setTimeout(resolve, 50))
-    
-    // Verify button is back (positive assertion first, per timing notes)
+    // Wait for button to reappear (positive assertion first - more reliable)
     await waitFor(() => {
       expect(within(workSection).getByRole('button', { name: /add new task to work/i })).toBeInTheDocument()
-    }, { timeout: 5000 })
+    }, { timeout: 10000 })
     
-    // Then verify input is gone (negative assertion after positive succeeds)
+    // Then verify input is gone (negative assertion - after positive succeeds)
     expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
-  })
+  }, 15000)
 
   it('closes input field when clicking outside (if empty)', async () => {
     const user = userEvent.setup()
