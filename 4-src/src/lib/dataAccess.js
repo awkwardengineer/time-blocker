@@ -224,14 +224,29 @@ export async function updateTaskStatus(taskId, status) {
 /**
  * Restore an archived task (change status from 'archived' to 'checked')
  * Appends task to end of list (max order + 1)
+ * If the task's list is archived, automatically restores the list as well
  * @param {number} taskId - The ID of the task to restore
- * @returns {Promise<number>} The number of tasks updated (should be 1)
+ * @returns {Promise<{taskUpdated: number, listRestored: boolean}>} Object with task update count and whether list was restored
  */
 export async function restoreTask(taskId) {
   // Get the task to find its listId
   const task = await db.tasks.get(taskId);
   if (!task) {
     throw new Error(`Task ${taskId} not found`);
+  }
+  
+  // Check if the list exists and if it's archived
+  const list = await db.lists.get(task.listId);
+  if (!list) {
+    // List doesn't exist - deferred: will be handled when delete lists feature is added
+    throw new Error(`Task's list ${task.listId} not found`);
+  }
+  
+  let listRestored = false;
+  // If the list is archived, restore it first
+  if (list.archivedAt != null) {
+    await restoreList(task.listId);
+    listRestored = true;
   }
   
   // Get existing tasks for this list to determine the next order value
@@ -244,10 +259,12 @@ export async function restoreTask(taskId) {
   const nextOrder = getNextOrderValue(existingTasks);
   
   // Update task status and order
-  return await db.tasks.update(taskId, {
+  const taskUpdated = await db.tasks.update(taskId, {
     status: 'checked',
     order: nextOrder
   });
+  
+  return { taskUpdated, listRestored };
 }
 
 /**
@@ -365,6 +382,15 @@ export async function deleteTask(taskId) {
 export async function archiveList(listId) {
   const archivedAt = Date.now();
   return await db.lists.update(listId, { archivedAt });
+}
+
+/**
+ * Restore an archived list by clearing its archivedAt timestamp
+ * @param {number} listId - The ID of the list to restore
+ * @returns {Promise<number>} The number of lists updated (should be 1)
+ */
+export async function restoreList(listId) {
+  return await db.lists.update(listId, { archivedAt: null });
 }
 
 /**

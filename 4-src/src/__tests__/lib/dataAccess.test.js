@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import db from '../../lib/db.js'
-import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, updateTaskOrderCrossList, deleteTask, updateListName, createList, createUnnamedList } from '../../lib/dataAccess.js'
+import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, updateTaskOrderCrossList, deleteTask, updateListName, createList, createUnnamedList, archiveList, restoreList } from '../../lib/dataAccess.js'
 
 describe('dataAccess', () => {
   beforeEach(async () => {
@@ -508,11 +508,78 @@ describe('dataAccess', () => {
       await updateTaskStatus(taskId, 'archived')
       
       // Restore it
-      await restoreTask(taskId)
+      const result = await restoreTask(taskId)
+      
+      // Verify return value
+      expect(result.taskUpdated).toBe(1)
+      expect(result.listRestored).toBe(false)
       
       // Verify it's at the end (maxOrder + 1)
       const task = await db.tasks.get(taskId)
       expect(task.order).toBe(maxOrder + 1)
+    })
+    
+    it('should automatically restore archived list when restoring task from archived list', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      
+      // Create a task in the list
+      const taskId = await createTask(list1.id, 'Task in List')
+      
+      // Archive the list (which archives all tasks)
+      await archiveList(list1.id)
+      await updateTaskStatus(taskId, 'archived')
+      
+      // Verify list is archived
+      let list = await db.lists.get(list1.id)
+      expect(list.archivedAt).not.toBeNull()
+      
+      // Verify list is not in active lists
+      const activeLists = await getAllLists()
+      expect(activeLists.find(l => l.id === list1.id)).toBeUndefined()
+      
+      // Restore the task
+      const result = await restoreTask(taskId)
+      
+      // Verify return value indicates list was restored
+      expect(result.taskUpdated).toBe(1)
+      expect(result.listRestored).toBe(true)
+      
+      // Verify list is restored (archivedAt is null)
+      list = await db.lists.get(list1.id)
+      expect(list.archivedAt).toBeNull()
+      
+      // Verify list appears in active lists
+      const activeListsAfter = await getAllLists()
+      expect(activeListsAfter.find(l => l.id === list1.id)).toBeDefined()
+      
+      // Verify task is restored
+      const task = await db.tasks.get(taskId)
+      expect(task.status).toBe('checked')
+    })
+    
+    it('should restore task normally when list is active', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      
+      // Create and archive a task
+      const taskId = await createTask(list1.id, 'Task to Restore')
+      await updateTaskStatus(taskId, 'archived')
+      
+      // Verify list is active
+      const list = await db.lists.get(list1.id)
+      expect(list.archivedAt == null).toBe(true) // null or undefined
+      
+      // Restore the task
+      const result = await restoreTask(taskId)
+      
+      // Verify return value indicates list was not restored
+      expect(result.taskUpdated).toBe(1)
+      expect(result.listRestored).toBe(false)
+      
+      // Verify task is restored
+      const task = await db.tasks.get(taskId)
+      expect(task.status).toBe('checked')
     })
   })
 
@@ -1003,6 +1070,57 @@ describe('dataAccess', () => {
       expect(persistedTasks[1].order).toBe(1)
       expect(persistedTasks[2].id).toBe(reorderedTasks[2].id)
       expect(persistedTasks[2].order).toBe(2)
+    })
+  })
+  
+  describe('restoreList', () => {
+    it('should restore an archived list by clearing archivedAt', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      
+      // Archive the list
+      await archiveList(list1.id)
+      
+      // Verify list is archived
+      let list = await db.lists.get(list1.id)
+      expect(list.archivedAt).not.toBeNull()
+      
+      // Verify list is not in active lists
+      const activeLists = await getAllLists()
+      expect(activeLists.find(l => l.id === list1.id)).toBeUndefined()
+      
+      // Restore the list
+      const result = await restoreList(list1.id)
+      
+      // Verify return value
+      expect(result).toBe(1)
+      
+      // Verify list is restored (archivedAt is null)
+      list = await db.lists.get(list1.id)
+      expect(list.archivedAt).toBeNull()
+      
+      // Verify list appears in active lists
+      const activeListsAfter = await getAllLists()
+      expect(activeListsAfter.find(l => l.id === list1.id)).toBeDefined()
+    })
+    
+    it('should handle restoring a list that is not archived', async () => {
+      const lists = await getAllLists()
+      const list1 = lists.find(l => l.order === 1)
+      
+      // Verify list is active
+      let list = await db.lists.get(list1.id)
+      expect(list.archivedAt == null).toBe(true) // null or undefined
+      
+      // Restore the list (should still work, just clears archivedAt)
+      const result = await restoreList(list1.id)
+      
+      // Verify return value
+      expect(result).toBe(1)
+      
+      // Verify list is still active
+      list = await db.lists.get(list1.id)
+      expect(list.archivedAt).toBeNull() // After restore, should be explicitly null
     })
   })
 })

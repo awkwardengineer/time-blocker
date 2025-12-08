@@ -139,8 +139,12 @@
   
   async function handleRestore(taskId) {
     try {
-      await restoreTask(taskId);
+      const result = await restoreTask(taskId);
       // No need to reload - liveQuery will update automatically!
+      if (result.listRestored) {
+        // List was also restored - user will see it appear in main view
+        console.log('Task and its list have been restored');
+      }
     } catch (error) {
       console.error('Error restoring task:', error);
     }

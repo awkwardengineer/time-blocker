@@ -59,7 +59,7 @@ Since we already have lists, we'll start with editing and adding new lists, then
 3. Add new lists (non-empty state)
 4. Archive lists
 5. Empty state (for creating lists when no lists exist)
-6. Restore archived tasks (individual only)
+6. Restore archived tasks (individual only) ✅
 7. Sort/reorder lists
 8. Delete archived lists
 
@@ -172,15 +172,10 @@ Since we already have lists, we'll start with editing and adding new lists, then
 > - Only individual tasks can be restored (no bulk restore)
 > - If the task's original list is archived (but still exists in database):
 >   - Detect that the list is archived
->   - Prompt: "This task's list is archived. Restore the list, or restore to an unnamed list?"
->   - Option 1: Restore the list (clears list's `archivedAt`, restores task to original list)
->   - Option 2: Restore to an unnamed list (creates new unnamed list or uses existing one)
->   - Option 3: Cancel restore
+>   - Automatically restore the list (clear list's `archivedAt`) and restore task to original list
+>   - No prompt needed - just restore both the list and the task
 > - If the task's original list was deleted (no longer exists in database):
->   - Detect that the list doesn't exist
->   - Prompt: "This task's list no longer exists. Restore to an unnamed list?"
->   - If yes: Restore task to a new unnamed list (or existing unnamed list if one exists)
->   - If no: Cancel restore
+>   - **Deferred:** This behavior will be implemented when delete lists feature is added
 > - If the task's original list is active:
 >   - Restore task normally to its original list
 >
@@ -232,33 +227,26 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - ✅ Handle edge case: creating first list
      - Write tests: integration tests for empty state display and interactions
 
-6. **Restore Archived Tasks (Individual Only)**
-   - **Description:** Only individual tasks can be restored. If the task's original list is archived (but exists), prompt to restore the list or restore to an unnamed list. If the list was deleted, prompt to restore to an unnamed list. If the list is active, restore normally.
+6. **Restore Archived Tasks (Individual Only)** ✅
+   - **Description:** Only individual tasks can be restored. If the task's original list is archived (but exists), automatically restore the list along with the task. If the list is active, restore normally. Deleted list behavior is deferred until delete lists feature is implemented.
    - **Acceptance Criteria:**
-     - Only individual tasks can be restored (no bulk restore)
-     - If task's original list is archived (but still exists in database):
-       - Detect that the list is archived
-       - Show prompt: "This task's list is archived. Restore the list, or restore to an unnamed list?"
-       - Option 1: Restore the list (clears list's `archivedAt`, restores task to original list)
-       - Option 2: Restore to an unnamed list (creates new unnamed list or uses existing one)
-       - Option 3: Cancel restore
+     - ✅ Only individual tasks can be restored (no bulk restore)
+     - ✅ If task's original list is archived (but still exists in database):
+       - ✅ Detect that the list is archived
+       - ✅ Automatically restore the list (clear list's `archivedAt`) and restore task to original list
+       - ✅ No prompt needed - restore both the list and the task automatically
      - If task's original list was deleted (no longer exists in database):
-       - Detect that the list doesn't exist
-       - Show prompt: "This task's list no longer exists. Restore to an unnamed list?"
-       - If yes: Restore task to a new unnamed list (or existing unnamed list if one exists)
-       - If no: Cancel restore
-     - If task's original list is active:
-       - Restore task normally to its original list
-     - Restore persists in IndexedDB
-     - UI updates reactively after restoration
+       - **Deferred:** This behavior will be implemented when delete lists feature is added
+     - ✅ If task's original list is active:
+       - ✅ Restore task normally to its original list
+     - ✅ Restore persists in IndexedDB
+     - ✅ UI updates reactively after restoration
    - **Technical Work:**
-     - Update restore task function to check if list exists and if it's archived
-     - Show prompt modal when list is archived (with options to restore list or restore to unnamed list)
-     - Show prompt modal when list doesn't exist (with option to restore to unnamed list)
-     - Implement logic to restore list (clear `archivedAt`)
-     - Implement logic to restore task to unnamed list (create if needed)
-     - Update UI to inform user of what happened
-     - Write tests: integration tests for restore task flow with archived list prompt and deleted list prompt
+     - ✅ Update restore task function to check if list exists and if it's archived
+     - ✅ If list is archived, automatically restore the list (clear `archivedAt`) before restoring the task
+     - ✅ Restore task to its original list after list is restored
+     - ✅ Update UI to inform user that both list and task were restored (if applicable)
+     - ✅ Write tests: integration tests for restore task flow with archived list (automatic restore)
 
 8. **Archived Tasks View UI Updates**
    - **Description:** Display archived lists and tasks in a grid layout. First column shows list names with badge indicators. Second column shows tasks for each list. Show all lists that are archived OR have archived tasks. If a list has no archived tasks, show "No archived tasks" in the second column.
