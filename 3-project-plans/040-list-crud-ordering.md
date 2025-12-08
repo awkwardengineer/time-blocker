@@ -181,14 +181,17 @@ Since we already have lists, we'll start with editing and adding new lists, then
 > **Archived tasks view UI:**
 > - Show list name for each task (already implemented)
 > - Show badge indicator: `[List Archived]` or `[List Active]` next to the list name
-> - Helps users understand which tasks belong to archived lists
+> - List titles are viewable in the archive area
+> - List titles have a badge to signify they are list titles (not tasks)
+> - Helps users understand which tasks belong to archived lists and distinguish between archived lists and archived tasks
 
 ---
 
 4. **Archive Lists**
-   - **Description:** Archive a list by setting `archivedAt` timestamp on the list and archiving all active tasks individually. Show confirmation prompt before archiving.
+   - **Description:** Archive a list by setting `archivedAt` timestamp on the list and archiving all active tasks individually. The archive button is available via the list title edit modal. Show confirmation prompt before archiving.
    - **Acceptance Criteria:**
-     - Users can archive lists
+     - Users can archive lists via the list title edit modal
+     - Archive button/action is available in the list edit modal
      - Confirmation prompt appears: "Archive this list? This will archive all tasks in the list."
      - User must confirm before list is archived
      - List archiving sets `archivedAt` timestamp
@@ -198,7 +201,7 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - UI updates reactively after archiving
    - **Technical Work:**
      - Add `archivedAt` field to lists table (database migration)
-     - Add archive button/action for lists
+     - Add archive button/action to the list title edit modal (ListEditModal component)
      - Show confirmation modal before archiving
      - Implement function to archive list (set `archivedAt` timestamp)
      - Implement function to archive all active tasks in a list (set `archivedAt` on each task)
@@ -243,15 +246,20 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - Write tests: integration tests for restore task flow with archived list prompt
 
 8. **Archived Tasks View UI Updates**
-   - **Description:** Show list name for each task and badge indicator `[List Archived]` or `[List Active]` next to the list name to help users understand which tasks belong to archived lists
+   - **Description:** Show list name for each task and badge indicator `[List Archived]` or `[List Active]` next to the list name. Display archived list titles in the archive area with a badge to signify they are list titles (not tasks).
    - **Acceptance Criteria:**
      - List name is shown for each archived task (already implemented)
      - Badge indicator shows `[List Archived]` or `[List Active]` next to list name
-     - Badge helps users understand list status
+     - List titles are viewable in the archive area
+     - List titles have a badge to signify they are list titles (to distinguish from tasks)
+     - Badge helps users understand list status and distinguish between archived lists and archived tasks
    - **Technical Work:**
      - Update archived tasks view to check list status
-     - Add badge indicator component/UI element
+     - Display archived list titles in the archive area
+     - Add badge indicator component/UI element for list titles
+     - Add badge indicator component/UI element for task list status
      - Display badge next to list name in archived view
+     - Display badge on list titles to indicate they are lists
      - Write tests: integration tests for badge display and list status checking
 
 9. **Sort/Reorder Lists**
