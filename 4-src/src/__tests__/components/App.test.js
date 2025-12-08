@@ -42,8 +42,9 @@ describe('App', () => {
     // Wait for lists to appear (data has started loading)
     await waitFor(() => {
       expect(screen.getByText('Work')).toBeInTheDocument()
-      expect(screen.getByText('Personal')).toBeInTheDocument()
     })
+    const personalSection = await waitForListSection('Personal')
+    expect(within(personalSection).getByText('Personal')).toBeInTheDocument()
     
     // Wait for tasks to load and be displayed
     await waitFor(() => {
@@ -155,49 +156,6 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
-    })
-  })
-
-  it('requires confirmation before deleting archived tasks', async () => {
-    const user = userEvent.setup()
-    render(App)
-
-    const workSection = await waitForListSection('Work')
-    const checkbox = await getFirstCheckboxFor('Work')
-    await user.click(checkbox)
-
-    await waitFor(() => {
-      expect(within(getListSection('Work')).getAllByRole('checkbox')[0]).toBeChecked()
-    })
-
-    const archiveButton = await within(workSection).findByRole('button', { name: /archive/i })
-    await user.click(archiveButton)
-
-    const archivedSection = screen.getByText('Archived Tasks').parentElement
-    await waitFor(() => {
-      expect(within(archivedSection).getByText('Task 1')).toBeInTheDocument()
-    })
-
-    const deleteButton = within(archivedSection).getByRole('button', { name: /delete/i })
-    await user.click(deleteButton)
-
-    const modalContent = await screen.findByText(/permanently delete "Task 1"/i)
-    const modal = modalContent.closest('div')
-
-    await user.click(within(modal).getByRole('button', { name: /cancel/i }))
-
-    await waitFor(() => {
-      expect(screen.queryByText(/permanently delete "Task 1"/i)).not.toBeInTheDocument()
-    })
-
-    await user.click(deleteButton)
-    const modalContent2 = await screen.findByText(/permanently delete "Task 1"/i)
-    const modal2 = modalContent2.closest('div')
-
-    await user.click(within(modal2).getByRole('button', { name: /^delete$/i }))
-
-    await waitFor(() => {
-      expect(within(archivedSection).queryByText('Task 1')).not.toBeInTheDocument()
     })
   })
 

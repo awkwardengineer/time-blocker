@@ -39,6 +39,21 @@ db.version(3).stores({
     });
 });
 
+// Version 4: Add archivedAt timestamp field to lists
+db.version(4).stores({
+  lists: '++id, name, order, archivedAt',
+  tasks: '++id, text, listId, order, status, archivedAt',
+  preferences: 'key',
+  calendarSyncState: 'key'
+}).upgrade(tx => {
+  // Migration: Set archivedAt to null for all existing lists (they are active)
+  return tx.lists.toCollection().modify(list => {
+    if (list.archivedAt === undefined) {
+      list.archivedAt = null;
+    }
+  });
+});
+
 export default db;
 
 

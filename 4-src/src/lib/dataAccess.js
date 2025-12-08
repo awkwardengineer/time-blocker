@@ -16,9 +16,21 @@ function getNextOrderValue(items) {
 
 /**
  * Fetch all lists ordered by their order field
+ * Only returns lists where archivedAt is null (excludes archived lists)
  * @returns {Promise<Array>} Array of list objects
  */
 export async function getAllLists() {
+  // Filter for lists where archivedAt is null or undefined (active lists)
+  // This handles both existing lists (which may not have the field) and new lists
+  const allLists = await db.lists.orderBy('order').toArray();
+  return allLists.filter(list => list.archivedAt == null); // == null matches both null and undefined
+}
+
+/**
+ * Fetch all lists including archived ones, ordered by their order field
+ * @returns {Promise<Array>} Array of list objects (both active and archived)
+ */
+export async function getAllListsIncludingArchived() {
   return await db.lists.orderBy('order').toArray();
 }
 
@@ -41,7 +53,8 @@ export async function createList(name) {
   // Create the list with trimmed name
   const listId = await db.lists.add({
     name: trimmedName,
-    order: nextOrder
+    order: nextOrder,
+    archivedAt: null
   });
   
   return listId;
@@ -59,7 +72,8 @@ export async function createUnnamedList() {
   // Create the list with name set to null
   const listId = await db.lists.add({
     name: null,
-    order: nextOrder
+    order: nextOrder,
+    archivedAt: null
   });
   
   return listId;
@@ -210,14 +224,29 @@ export async function updateTaskStatus(taskId, status) {
 /**
  * Restore an archived task (change status from 'archived' to 'checked')
  * Appends task to end of list (max order + 1)
+ * If the task's list is archived, automatically restores the list as well
  * @param {number} taskId - The ID of the task to restore
- * @returns {Promise<number>} The number of tasks updated (should be 1)
+ * @returns {Promise<{taskUpdated: number, listRestored: boolean}>} Object with task update count and whether list was restored
  */
 export async function restoreTask(taskId) {
   // Get the task to find its listId
   const task = await db.tasks.get(taskId);
   if (!task) {
     throw new Error(`Task ${taskId} not found`);
+  }
+  
+  // Check if the list exists and if it's archived
+  const list = await db.lists.get(task.listId);
+  if (!list) {
+    // List doesn't exist - deferred: will be handled when delete lists feature is added
+    throw new Error(`Task's list ${task.listId} not found`);
+  }
+  
+  let listRestored = false;
+  // If the list is archived, restore it first
+  if (list.archivedAt != null) {
+    await restoreList(task.listId);
+    listRestored = true;
   }
   
   // Get existing tasks for this list to determine the next order value
@@ -230,10 +259,12 @@ export async function restoreTask(taskId) {
   const nextOrder = getNextOrderValue(existingTasks);
   
   // Update task status and order
-  return await db.tasks.update(taskId, {
+  const taskUpdated = await db.tasks.update(taskId, {
     status: 'checked',
     order: nextOrder
   });
+  
+  return { taskUpdated, listRestored };
 }
 
 /**
@@ -334,12 +365,84 @@ export async function updateTaskOrderCrossList(destinationListId, newTasks) {
 }
 
 /**
- * Permanently delete a task from the database
- * This is a destructive operation - use with caution
- * @param {number} taskId - The ID of the task to delete
+ * Archive a list by setting its archivedAt timestamp
+ * @param {number} listId - The ID of the list to archive
+ * @returns {Promise<number>} The number of lists updated (should be 1)
+ */
+export async function archiveList(listId) {
+  const archivedAt = Date.now();
+  return await db.lists.update(listId, { archivedAt });
+}
+
+/**
+ * Restore an archived list by clearing its archivedAt timestamp
+ * @param {number} listId - The ID of the list to restore
+ * @returns {Promise<number>} The number of lists updated (should be 1)
+ */
+export async function restoreList(listId) {
+  return await db.lists.update(listId, { archivedAt: null });
+}
+
+/**
+ * Archive all active tasks (unchecked/checked) in a list
+ * Sets archivedAt timestamp on each task and updates status to 'archived'
+ * @param {number} listId - The ID of the list
+ * @returns {Promise<number>} The number of tasks archived
+ */
+export async function archiveAllTasksInList(listId) {
+  const archivedAt = Date.now();
+  
+  // Get all active tasks in the list
+  const activeTasks = await db.tasks
+    .where('listId')
+    .equals(listId)
+    .filter(task => task.status === 'unchecked' || task.status === 'checked')
+    .toArray();
+  
+  // Archive each task
+  const updatePromises = activeTasks.map(task =>
+    db.tasks.update(task.id, {
+      status: 'archived',
+      archivedAt: archivedAt
+    })
+  );
+  
+  await Promise.all(updatePromises);
+  
+  return activeTasks.length;
+}
+
+/**
+ * Update the order of lists
+ * Recalculates sequential order values (0, 1, 2, 3...) for all lists based on their new positions
+ * @param {Array<{id: number}>} reorderedLists - Array of lists in their new order (must include id field)
  * @returns {Promise<void>}
  */
-export async function deleteTask(taskId) {
-  await db.tasks.delete(taskId);
+export async function updateListOrder(reorderedLists) {
+  if (!reorderedLists || reorderedLists.length === 0) {
+    return; // No lists to update
+  }
+  
+  // Validate that all lists exist
+  const listIds = reorderedLists.map(l => l.id);
+  const lists = await db.lists.bulkGet(listIds);
+  const invalidLists = lists.filter(l => !l);
+  if (invalidLists.length > 0) {
+    throw new Error('Cannot update order: some lists do not exist');
+  }
+  
+  // Calculate new sequential order values based on array position
+  // Array index becomes the order value (0, 1, 2, 3...)
+  const updates = reorderedLists.map((list, index) => ({
+    id: list.id,
+    order: index
+  }));
+  
+  // Update all lists in a transaction for atomicity
+  await db.transaction('rw', db.lists, async () => {
+    for (const update of updates) {
+      await db.lists.update(update.id, { order: update.order });
+    }
+  });
 }
 

@@ -5,6 +5,7 @@
 - **Do not start implementing code until explicitly asked to do so, or until you've checked with the user first**
 - Always propose changes and wait for approval before implementing
 - When discussing features, requirements, or planning: update documentation/plans as requested, ask clarifying questions, propose approaches and get approval before implementing
+- **Mark tasks as complete with ✅ checkmark emojis in milestone files as work is completed** (not just at merge time)
 
 ## Brainstorming & Approach Discussion
 - When asked about approaches or how to do something:
@@ -21,10 +22,18 @@
 - Avoid fluff phrases like "That's a great idea!" or excessive pleasantries
 - Be direct and concise
 
+## Task Tracking
+- **Mark tasks complete with ✅ checkmark emojis as they're being done** (not just at merge time)
+- Update milestone files immediately when:
+  - Acceptance criteria are met
+  - Technical work items are completed
+  - Steps are finished
+- Use ✅ emoji for completed items in milestone markdown files
+
 ## Merging Workflow
 - Before merging a branch:
   1. Run tests: `cd 4-src && npm test`
-  2. If tests pass, mark tasks as complete in project plans (using ✅ checkmark emojis)
+  2. Verify all tasks are marked complete in project plans (using ✅ checkmark emojis)
   3. Commit any documentation updates
   4. Merge the branch into master
   5. Push to origin

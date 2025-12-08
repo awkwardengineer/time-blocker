@@ -1,5 +1,5 @@
 <script>
-  let { isOpen, title, message, onConfirm, onCancel } = $props();
+  let { isOpen, title, message, onConfirm, onCancel, confirmButtonText = 'Delete' } = $props();
   
   function handleConfirm() {
     onConfirm();
@@ -48,7 +48,7 @@
           onclick={handleConfirm}
           class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
         >
-          Delete
+          {confirmButtonText}
         </button>
       </div>
     </div>

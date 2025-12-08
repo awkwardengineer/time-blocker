@@ -13,11 +13,11 @@ describe('App - Unnamed List Creation (Task 3b)', () => {
     await setupTestData()
   })
 
-  // Helper: Activate unnamed list task input by clicking "Add a task" button
+  // Helper: Activate unnamed list task input by clicking "Add your first task" button
   async function activateUnnamedListInput(user) {
-    // Wait for "Add a task" button to appear (should be visible when lists exist)
+    // Wait for "Add your first task" button to appear (should be visible when lists exist)
     const addTaskButton = await waitFor(() => {
-      return screen.getByRole('button', { name: /add a task/i })
+      return screen.getByRole('button', { name: /add your first task/i })
     })
     await user.click(addTaskButton)
     
@@ -38,8 +38,8 @@ describe('App - Unnamed List Creation (Task 3b)', () => {
       expect(screen.getByText('Work')).toBeInTheDocument()
     })
     
-    // Verify "Add a task" button exists
-    const addTaskButton = screen.getByRole('button', { name: /add a task/i })
+    // Verify "Add your first task" button exists
+    const addTaskButton = screen.getByRole('button', { name: /add your first task/i })
     expect(addTaskButton).toBeInTheDocument()
   })
 
@@ -205,8 +205,8 @@ describe('App - Unnamed List Creation (Task 3b)', () => {
     // Verify no unnamed list was created
     expect(screen.queryByText('Unnamed list')).not.toBeInTheDocument()
     
-    // Verify "Add a task" button appears again
-    expect(screen.getByRole('button', { name: /add a task/i })).toBeInTheDocument()
+    // Verify "Add your first task" button appears again
+    expect(screen.getByRole('button', { name: /add your first task/i })).toBeInTheDocument()
   })
 
   it('Click outside input (when empty) cancels and closes', async () => {
@@ -225,8 +225,8 @@ describe('App - Unnamed List Creation (Task 3b)', () => {
       expect(screen.queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
     })
     
-    // Verify "Add a task" button appears again
-    expect(screen.getByRole('button', { name: /add a task/i })).toBeInTheDocument()
+    // Verify "Add your first task" button appears again
+    expect(screen.getByRole('button', { name: /add your first task/i })).toBeInTheDocument()
   })
 
   it('Multiple tasks can be created in unnamed list sequentially', async () => {

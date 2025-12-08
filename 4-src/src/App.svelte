@@ -2,7 +2,7 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
-  import { getAllLists, createList, createTask, createUnnamedList, updateTaskOrderCrossList } from './lib/dataAccess.js';
+  import { getAllLists, createList, createTask, createUnnamedList, updateTaskOrderCrossList, updateListOrder } from './lib/dataAccess.js';
   import db from './lib/db.js';
   import TaskList from './components/TaskList.svelte';
   import ArchivedView from './components/ArchivedView.svelte';
@@ -12,6 +12,9 @@
   
   // Reactive query for lists - automatically updates when lists change
   let lists = liveQuery(() => getAllLists());
+  
+  // Local state for drag-and-drop lists - synced from liveQuery
+  let draggableLists = $state([]);
   
   // Track new task inputs per list
   let newTaskInputs = $state({});
@@ -58,6 +61,15 @@
       if (hasChanges) {
         newTaskInputs = inputs;
       }
+    }
+  });
+  
+  // Sync draggableLists from liveQuery (similar to tasks)
+  $effect(() => {
+    if ($lists && Array.isArray($lists)) {
+      draggableLists = $lists.map(list => ({ id: list.id, name: list.name, order: list.order }));
+    } else {
+      draggableLists = [];
     }
   });
   
@@ -322,6 +334,28 @@
       }
     }
   }
+  
+  // Handle list drag events - consider event for visual reordering only
+  function handleListConsider(event) {
+    // Update local state for immediate visual feedback (no database updates)
+    draggableLists = event.detail.items;
+  }
+  
+  // Handle list drag events - finalize event for database updates
+  async function handleListFinalize(event) {
+    // Update local state for immediate visual feedback
+    draggableLists = event.detail.items;
+    
+    // Update database with new order values
+    try {
+      await updateListOrder(event.detail.items);
+      // liveQuery will automatically update the UI after database changes
+    } catch (error) {
+      console.error('Error updating list order:', error);
+      // On error, revert draggableLists to match database state
+      // The $effect will sync it back from liveQuery
+    }
+  }
 </script>
 
 <main class="min-h-screen flex flex-col items-center justify-center bg-gray-50 print:bg-white print:min-h-0 print:gap-0 print:py-0 gap-4 py-8">
@@ -339,17 +373,119 @@
         {#if $lists === undefined || $lists === null}
           <p>Loading...</p>
         {:else if Array.isArray($lists) && $lists.length === 0}
-          <p>No lists found</p>
+          <!-- Empty State: Create Your First List -->
+          <div class="print:hidden">
+            {#if isCreateListInputActive}
+              <h2>
+                <div class="flex items-center gap-2">
+                  <input
+                    bind:this={createListInputElement}
+                    bind:value={createListInput}
+                    type="text"
+                    class="create-list-input cursor-pointer hover:underline"
+                    placeholder="List name..."
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleCreateList();
+                      } else if (e.key === 'Escape') {
+                        handleCreateListInputEscape(e);
+                      }
+                    }}
+                    aria-label="Enter list name"
+                  />
+                  <button
+                    onclick={handleCreateList}
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                    aria-label="Create list"
+                  >
+                    Save
+                  </button>
+                </div>
+              </h2>
+            {:else}
+              <h2 
+                onclick={handleCreateListClick}
+                onkeydown={handleCreateListKeydown}
+                role="button"
+                tabindex="0"
+                class="cursor-pointer hover:underline"
+                aria-label="Create your first list"
+              >
+                Create Your First List
+              </h2>
+            {/if}
+            
+            <!-- Add your first task button -->
+            {#if !isUnnamedListInputActive}
+              <div class="mt-4">
+                <span
+                  class="inline-block px-4 py-2 bg-gray-100 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 text-sm"
+                  style="width: {TASK_WIDTH}px;"
+                  onclick={handleUnnamedListAddTaskClick}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleUnnamedListAddTaskClick();
+                    }
+                  }}
+                  role="button"
+                  tabindex="0"
+                  aria-label="Add your first task"
+                >
+                  Add your first task
+                </span>
+              </div>
+            {:else}
+              <div class="mt-4">
+                <textarea
+                  bind:this={unnamedListInputElement}
+                  bind:value={unnamedListTaskInput}
+                  class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  style="width: {TASK_WIDTH}px; max-height: {MAX_TEXTAREA_HEIGHT}px;"
+                  placeholder="Add new task..."
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleUnnamedListCreateTask();
+                    } else if (e.key === 'Escape') {
+                      handleUnnamedListInputEscape(e);
+                    }
+                  }}
+                  aria-label="Enter task text"
+                ></textarea>
+              </div>
+            {/if}
+          </div>
         {:else if Array.isArray($lists)}
-          {#each $lists as list}
-            <TaskList
-              listId={list.id}
-              listName={list.name ?? 'Unnamed list'}
-              newTaskInput={newTaskInputs[list.id] || ''}
-              onInputChange={(value) => handleInputChange(list.id, value)}
-              allLists={$lists}
-            />
-          {/each}
+          <div
+            use:dndzone={{
+              items: draggableLists,
+              type: 'list' // Unique type for lists
+            }}
+            onconsider={handleListConsider}
+            onfinalize={handleListFinalize}
+          >
+            {#each draggableLists as list (list.id)}
+              <div data-id={list.id} class="list-item-wrapper flex items-center gap-2 cursor-move">
+                <span 
+                  class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
+                  title="Drag to reorder list"
+                  tabindex="-1"
+                  aria-hidden="true"
+                >
+                  ⋮⋮
+                </span>
+                <TaskList
+                  listId={list.id}
+                  listName={list.name ?? 'Unnamed list'}
+                  newTaskInput={newTaskInputs[list.id] || ''}
+                  onInputChange={(value) => handleInputChange(list.id, value)}
+                  allLists={$lists}
+                />
+              </div>
+            {/each}
+          </div>
           
           <!-- Create List button/input - styled to match h2 headings exactly -->
           {#if isCreateListInputActive}
@@ -497,9 +633,9 @@
                 }}
                 role="button"
                 tabindex="0"
-                aria-label="Add a task"
+                aria-label="Add your first task"
               >
-                Add a task
+                Add your first task
               </span>
             </div>
           {/if}
