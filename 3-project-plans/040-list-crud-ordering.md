@@ -247,7 +247,7 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - ✅ Update UI to inform user that both list and task were restored (if applicable)
      - ✅ Write tests: integration tests for restore task flow with archived list (automatic restore)
 
-8. **Archived Tasks View UI Updates** ✅ (except tests)
+8. **Archived Tasks View UI Updates** ✅
    - **Description:** Display archived lists and tasks in a grid layout. First column shows list names with badge indicators. Second column shows tasks for each list. Show all lists that are archived OR have archived tasks. If a list has no archived tasks, show "No archived tasks" in the second column.
    - **Acceptance Criteria:**
      - ✅ Grid layout with 2 columns: list names (left) and tasks (right)
@@ -266,7 +266,7 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - ✅ Display list names in first column with badges
      - ✅ Display tasks in second column (or "No archived tasks" message)
      - ✅ Ensure alignment between list names and their tasks
-     - ✅ Write tests: integration tests for grid layout and list/task display
+     - ✅ Write tests: integration tests for grid layout and list/task display (completed in step 10)
 
 9. **Sort/Reorder Lists** ✅
    - **Description:** Users can reorder lists via drag-and-drop to prioritize and organize their lists

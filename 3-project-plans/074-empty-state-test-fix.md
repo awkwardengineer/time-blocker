@@ -41,10 +41,10 @@ The `activateAddTaskInput` function uses `document.querySelector` which is not a
    - Ensure no regressions
 
 ## Acceptance Criteria
-- ✅ `activateAddTaskInput` works in test environment
-- ✅ Both skipped empty state tests pass
-- ✅ No regressions in existing functionality
-- ✅ All tests in test suite pass
+- `activateAddTaskInput` works in test environment
+- Both skipped empty state tests pass
+- No regressions in existing functionality
+- All tests in test suite pass
 
 ## Technical Notes
 - The issue occurs in `App.svelte` at line ~94 in `activateAddTaskInput` function

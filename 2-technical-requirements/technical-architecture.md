@@ -72,8 +72,9 @@ graph TB
 
 **Lists**
 - `id`: Unique identifier
-- `name`: List name
+- `name`: List name (can be `null` for unnamed lists)
 - `order`: Display order
+- `archivedAt`: Timestamp when list was archived (null if active) - *Added in milestone 040*
 
 **Tasks**
 - `id`: Unique identifier
@@ -85,9 +86,10 @@ graph TB
 **Task State Transitions** (Milestone 030+)
 - `unchecked` → `checked`: User marks task as complete
 - `checked` → `archived`: User archives completed task
-- `archived` → deleted: User permanently deletes task from archived view
+- `archived` → `checked`: User restores archived task (milestone 030+)
 - Main page displays only `unchecked` and `checked` tasks
 - Archived view displays only `archived` tasks
+- **Note:** Task deletion moved to milestone 077
 
 #### Future Model (Later Milestones)
 
@@ -166,9 +168,29 @@ db.version(2).stores({
 - **Query Pattern (Main View)**: `db.tasks.where('listId').equals(listId).and(task => task.status !== 'archived').toArray()`
 - **Query Pattern (Archived View)**: `db.tasks.where('status').equals('archived').toArray()`
 
-#### Future Schema (Later Milestones): Many-to-Many with Junction Table
+#### Schema Version 3 (Milestone 040+): Add List Archiving
 ```javascript
 db.version(3).stores({
+  lists: '++id, name, order, archivedAt',
+  tasks: '++id, text, listId, order, status, archivedAt',
+  preferences: 'key',
+  calendarSyncState: 'key'
+}).upgrade(tx => {
+  // Migration: Add archivedAt field to lists and tasks (defaults to null/undefined)
+  // No data migration needed - existing records will have undefined archivedAt
+  return Promise.resolve();
+});
+```
+
+- **Lists Table**: Adds `archivedAt` field (timestamp when archived, null/undefined if active)
+- **Tasks Table**: Adds `archivedAt` field (timestamp when archived, null/undefined if active)
+- **Query Pattern (Main View Lists)**: `db.lists.where('archivedAt').equals(null).or('archivedAt').equals(undefined).toArray()`
+- **Query Pattern (Archived View Lists)**: `db.lists.where('archivedAt').above(0).toArray()` or filter by `archivedAt != null`
+- **Note:** Tasks use `status` field for archiving, `archivedAt` is for timestamp tracking
+
+#### Future Schema (Later Milestones): Many-to-Many with Junction Table
+```javascript
+db.version(4).stores({
   tasks: '++id, day, time, weekId, text, source, status',
   backlogLists: '++id, name, order',
   backlogItems: '++id, listId, taskId, order',
@@ -184,7 +206,8 @@ db.version(3).stores({
 
 #### Migration Strategy
 - **Version 1 → Version 2** (Milestone 030): Add `status` field, default existing tasks to `unchecked`
-- **Version 2 → Version 3** (Later): Migrate to many-to-many when tasks need to exist in multiple lists
+- **Version 2 → Version 3** (Milestone 040): Add `archivedAt` field to lists and tasks for archiving support
+- **Version 3 → Version 4** (Later): Migrate to many-to-many when tasks need to exist in multiple lists
 - Use Dexie migrations to convert `tasks.listId` → `backlogItems` entries
 - Abstract list access patterns in code to ease migration
 - Preserve `status` field through all migrations
