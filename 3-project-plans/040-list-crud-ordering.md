@@ -248,25 +248,25 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - ✅ Update UI to inform user that both list and task were restored (if applicable)
      - ✅ Write tests: integration tests for restore task flow with archived list (automatic restore)
 
-8. **Archived Tasks View UI Updates**
+8. **Archived Tasks View UI Updates** ✅ (except tests)
    - **Description:** Display archived lists and tasks in a grid layout. First column shows list names with badge indicators. Second column shows tasks for each list. Show all lists that are archived OR have archived tasks. If a list has no archived tasks, show "No archived tasks" in the second column.
    - **Acceptance Criteria:**
-     - Grid layout with 2 columns: list names (left) and tasks (right)
-     - Show all lists that are archived (even if no tasks)
-     - Show all lists that have archived tasks (even if list is active)
-     - List names show badge indicator: `[List Archived]` or `[List Active]`
-     - If list is archived, show archive date next to badge
-     - If list has no archived tasks, show "No archived tasks" in second column
-     - Tasks are grouped by archive date within each list
-     - Lists are sorted by order, then by name
-     - Tasks are sorted by archive date (newest first)
+     - ✅ Grid layout with 2 columns: list names (left) and tasks (right)
+     - ✅ Show all lists that are archived (even if no tasks)
+     - ✅ Show all lists that have archived tasks (even if list is active)
+     - ✅ List names show badge indicator: `[List Archived]` or `[List Active]`
+     - ✅ If list is archived, show archive date next to badge
+     - ✅ If list has no archived tasks, show "No archived tasks" in second column
+     - ✅ Tasks are grouped by archive date within each list
+     - ✅ Lists are sorted by order, then by name
+     - ✅ Tasks are sorted by archive date (newest first)
    - **Technical Work:**
-     - Update archived tasks view to use grid layout
-     - Filter lists to show: archived lists OR lists with archived tasks
-     - Group tasks by list, then by archive date
-     - Display list names in first column with badges
-     - Display tasks in second column (or "No archived tasks" message)
-     - Ensure alignment between list names and their tasks
+     - ✅ Update archived tasks view to use grid layout
+     - ✅ Filter lists to show: archived lists OR lists with archived tasks
+     - ✅ Group tasks by list, then by archive date
+     - ✅ Display list names in first column with badges
+     - ✅ Display tasks in second column (or "No archived tasks" message)
+     - ✅ Ensure alignment between list names and their tasks
      - Write tests: integration tests for grid layout and list/task display
 
 9. **Sort/Reorder Lists**
