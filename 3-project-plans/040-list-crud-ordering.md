@@ -98,7 +98,7 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - ✅ Verify focus management works correctly
      - ✅ Ensure keyboard navigation works properly (Enter/Space to activate)
      - ✅ Update click-outside handler to work with new structure
-     - Write tests: integration tests for button behavior and styling
+     - ❌ Write tests: integration tests for button behavior and styling
 
 3. **Add New Lists (Non-Empty State)** ✅ - Split into two paths
 
@@ -207,7 +207,8 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - ✅ Filter lists in main view: only show lists where `archivedAt` is null
      - ✅ Update data access functions to filter by `archivedAt`
      - ✅ Update UI reactively after archiving
-     - Write tests: unit tests for archive functions, integration tests for UI interaction and confirmation prompt
+     - ✅ Write tests: unit tests for archive functions
+     - ❌ Write tests: integration tests for UI interaction and confirmation prompt
 
 5. **Empty State (Creating Lists When No Lists Exist)** ✅
    - **Description:** Handle empty list state behavior - when no lists exist, provide buttons to "name a list" or "add a task" to get started
@@ -222,7 +223,7 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - ✅ Display empty state UI with buttons
      - ✅ Implement empty state list creation flow
      - ✅ Handle edge case: creating first list
-     - Write tests: integration tests for empty state display and interactions
+     - ❌ Write tests: integration tests for empty state display and interactions
 
 6. **Restore Archived Tasks (Individual Only)** ✅
    - **Description:** Only individual tasks can be restored. If the task's original list is archived (but exists), automatically restore the list along with the task. If the list is active, restore normally. Deleted list behavior will be handled in milestone 077.
@@ -264,7 +265,7 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - ✅ Display list names in first column with badges
      - ✅ Display tasks in second column (or "No archived tasks" message)
      - ✅ Ensure alignment between list names and their tasks
-     - Write tests: integration tests for grid layout and list/task display
+     - ❌ Write tests: integration tests for grid layout and list/task display
 
 9. **Sort/Reorder Lists** ✅
    - **Description:** Users can reorder lists via drag-and-drop to prioritize and organize their lists
@@ -284,5 +285,34 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - ✅ Add drag handle next to list titles
      - ✅ Write tests: unit tests for reorder function
 
+## Testing
+
+### Unit Tests
+- ✅ `updateListName` function tests
+- ✅ `createList` function tests
+- ✅ `createUnnamedList` function tests
+- ✅ `archiveList` function tests
+- ✅ `archiveAllTasksInList` function tests
+- ✅ `restoreList` function tests
+- ✅ `restoreTask` function tests (including automatic list restoration)
+- ✅ `updateListOrder` function tests
+
+### Integration Tests
+- ✅ List creation (happy path and unnamed list path)
+- ✅ List renaming/editing
+- ❌ List archiving (UI interaction and confirmation prompt) - **Missing**
+- ✅ Task restoration with archived lists
+- ✅ List reordering via drag-and-drop (UI interaction)
+- ❌ "Add Task" button behavior and styling - **Missing**
+- ❌ Empty state display and interactions (when no lists exist) - **Missing**
+- ❌ Archived view grid layout and list/task display - **Missing**
+
+### Test Coverage Status
+- ✅ All data access functions have unit tests
+- ⚠️ Most core UI interactions have integration tests
+- ❌ Missing: List archiving UI tests (confirmation prompt)
+- ❌ Missing: Empty state tests (when no lists exist)
+- ❌ Missing: Archived view grid layout tests
+- ❌ Missing: "Add Task" button styling/behavior tests
 
 ## Quick Notes
