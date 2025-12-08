@@ -365,16 +365,6 @@ export async function updateTaskOrderCrossList(destinationListId, newTasks) {
 }
 
 /**
- * Permanently delete a task from the database
- * This is a destructive operation - use with caution
- * @param {number} taskId - The ID of the task to delete
- * @returns {Promise<void>}
- */
-export async function deleteTask(taskId) {
-  await db.tasks.delete(taskId);
-}
-
-/**
  * Archive a list by setting its archivedAt timestamp
  * @param {number} listId - The ID of the list to archive
  * @returns {Promise<number>} The number of lists updated (should be 1)

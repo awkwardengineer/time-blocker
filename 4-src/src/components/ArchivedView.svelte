@@ -1,16 +1,11 @@
 <script>
   import { liveQuery } from 'dexie';
-  import { getArchivedTasks, restoreTask, deleteTask, getAllListsIncludingArchived } from '../lib/dataAccess.js';
-  import ConfirmationModal from './ConfirmationModal.svelte';
+  import { getArchivedTasks, restoreTask, getAllListsIncludingArchived } from '../lib/dataAccess.js';
   import { PRINT_CONTAINER_WIDTH } from '../lib/constants.js';
   
   // Create liveQuery for archived tasks
   let archivedTasksQuery = $state(null);
   let listsQuery = $state(null);
-  
-  // Modal state
-  let showDeleteModal = $state(false);
-  let taskToDelete = $state(null);
   
   $effect(() => {
     archivedTasksQuery = liveQuery(() => getArchivedTasks());
@@ -149,29 +144,6 @@
       console.error('Error restoring task:', error);
     }
   }
-  
-  function handleDeleteClick(taskId, taskText) {
-    taskToDelete = { id: taskId, text: taskText };
-    showDeleteModal = true;
-  }
-  
-  async function handleConfirmDelete() {
-    if (!taskToDelete) return;
-    
-    try {
-      await deleteTask(taskToDelete.id);
-      showDeleteModal = false;
-      taskToDelete = null;
-      // No need to reload - liveQuery will update automatically!
-    } catch (error) {
-      console.error('Error deleting task:', error);
-    }
-  }
-  
-  function handleCancelDelete() {
-    showDeleteModal = false;
-    taskToDelete = null;
-  }
 </script>
 
 <div class="mt-8 print:hidden" style="width: {PRINT_CONTAINER_WIDTH}px;">
@@ -226,12 +198,6 @@
                       >
                         Restore
                       </button>
-                      <button
-                        onclick={() => handleDeleteClick(task.id, task.text)}
-                        class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                      >
-                        Delete
-                      </button>
                     </li>
                   {/each}
                 </ul>
@@ -243,12 +209,4 @@
     </div>
   {/if}
 </div>
-
-<ConfirmationModal
-  isOpen={showDeleteModal}
-  title="Delete Task"
-  message={taskToDelete ? `Are you sure you want to permanently delete "${taskToDelete.text}"? This action cannot be undone.` : ''}
-  onConfirm={handleConfirmDelete}
-  onCancel={handleCancelDelete}
-/>
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import db from '../../lib/db.js'
-import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, updateTaskOrderCrossList, deleteTask, updateListName, createList, createUnnamedList, archiveList, restoreList } from '../../lib/dataAccess.js'
+import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, updateTaskOrderCrossList, updateListName, createList, createUnnamedList, archiveList, restoreList } from '../../lib/dataAccess.js'
 
 describe('dataAccess', () => {
   beforeEach(async () => {
@@ -949,24 +949,6 @@ describe('dataAccess', () => {
       
       // Archive middle task
       await updateTaskStatus(tasks[1].id, 'archived')
-      
-      // Verify remaining tasks maintain their order
-      const remainingTasks = await getTasksForList(list1.id)
-      expect(remainingTasks.length).toBe(2)
-      expect(remainingTasks[0].id).toBe(tasks[0].id)
-      expect(remainingTasks[0].order).toBe(0)
-      expect(remainingTasks[1].id).toBe(tasks[2].id)
-      expect(remainingTasks[1].order).toBe(2)
-    })
-    
-    it('should maintain order after deleting a task', async () => {
-      const lists = await getAllLists()
-      const list1 = lists.find(l => l.order === 1)
-      const tasks = await getTasksForList(list1.id)
-      
-      // Archive and then delete a task
-      await updateTaskStatus(tasks[1].id, 'archived')
-      await deleteTask(tasks[1].id)
       
       // Verify remaining tasks maintain their order
       const remainingTasks = await getTasksForList(list1.id)
