@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import db from '../../lib/db.js'
-import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, updateTaskOrderCrossList, updateListName, createList, createUnnamedList, archiveList, restoreList } from '../../lib/dataAccess.js'
+import { getAllLists, getTasksForList, getAllTasks, getArchivedTasks, createTask, updateTaskStatus, restoreTask, updateTaskOrder, updateTaskOrderCrossList, updateListName, createList, createUnnamedList, archiveList, restoreList, updateListOrder } from '../../lib/dataAccess.js'
 
 describe('dataAccess', () => {
   beforeEach(async () => {
@@ -1103,6 +1103,78 @@ describe('dataAccess', () => {
       // Verify list is still active
       list = await db.lists.get(list1.id)
       expect(list.archivedAt).toBeNull() // After restore, should be explicitly null
+    })
+  })
+  
+  describe('updateListOrder', () => {
+    it('should update list order values sequentially based on array position', async () => {
+      const lists = await getAllLists()
+      
+      // Reorder lists: move first to last
+      const reorderedLists = [
+        { id: lists[1].id },
+        { id: lists[2].id },
+        { id: lists[0].id }
+      ]
+      
+      await updateListOrder(reorderedLists)
+      
+      // Verify order values are sequential (0, 1, 2)
+      const updatedLists = await getAllLists()
+      const list0 = updatedLists.find(l => l.id === lists[1].id)
+      const list1 = updatedLists.find(l => l.id === lists[2].id)
+      const list2 = updatedLists.find(l => l.id === lists[0].id)
+      
+      expect(list0.order).toBe(0)
+      expect(list1.order).toBe(1)
+      expect(list2.order).toBe(2)
+    })
+    
+    it('should maintain sequential ordering with no gaps', async () => {
+      const lists = await getAllLists()
+      const listCount = lists.length
+      
+      // Reorder to create a specific order
+      const reorderedLists = lists.map(l => ({ id: l.id })).reverse()
+      
+      await updateListOrder(reorderedLists)
+      
+      // Verify all lists have sequential order values
+      const updatedLists = await getAllLists()
+      const orders = updatedLists.map(l => l.order).sort()
+      const expectedOrders = Array.from({ length: listCount }, (_, i) => i)
+      expect(orders).toEqual(expectedOrders)
+    })
+    
+    it('should handle empty array gracefully', async () => {
+      await updateListOrder([])
+      // Should not throw error
+    })
+    
+    it('should throw error if list does not exist', async () => {
+      await expect(updateListOrder([{ id: 99999 }])).rejects.toThrow('Cannot update order: some lists do not exist')
+    })
+    
+    it('should persist order changes to IndexedDB', async () => {
+      const lists = await getAllLists()
+      const reorderedLists = [
+        { id: lists[1].id },
+        { id: lists[0].id },
+        { id: lists[2].id }
+      ]
+      
+      await updateListOrder(reorderedLists)
+      
+      // Close and reopen database
+      db.close()
+      await db.open()
+      
+      // Verify order persisted
+      const persistedLists = await getAllLists()
+      expect(persistedLists[0].id).toBe(reorderedLists[0].id)
+      expect(persistedLists[0].order).toBe(0)
+      expect(persistedLists[1].id).toBe(reorderedLists[1].id)
+      expect(persistedLists[1].order).toBe(1)
     })
   })
 })

@@ -412,3 +412,37 @@ export async function archiveAllTasksInList(listId) {
   return activeTasks.length;
 }
 
+/**
+ * Update the order of lists
+ * Recalculates sequential order values (0, 1, 2, 3...) for all lists based on their new positions
+ * @param {Array<{id: number}>} reorderedLists - Array of lists in their new order (must include id field)
+ * @returns {Promise<void>}
+ */
+export async function updateListOrder(reorderedLists) {
+  if (!reorderedLists || reorderedLists.length === 0) {
+    return; // No lists to update
+  }
+  
+  // Validate that all lists exist
+  const listIds = reorderedLists.map(l => l.id);
+  const lists = await db.lists.bulkGet(listIds);
+  const invalidLists = lists.filter(l => !l);
+  if (invalidLists.length > 0) {
+    throw new Error('Cannot update order: some lists do not exist');
+  }
+  
+  // Calculate new sequential order values based on array position
+  // Array index becomes the order value (0, 1, 2, 3...)
+  const updates = reorderedLists.map((list, index) => ({
+    id: list.id,
+    order: index
+  }));
+  
+  // Update all lists in a transaction for atomicity
+  await db.transaction('rw', db.lists, async () => {
+    for (const update of updates) {
+      await db.lists.update(update.id, { order: update.order });
+    }
+  });
+}
+

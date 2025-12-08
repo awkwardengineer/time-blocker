@@ -59,7 +59,7 @@ Since we already have lists, we'll start with editing and adding new lists, then
 4. Archive lists
 5. Empty state (for creating lists when no lists exist)
 6. Restore archived tasks (individual only) ✅
-7. Sort/reorder lists
+7. Sort/reorder lists ✅
 
 
 ## Implementation Steps
@@ -266,20 +266,23 @@ Since we already have lists, we'll start with editing and adding new lists, then
      - ✅ Ensure alignment between list names and their tasks
      - Write tests: integration tests for grid layout and list/task display
 
-9. **Sort/Reorder Lists**
-   - **Description:** Users can reorder lists via drag-and-drop or buttons to prioritize and organize their lists
+9. **Sort/Reorder Lists** ✅
+   - **Description:** Users can reorder lists via drag-and-drop to prioritize and organize their lists
    - **Acceptance Criteria:**
-     - Users can reorder lists via drag-and-drop or buttons
-     - List reordering persists in IndexedDB
-     - Order updates reactively in UI
-     - Order persists across page refreshes
-     - Maintain order consistency (no gaps, sequential numbering)
+     - ✅ Users can reorder lists via drag-and-drop (clicking and dragging on list title)
+     - ✅ List reordering persists in IndexedDB
+     - ✅ Order updates reactively in UI
+     - ✅ Order persists across page refreshes
+     - ✅ Maintain order consistency (no gaps, sequential numbering)
+     - ✅ Drag handle is visible next to list titles
+     - ✅ List titles remain clickable for editing while being draggable
    - **Technical Work:**
-     - Add drag-and-drop or button-based reordering UI for lists
-     - Implement function to update list order in IndexedDB
-     - Maintain order consistency (recalculate sequential order values)
-     - Update UI reactively after reordering
-     - Write tests: unit tests for reorder function, integration tests for drag-and-drop/button interactions
+     - ✅ Add drag-and-drop UI for lists using svelte-dnd-action
+     - ✅ Implement function to update list order in IndexedDB
+     - ✅ Maintain order consistency (recalculate sequential order values)
+     - ✅ Update UI reactively after reordering
+     - ✅ Add drag handle next to list titles
+     - ✅ Write tests: unit tests for reorder function
 
 
 ## Quick Notes
