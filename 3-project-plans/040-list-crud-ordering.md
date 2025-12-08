@@ -59,16 +59,10 @@ Since we already have lists, we'll start with editing and adding new lists, then
 3. Add new lists (non-empty state)
 4. Archive lists
 5. Empty state (for creating lists when no lists exist)
-6. Restore archived lists
+6. Restore archived tasks (individual only)
 7. Sort/reorder lists
 8. Delete archived lists
 
-## Same-Day Grouping Approach
-
-Both archiving and deleting lists use a **same-day grouping** approach based on calendar day (local time), which allows us to distinguish between tasks that were archived/deleted WITH the list and pre-archived tasks. This approach balances individual freedom (users can archive and restore individual tasks) with efficient bulk operations (archive/restore entire lists). The same-day assumption treats tasks archived on the same calendar day as a unit, allowing bulk operations while preserving user intent for pre-archived tasks that were archived on different days.
-
-**Implementation:**
-We use calendar day (local time) to determine "same day" - tasks archived on 2024-01-15 are considered same day regardless of exact time. We compare `archivedAt` timestamps using date-only comparison (ignoring the time component), so pre-archived tasks from different days maintain their archived status when a list is restored.
 
 ## Implementation Steps
 
@@ -167,51 +161,51 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
 
 ## Archive & Restore Approach
 
-> > **Archiving a list:**
-> - Set `archivedAt` timestamp on the list
-> - Archive all active tasks (unchecked/checked) individually - each gets `archivedAt` timestamp (same/similar time)
-> - Pre-archived tasks keep their original `archivedAt` timestamp (different day)
+> **Archiving a list:**
+> - Show confirmation prompt: "Archive this list? This will archive all tasks in the list."
+> - If confirmed:
+>   - Set `archivedAt` timestamp on the list
+>   - Archive all active tasks (unchecked/checked) individually - each gets `archivedAt` timestamp
+> - Archived lists are hidden from main page display
 >
-> **Restoring a pre-archived task (whose list is archived):**
-> - Detect that the list is archived
-> - Show error/message: "This task's list is archived"
-> - Prompt: "Restore the list? This will also restore all tasks that were archived on the same day."
-> - If yes:
->   - Restore list (clear list's `archivedAt`)
->   - Restore all tasks with that `listId` that were archived on the same calendar day as the list's `archivedAt`
->   - Pre-archived tasks (different day) stay archived
->
-> **Restoring a list:**
-> - Restore list (clear list's `archivedAt`)
-> - Restore all tasks with that `listId` that were archived on the same calendar day as the list's `archivedAt`
-> - Pre-archived tasks (different day) stay archived
+> **Restoring an archived task:**
+> - Only individual tasks can be restored (no bulk restore)
+> - If the task's original list is archived:
+>   - Detect that the list is archived
+>   - Prompt: "This task's list is archived. Restore to an unnamed list?"
+>   - If yes: Restore task to a new unnamed list (or existing unnamed list if one exists)
+>   - If no: Cancel restore
+> - If the task's original list is active:
+>   - Restore task normally to its original list
 >
 > **Archived tasks view UI:**
 > - Show list name for each task (already implemented)
 > - Show badge indicator: `[List Archived]` or `[List Active]` next to the list name
-> - Helps users understand which tasks belong to archived lists and why restoring them might prompt to restore the list
+> - Helps users understand which tasks belong to archived lists
 
 ---
 
 4. **Archive Lists**
-   - **Description:** Archive a list by setting `archivedAt` timestamp on the list and archiving all active tasks individually with timestamps from the same day. Pre-archived tasks keep their original `archivedAt` timestamp.
+   - **Description:** Archive a list by setting `archivedAt` timestamp on the list and archiving all active tasks individually. Show confirmation prompt before archiving.
    - **Acceptance Criteria:**
      - Users can archive lists
+     - Confirmation prompt appears: "Archive this list? This will archive all tasks in the list."
+     - User must confirm before list is archived
      - List archiving sets `archivedAt` timestamp
      - All active tasks (unchecked/checked) in the list are archived individually with `archivedAt` timestamps
-     - Pre-archived tasks keep their original `archivedAt` timestamp
      - Archived lists are hidden from main page display
      - List archiving persists in IndexedDB
      - UI updates reactively after archiving
    - **Technical Work:**
      - Add `archivedAt` field to lists table (database migration)
      - Add archive button/action for lists
+     - Show confirmation modal before archiving
      - Implement function to archive list (set `archivedAt` timestamp)
      - Implement function to archive all active tasks in a list (set `archivedAt` on each task)
      - Filter lists in main view: only show lists where `archivedAt` is null
      - Update data access functions to filter by `archivedAt`
      - Update UI reactively after archiving
-     - Write tests: unit tests for archive functions, integration tests for UI interaction and same-day grouping
+     - Write tests: unit tests for archive functions, integration tests for UI interaction and confirmation prompt
 
 5. **Empty State (Creating Lists When No Lists Exist)**
    - **Description:** Handle empty list state behavior - when no lists exist, provide buttons to "name a list" or "add a task" to get started
@@ -228,42 +222,25 @@ We use calendar day (local time) to determine "same day" - tasks archived on 202
      - Handle edge case: creating first list
      - Write tests: integration tests for empty state display and interactions
 
-6. **Restore Archived Lists**
-   - **Description:** Restore a list by clearing its `archivedAt` timestamp and restoring all tasks with that `listId` that were archived on the same calendar day as the list's `archivedAt`. Pre-archived tasks (different day) stay archived.
+6. **Restore Archived Tasks (Individual Only)**
+   - **Description:** Only individual tasks can be restored. If the task's original list is archived, prompt to restore to an unnamed list. If the list is active, restore normally.
    - **Acceptance Criteria:**
-     - Users can restore archived lists
-     - Restore clears `archivedAt` timestamp on the list
-     - Restore restores all tasks with that `listId` archived on the same calendar day as the list's `archivedAt`
-     - Pre-archived tasks (different day) stay archived
-     - Restored lists appear in main view
+     - Only individual tasks can be restored (no bulk restore)
+     - If task's original list is archived:
+       - Detect that the list is archived
+       - Show prompt: "This task's list is archived. Restore to an unnamed list?"
+       - If yes: Restore task to a new unnamed list (or existing unnamed list if one exists)
+       - If no: Cancel restore
+     - If task's original list is active:
+       - Restore task normally to its original list
      - Restore persists in IndexedDB
      - UI updates reactively after restoration
    - **Technical Work:**
-     - Create archived lists view component/section (temporarily below printed page area)
-     - Display all lists with `archivedAt` timestamp set
-     - Order archived lists by archive time (newest first)
-     - Display archive time for each archived list
-     - Add restore button for each archived list
-     - Implement restore function: clear list's `archivedAt`, restore tasks from same calendar day
-     - Implement same-day comparison logic (date-only, ignore time)
-     - Update UI reactively after restoration
-     - Write tests: unit tests for restore function and same-day comparison, integration tests for UI interaction
-
-7. **Restore Pre-Archived Tasks (Whose List is Archived)**
-   - **Description:** When restoring a pre-archived task whose list is archived, detect the archived list, show error/message, and prompt user to restore the list. If yes, restore the list and all tasks archived on the same day.
-   - **Acceptance Criteria:**
-     - Restoring a task whose list is archived shows error/message
-     - Prompt asks: "Restore the list? This will also restore all tasks that were archived on the same day."
-     - If user confirms, restore list and all tasks from same day
-     - Pre-archived tasks (different day) stay archived
-     - UI updates reactively after restore
-   - **Technical Work:**
      - Update restore task function to check if list is archived
-     - Show error/message modal when list is archived
-     - Add confirmation prompt with restore list option
-     - Implement restore list + same-day tasks logic
+     - Show prompt modal when list is archived
+     - Implement logic to restore task to unnamed list (create if needed)
      - Update UI to inform user of what happened
-     - Write tests: integration tests for restore pre-archived task flow and prompt
+     - Write tests: integration tests for restore task flow with archived list prompt
 
 8. **Archived Tasks View UI Updates**
    - **Description:** Show list name for each task and badge indicator `[List Archived]` or `[List Active]` next to the list name to help users understand which tasks belong to archived lists
