@@ -711,8 +711,8 @@
   }
 </script>
 
-<div bind:this={listSectionElement} data-list-id={listId} style="margin: 0; padding: 0;">
-  <div class="flex items-center gap-2" style="margin: 0; padding: 0;">
+<div bind:this={listSectionElement} data-list-id={listId} class="flex flex-col gap-1 m-0 p-0">
+  <div class="flex items-center gap-2 m-0 p-0">
     <span 
       class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
       title="Drag to reorder list"
@@ -726,15 +726,14 @@
       onkeydown={handleListNameKeydown}
       role="button"
       tabindex="0"
-      class="cursor-pointer hover:underline"
-      style="margin: 0; padding: 0;"
+      class="cursor-pointer hover:underline m-0 p-0 leading-none"
       aria-label={`Rename list: ${listName}`}
     >
       {listName}
     </h2>
   </div>
   {#if tasksQuery && $tasksQuery !== undefined}
-    <div class="task-list-wrapper">
+    <div class="task-list-wrapper m-0 p-0">
       <ul 
         bind:this={ulElement}
         use:dndzone={{ 
@@ -743,10 +742,10 @@
         }}
         onconsider={handleConsider}
         onfinalize={handleFinalize}
-        class="space-y-2 {draggableTasks.length === 0 ? 'empty-drop-zone' : ''}"
+        class="space-y-2 m-0 p-0 list-none {draggableTasks.length === 0 ? 'empty-drop-zone min-h-0 pb-2' : ''}"
       >
         {#each draggableTasks as task (task.id)}
-          <li data-id={task.id} class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-fit">
+          <li data-id={task.id} class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-full m-0 list-none">
             <span 
               class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
               title="Drag to reorder"
@@ -763,8 +762,7 @@
               aria-label={`Mark task "${task.text || 'blank task'}" as ${task.status === 'checked' ? 'unchecked' : 'checked'}`}
             />
             <span 
-              class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words' : 'cursor-pointer hover:underline break-words'}
-              style="width: {TASK_WIDTH}px;"
+              class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words flex-1' : 'cursor-pointer hover:underline break-words flex-1'}
               onclick={(e) => handleTaskTextClick(task.id, task.text, e)}
               role="button"
               tabindex="0"
@@ -802,7 +800,7 @@
           buttonText="Add your first task"
           placeholder="Add new task..."
           ariaLabel="Add your first task to {listName}"
-          marginLeft={true}
+          marginLeft={false}
         />
       {:else}
         <AddTaskInput
@@ -817,7 +815,7 @@
           buttonText="Add Task"
           placeholder="Add new task..."
           ariaLabel="Add new task to {listName}"
-          marginLeft={true}
+          marginLeft={false}
         />
       {/if}
     </div>
@@ -836,7 +834,7 @@
       buttonText="Add Task"
       placeholder="Add new task..."
       ariaLabel="Add new task to {listName}"
-      marginLeft={true}
+      marginLeft={false}
     />
   {/if}
 </div>
@@ -844,16 +842,19 @@
 <style>
   .task-list-wrapper ul {
     margin: 0;
-    padding-left: 1.5rem; /* Standard ul indentation */
+    padding: 0;
+    list-style: none;
   }
   
-  .task-list-wrapper ul.empty-drop-zone {
-    min-height: 0;
-    padding-bottom: 0.5rem; /* Small padding for drop zone, but minimal visual gap */
+  .task-list-wrapper li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   
-  .task-list-wrapper .add-task-container {
-    margin-left: 1.5rem; /* Match ul's padding-left */
+  /* Explicitly reset h2 margins to ensure no browser defaults */
+  [data-list-id] h2 {
+    margin: 0;
   }
   
   @media print {

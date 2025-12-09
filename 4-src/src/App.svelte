@@ -73,10 +73,41 @@
   // Sync draggableLists from liveQuery (similar to tasks)
   $effect(() => {
     if ($lists && Array.isArray($lists)) {
-      draggableLists = $lists.map(list => ({ id: list.id, name: list.name, order: list.order }));
+      draggableLists = $lists.map(list => ({ id: list.id, name: list.name, order: list.order, columnIndex: list.columnIndex }));
     } else {
       draggableLists = [];
     }
+  });
+
+  // Organize lists by column with overflow handling
+  // Lists with columnIndex >= 5 are placed in the last column (index 4)
+  const COLUMN_COUNT = 5;
+  
+  // Organize lists into columns for rendering
+  // Returns an array of columns, each containing lists for that column
+  let listsByColumn = $derived(() => {
+    if (!draggableLists || draggableLists.length === 0) {
+      return Array(COLUMN_COUNT).fill(null).map(() => []);
+    }
+    
+    const columns = Array(COLUMN_COUNT).fill(null).map(() => []);
+    const lastColumnIndex = COLUMN_COUNT - 1;
+    
+    for (const list of draggableLists) {
+      let columnIndex = list.columnIndex ?? 0;
+      // Handle overflow: if columnIndex >= COLUMN_COUNT, place in last column
+      if (columnIndex >= COLUMN_COUNT) {
+        columnIndex = lastColumnIndex;
+      }
+      columns[columnIndex].push(list);
+    }
+    
+    // Sort lists within each column by their order
+    for (let i = 0; i < columns.length; i++) {
+      columns[i].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+    
+    return columns;
   });
   
   function handleInputChange(listId, value) {
@@ -471,31 +502,38 @@
             {/if}
           </div>
         {:else if Array.isArray($lists)}
-          <div
-            use:dndzone={{
-              items: draggableLists,
-              type: 'list' // Unique type for lists
-            }}
-            onconsider={handleListConsider}
-            onfinalize={handleListFinalize}
-          >
-            <!-- Render from draggableLists to match drag library's expected order -->
-            <!-- Always render wrapper div so drag library can find elements -->
-            <!-- TaskList query will recreate when listId becomes valid (handles placeholders) -->
-            {#each draggableLists as dragItem (dragItem.id)}
-              {@const isPlaceholder = isPlaceholderItem(dragItem)}
-              {@const realList = isPlaceholder ? stableLists.find(list => list.id === dragItem.id) : dragItem}
-              <div data-id={dragItem.id} class="list-item-wrapper">
-                {#if realList}
-                  <TaskList
-                    listId={realList.id}
-                    listName={realList.name ?? 'Unnamed list'}
-                    newTaskInput={newTaskInputs[realList.id] || ''}
-                    onInputChange={(value) => handleInputChange(realList.id, value)}
-                    allLists={$lists}
-                    stableLists={stableLists}
-                  />
-                {/if}
+          <!-- 5-column grid layout with column containers -->
+          <div class="grid grid-cols-5 gap-4 w-full">
+            {#each listsByColumn() as columnLists, columnIndex}
+              <div class="flex flex-col min-w-0 border-r border-gray-300 last:border-r-0 pt-0" data-column-index={columnIndex}>
+                <div
+                  use:dndzone={{
+                    items: columnLists,
+                    type: 'list' // Unique type for lists
+                  }}
+                  onconsider={handleListConsider}
+                  onfinalize={handleListFinalize}
+                  class="flex flex-col pt-0"
+                >
+                  <!-- Render lists in this column -->
+                  {#each columnLists as dragItem, index (dragItem.id)}
+                    {@const isPlaceholder = isPlaceholderItem(dragItem)}
+                    {@const realList = isPlaceholder ? stableLists.find(list => list.id === dragItem.id) : dragItem}
+                    {@const isLast = index === columnLists.length - 1}
+                    <div data-id={dragItem.id} class="flex flex-col" style={isLast ? '' : 'margin-bottom: 1.5rem;'}>
+                      {#if realList}
+                        <TaskList
+                          listId={realList.id}
+                          listName={realList.name ?? 'Unnamed list'}
+                          newTaskInput={newTaskInputs[realList.id] || ''}
+                          onInputChange={(value) => handleInputChange(realList.id, value)}
+                          allLists={$lists}
+                          stableLists={stableLists}
+                        />
+                      {/if}
+                    </div>
+                  {/each}
+                </div>
               </div>
             {/each}
           </div>
@@ -543,7 +581,7 @@
           {/if}
           
           <!-- Drop zone for creating new list from dragged task -->
-          <div class="create-list-drop-zone print:hidden">
+          <div class="relative print:hidden">
             <ul
               bind:this={createListDropZoneElement}
               use:dndzone={{
@@ -552,7 +590,7 @@
               }}
               onconsider={handleCreateListConsider}
               onfinalize={handleCreateListFinalize}
-              class="create-list-drop-zone-ul"
+              class="m-0 p-0 list-none min-h-0 pb-2"
             >
               {#each createListDropZoneItems as task (task.id)}
                 <li data-id={task.id} class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-fit">
@@ -680,32 +718,6 @@
   
   .create-list-input::placeholder {
     opacity: 0.5;
-  }
-  
-  .create-list-drop-zone {
-    position: relative;
-  }
-  
-  .create-list-drop-zone-ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    min-height: 0;
-    padding-bottom: 0.5rem; /* Small padding for drop zone */
-  }
-  
-  /* Ensure list wrapper aligns with visual content for accurate drag offset */
-  .list-item-wrapper {
-    margin: 0;
-    margin-bottom: 1rem; /* Space between lists */
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  /* Remove margin from last list */
-  .list-item-wrapper:last-child {
-    margin-bottom: 0;
   }
   
   @media print {
