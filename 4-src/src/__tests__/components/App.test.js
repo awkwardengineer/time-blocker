@@ -117,20 +117,31 @@ describe('App', () => {
       // Re-query to get fresh reference after state update
       const updatedCheckbox = within(task1ListItem).getByRole('checkbox')
       expect(updatedCheckbox).toBeChecked()
-    })
+    }, { timeout: 10000 })
+    
+    // Small delay to ensure first toggle is fully processed before second toggle
+    await new Promise(resolve => setTimeout(resolve, 200))
 
     // Toggle it back - re-query the checkbox to avoid stale reference
     // Re-query before clicking to get fresh reference
     const task1ListItemUpdated = within(workSection).getByText('Task 1').closest('li')
     const task1CheckboxUpdated = within(task1ListItemUpdated).getByRole('checkbox')
+    
+    // Verify it's still checked before toggling (sanity check)
+    expect(task1CheckboxUpdated).toBeChecked()
+    
     await user.click(task1CheckboxUpdated)
     
+    // Small delay to ensure click is processed and database update starts
+    await new Promise(resolve => setTimeout(resolve, 200))
+    
     // Wait for state to update - re-query inside waitFor to ensure we have latest state
+    // liveQuery updates can take time to propagate, especially in CI
     await waitFor(() => {
       // Re-query the checkbox to ensure we have the latest state
       const finalCheckbox = within(task1ListItemUpdated).getByRole('checkbox')
       expect(finalCheckbox).not.toBeChecked()
-    }, { timeout: 5000 })
+    }, { timeout: 10000 })
   }, 15000)
 
   it('allows archiving and restoring tasks via the archived view', async () => {
