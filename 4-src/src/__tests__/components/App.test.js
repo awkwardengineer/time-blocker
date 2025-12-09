@@ -114,16 +114,23 @@ describe('App', () => {
     // Toggle Task 1 checkbox
     await user.click(task1Checkbox)
     await waitFor(() => {
-      expect(task1Checkbox).toBeChecked()
+      // Re-query to get fresh reference after state update
+      const updatedCheckbox = within(task1ListItem).getByRole('checkbox')
+      expect(updatedCheckbox).toBeChecked()
     })
 
     // Toggle it back - re-query the checkbox to avoid stale reference
-    await user.click(task1Checkbox)
-    await waitFor(async () => {
+    // Re-query before clicking to get fresh reference
+    const task1ListItemUpdated = within(workSection).getByText('Task 1').closest('li')
+    const task1CheckboxUpdated = within(task1ListItemUpdated).getByRole('checkbox')
+    await user.click(task1CheckboxUpdated)
+    
+    // Wait for state to update - re-query inside waitFor to ensure we have latest state
+    await waitFor(() => {
       // Re-query the checkbox to ensure we have the latest state
-      const updatedCheckbox = within(task1ListItem).getByRole('checkbox')
-      expect(updatedCheckbox).not.toBeChecked()
-    })
+      const finalCheckbox = within(task1ListItemUpdated).getByRole('checkbox')
+      expect(finalCheckbox).not.toBeChecked()
+    }, { timeout: 5000 })
   })
 
   it('allows archiving and restoring tasks via the archived view', async () => {
