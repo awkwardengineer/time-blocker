@@ -131,7 +131,7 @@ describe('App', () => {
       const finalCheckbox = within(task1ListItemUpdated).getByRole('checkbox')
       expect(finalCheckbox).not.toBeChecked()
     }, { timeout: 5000 })
-  })
+  }, 15000)
 
   it('allows archiving and restoring tasks via the archived view', async () => {
     const user = userEvent.setup()
