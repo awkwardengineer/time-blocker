@@ -1,4 +1,4 @@
-# 070: Multiple Columns
+# 060: Multiple Columns
 
 ## Goal
 Enable multiple columns layout for displaying lists. Lists are arranged in columns (e.g., 2-3 columns) to better utilize screen space and provide a multi-column view similar to paper planners. **No formatting focus** - focus purely on functionality and layout structure.

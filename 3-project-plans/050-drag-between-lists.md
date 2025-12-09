@@ -102,7 +102,7 @@ Enable users to drag tasks between different lists using drag-and-drop. When a t
 - Drop position: Insert at drop position or append to end (implementation decision)
 - Requires: [[031-task-reordering]] (drag-and-drop infrastructure)
 - Requires: [[040-list-crud-ordering]] (list management)
-- **Future milestone**: [[070-multiple-columns]] will extend this functionality to work across columns - ensure drag-and-drop and keyboard navigation can work seamlessly across column boundaries
+- **Future milestone**: [[060-multiple-columns]] will extend this functionality to work across columns - ensure drag-and-drop and keyboard navigation can work seamlessly across column boundaries
 - No formatting concerns - basic HTML/UI is fine
 - Mobile compatibility: Use touch-friendly drag-and-drop (already implemented in 031)
 
