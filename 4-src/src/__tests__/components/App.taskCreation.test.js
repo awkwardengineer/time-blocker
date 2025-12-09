@@ -44,12 +44,7 @@ describe('App - Task Creation UX Behaviors', () => {
     // Press Enter on empty input
     await user.keyboard('{Enter}')
     
-    // Wait for input to close first
-    await waitFor(() => {
-      expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
-    }, { timeout: 5000 })
-    
-    // Wait for button to reappear (positive assertion first - more reliable)
+    // Wait for button to reappear first (positive assertion - more reliable per TEST_TIMING_NOTES)
     await waitFor(() => {
       // Try to find button by aria-label (more reliable)
       const button = within(workSection).queryByRole('button', { name: /add new task to work/i })
@@ -62,7 +57,7 @@ describe('App - Task Creation UX Behaviors', () => {
       }
     }, { timeout: 10000 })
     
-    // Then verify input is gone (negative assertion - after positive succeeds)
+    // Then verify input is gone (negative assertion - after positive succeeds, no waitFor needed)
     expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
   }, 15000)
 

@@ -102,16 +102,12 @@ describe('App - Add Task Button Behavior and Styling', () => {
     textarea.focus()
     await user.keyboard('{Escape}')
     
-    // Wait for button to reappear (positive assertion first - more reliable)
-    // Need to wait for input to close first, then button appears
-    await waitFor(() => {
-      expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
-    }, { timeout: 5000 })
+    // Wait for button to reappear first (positive assertion - more reliable per TEST_TIMING_NOTES)
     await waitFor(() => {
       expect(within(workSection).getByRole('button', { name: /add new task to work/i })).toBeInTheDocument()
     }, { timeout: 10000 })
     
-    // Then verify input is gone (negative assertion - after positive succeeds)
+    // Then verify input is gone (negative assertion - after positive succeeds, no waitFor needed)
     expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
   }, 15000)
 
