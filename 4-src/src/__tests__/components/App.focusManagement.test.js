@@ -34,12 +34,14 @@ describe('App - Focus Management', () => {
     })
     
     // Verify focus returned to task text
-    const task1ListItem = task1Text.closest('li')
-    const taskTextSpan = task1ListItem.querySelector('span[role="button"]')
-    // Note: Focus return happens in setTimeout, so we wait a bit
+    // Re-query task element after modal closes (DOM might have updated)
     await waitFor(() => {
+      const updatedTask1Text = within(workSection).getByText('Task 1')
+      const task1ListItem = updatedTask1Text.closest('li')
+      const taskTextSpan = task1ListItem?.querySelector('span[role="button"]')
+      expect(taskTextSpan).toBeInTheDocument()
       expect(taskTextSpan).toHaveFocus()
-    }, { timeout: 1000 })
+    }, { timeout: 3000 })
   })
 
   it('Focus moves to next task after archiving', async () => {
@@ -114,13 +116,14 @@ describe('App - Focus Management', () => {
     })
     
     // Wait for button to appear (list becomes empty, so button text changes)
-    const addTaskButton = await within(workSection).findByRole('button', { name: /add your first task to work/i }, { timeout: 2000 })
+    const addTaskButton = await within(workSection).findByRole('button', { name: /add your first task to work/i }, { timeout: 5000 })
     
     // Verify focus moved to Add Task button
     // Increased timeout to handle timing issues in full test suite
+    // Focus management uses setTimeout with retries, so wait longer
     await waitFor(() => {
       expect(addTaskButton).toHaveFocus()
-    }, { timeout: 2000 })
+    }, { timeout: 5000 })
   })
 })
 

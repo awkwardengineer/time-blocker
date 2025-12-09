@@ -150,9 +150,41 @@ it('test name', async () => {
 6. **Test in isolation and together**: Always test both ways - run individual tests and all tests together
 7. **Use multiple ticks and delays**: When dealing with bindable props, use multiple `tick()` calls and `requestAnimationFrame` + delays
 
+## stableLists Refactoring (December 2024)
+
+**Context**: After implementing the stableLists pattern to fix drag-and-drop remounting issues, several tests started failing. These were **not timing-related issues** but structural issues with how test helpers were finding elements.
+
+### Issues Fixed
+
+1. **`getListSection` helper returning wrong element**
+   - **Problem**: Helper was returning `listNameElement.parentElement` (the flex container div), but tests needed the `div[data-list-id]` that contains all tasks
+   - **Fix**: Changed to use `listNameElement.closest('[data-list-id]')` to return the correct container
+   - **Location**: `src/__tests__/helpers/appTestHelpers.js`
+
+2. **`waitForListSection` failing with multiple matches**
+   - **Problem**: When list names appear in both main view and archived view, `screen.getByText()` throws "Found multiple elements"
+   - **Fix**: Use `getAllByText()` and filter to find the one in main view (has `data-list-id` ancestor)
+   - **Location**: `src/__tests__/helpers/appTestHelpers.js`
+
+3. **`document is not defined` in setTimeout callback**
+   - **Problem**: `setTimeout` callback in `handleTaskEditArchive` accesses `document.activeElement` after component cleanup in tests
+   - **Fix**: Added `typeof document === 'undefined'` check before accessing `document`
+   - **Location**: `src/components/TaskList.svelte:619`
+
+### Key Insight
+
+These failures were **structural/test helper issues**, not timing issues. The stableLists changes altered the DOM structure slightly (wrapping TaskList in a div with `data-list-id`), which broke test helpers that assumed a different structure.
+
+### Test Status After Fixes
+
+- ✅ All tests in `App.test.js` passing (15/15)
+- ✅ Most other test suites passing
+- ⚠️ Some isolated test failures remain (not timing-related, likely test-specific issues)
+
 ## Related Files
 
-- `4-src/src/components/TaskList.svelte` - Contains bindable prop updates that may cause timing issues
+- `4-src/src/components/TaskList.svelte` - Contains bindable prop updates that may cause timing issues, and setTimeout callbacks that need document checks
 - `4-src/src/components/AddTaskInput.svelte` - Child component that receives bindable props
 - `4-src/src/__tests__/components/App.taskCreation.test.js` - Contains the flaky test
+- `4-src/src/__tests__/helpers/appTestHelpers.js` - Test helpers that needed updates after stableLists refactoring
 

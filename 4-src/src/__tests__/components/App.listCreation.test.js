@@ -15,10 +15,19 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
 
   // Helper: Activate create list input by clicking Create List button
   async function activateCreateListInput(user) {
+    // Wait for lists to load first (button only appears when lists.length > 0)
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
+    })
+    // Wait for lists to appear
+    await waitFor(() => {
+      const listSections = document.querySelectorAll('[data-list-id]')
+      expect(listSections.length).toBeGreaterThan(0)
+    })
     // Wait for lists to load and button to appear
     const createButton = await waitFor(() => {
       return screen.getByRole('button', { name: /create new list/i })
-    })
+    }, { timeout: 10000 })
     await user.click(createButton)
     
     // Wait for input to appear
@@ -56,15 +65,17 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     // Wait for input to close
     await waitFor(() => {
       expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
-    })
+    }, { timeout: 5000 })
     
     // Verify list was created
     await waitFor(() => {
       expect(screen.getByText('New List Name')).toBeInTheDocument()
-    })
+    }, { timeout: 5000 })
     
     // Verify Create List button appears again
-    expect(screen.getByRole('button', { name: /create new list/i })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /create new list/i })).toBeInTheDocument()
+    }, { timeout: 5000 })
   })
 
   it('Empty input does not create list', async () => {

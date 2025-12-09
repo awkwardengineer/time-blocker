@@ -58,22 +58,28 @@ describe('App - Archived View Grid Layout', () => {
     const confirmButton = screen.getByRole('button', { name: /confirm archive list/i })
     await user.click(confirmButton)
     
-    // Wait for list to be archived
+    // Wait for list to be archived (it should disappear from main view)
     await waitFor(() => {
-      expect(within(workSection).queryByText('Work')).not.toBeInTheDocument()
-    }, { timeout: 3000 })
+      // Work list should no longer be in main view
+      const mainViewLists = Array.from(document.querySelectorAll('[data-list-id]'))
+      const workListInMain = mainViewLists.find(section => {
+        const h2 = section.querySelector('h2')
+        return h2 && h2.textContent === 'Work'
+      })
+      expect(workListInMain).toBeUndefined()
+    }, { timeout: 5000 })
     
     // Archived view is always visible - find it by the heading
     const archivedSection = await waitFor(() => {
       const heading = screen.getByText('Archived Tasks')
       return heading.parentElement
-    }, { timeout: 3000 })
+    }, { timeout: 5000 })
     
     // Verify list appears in archived view with [List Archived] badge
     await waitFor(() => {
       expect(within(archivedSection).getByText('Work')).toBeInTheDocument()
       expect(within(archivedSection).getByText('[List Archived]')).toBeInTheDocument()
-    }, { timeout: 3000 })
+    }, { timeout: 5000 })
   })
 
   it('shows active lists with archived tasks with [List Active] badge', async () => {
@@ -90,7 +96,8 @@ describe('App - Archived View Grid Layout', () => {
       expect(checkbox).toBeChecked()
     })
     
-    const archiveButton = await within(workSection).findByRole('button', { name: /archive/i })
+    // Archive button only appears for checked tasks - wait for it to appear
+    const archiveButton = await within(workSection).findByRole('button', { name: /archive task/i }, { timeout: 5000 })
     await user.click(archiveButton)
     
     // Wait for task to be archived

@@ -616,6 +616,8 @@
     // If focus wasn't handled by handleArchiveTask (e.g., modal already closed),
     // handle it here by finding the Add Task button
     setTimeout(() => {
+      // Check if document exists (may not be available in test environments after cleanup)
+      if (typeof document === 'undefined') return;
       const activeElement = document.activeElement;
       if (listSectionElement && (!activeElement || !listSectionElement.contains(activeElement))) {
         // Focus wasn't set, so focus the Add Task button

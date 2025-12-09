@@ -15,7 +15,13 @@ export function getListSection(name) {
   if (!listNameElement) {
     throw new Error(`Could not find list section for "${name}" in main view`)
   }
-  return listNameElement.parentElement
+  // Return the div[data-list-id] element, not just the parent of h2
+  // The h2 is inside a div.flex, which is inside the div[data-list-id]
+  const section = listNameElement.closest('[data-list-id]')
+  if (!section) {
+    throw new Error(`Could not find [data-list-id] container for "${name}"`)
+  }
+  return section
 }
 
 export async function getFirstCheckboxFor(listName) {
@@ -29,7 +35,15 @@ export async function getFirstCheckboxFor(listName) {
 // Helper: Wait for a specific list section to be ready (assumes App is already rendered)
 export async function waitForListSection(listName = 'Work') {
   await waitFor(() => {
-    expect(screen.getByText(listName)).toBeInTheDocument()
+    // Use getAllByText to handle cases where list name appears in multiple places
+    // (e.g., main view and archived view)
+    const allMatches = screen.getAllByText(listName)
+    // Find the one in main view (has data-list-id ancestor)
+    const mainViewMatch = allMatches.find(el => {
+      const section = el.closest('[data-list-id]')
+      return section !== null
+    })
+    expect(mainViewMatch).toBeInTheDocument()
   })
   return getListSection(listName)
 }

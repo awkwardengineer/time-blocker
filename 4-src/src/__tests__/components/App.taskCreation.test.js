@@ -44,6 +44,11 @@ describe('App - Task Creation UX Behaviors', () => {
     // Press Enter on empty input
     await user.keyboard('{Enter}')
     
+    // Wait for input to close first
+    await waitFor(() => {
+      expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
+    }, { timeout: 5000 })
+    
     // Wait for button to reappear (positive assertion first - more reliable)
     await waitFor(() => {
       // Try to find button by aria-label (more reliable)
