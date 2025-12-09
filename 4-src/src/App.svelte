@@ -25,8 +25,8 @@
   // Track new task inputs per list
   let newTaskInputs = $state({});
   
-  // State for creating new list (happy path)
-  let isCreateListInputActive = $state(false);
+  // State for creating new list (happy path) - track which column
+  let createListColumnIndex = $state(null); // null means not active, 0-4 means active for that column
   let createListInput = $state('');
   let createListInputElement = $state(null);
   
@@ -155,35 +155,35 @@
     console.warn(`Could not activate Add Task input for list ${listId} after ${MAX_RETRY_ATTEMPTS} attempts`);
   }
   
-  function handleCreateListClick() {
-    isCreateListInputActive = true;
+  function handleCreateListClick(columnIndex) {
+    createListColumnIndex = columnIndex;
   }
   
-  function handleCreateListKeydown(event) {
+  function handleCreateListKeydown(event, columnIndex) {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       event.stopPropagation();
-      handleCreateListClick();
+      handleCreateListClick(columnIndex);
     }
   }
   
   function handleCreateListInputEscape(e) {
     if (e.key === 'Escape') {
-      isCreateListInputActive = false;
+      createListColumnIndex = null;
       createListInput = '';
     }
   }
   
   // Handle click outside input to close it (only if no content)
   $effect(() => {
-    if (!isCreateListInputActive) return;
+    if (createListColumnIndex === null) return;
     
     return useClickOutside(
       createListInputElement,
       () => {
         // Only close if still active (prevents race conditions with programmatic closes)
-        if (isCreateListInputActive) {
-          isCreateListInputActive = false;
+        if (createListColumnIndex !== null) {
+          createListColumnIndex = null;
           createListInput = '';
         }
       },
@@ -203,19 +203,19 @@
   
   // Focus input when it becomes active
   $effect(() => {
-    if (isCreateListInputActive && createListInputElement) {
+    if (createListColumnIndex !== null && createListInputElement) {
       setTimeout(() => {
         createListInputElement?.focus();
       }, 0);
     }
   });
   
-  async function handleCreateList() {
+  async function handleCreateList(columnIndex) {
     const inputValue = createListInput || '';
     
     // Check if input is empty string "" - exit list creation
     if (isEmpty(inputValue)) {
-      isCreateListInputActive = false;
+      createListColumnIndex = null;
       createListInput = '';
       return;
     }
@@ -224,15 +224,15 @@
     const { text: normalizedText, isBlank } = normalizeInput(inputValue);
     if (isBlank) {
       // Whitespace-only, don't create
-      isCreateListInputActive = false;
+      createListColumnIndex = null;
       createListInput = '';
       return;
     }
     
     try {
-      const listId = await createList(normalizedText);
+      const listId = await createList(normalizedText, columnIndex);
       createListInput = '';
-      isCreateListInputActive = false;
+      createListColumnIndex = null;
       
       // Focus moves to creating the first task in that list
       // Lists will update automatically via liveQuery
@@ -419,7 +419,7 @@
         {:else if Array.isArray($lists) && $lists.length === 0}
           <!-- Empty State: Create Your First List -->
           <div class="print:hidden">
-            {#if isCreateListInputActive}
+            {#if createListColumnIndex === 0}
               <h2>
                 <div class="flex items-center gap-2">
                   <input
@@ -431,7 +431,7 @@
                     onkeydown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        handleCreateList();
+                        handleCreateList(0);
                       } else if (e.key === 'Escape') {
                         handleCreateListInputEscape(e);
                       }
@@ -439,7 +439,7 @@
                     aria-label="Enter list name"
                   />
                   <button
-                    onclick={handleCreateList}
+                    onclick={() => handleCreateList(0)}
                     class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                     aria-label="Create list"
                   >
@@ -449,8 +449,8 @@
               </h2>
             {:else}
               <h2 
-                onclick={handleCreateListClick}
-                onkeydown={handleCreateListKeydown}
+                onclick={() => handleCreateListClick(0)}
+                onkeydown={(e) => handleCreateListKeydown(e, 0)}
                 role="button"
                 tabindex="0"
                 class="cursor-pointer hover:underline"
@@ -519,8 +519,7 @@
                   {#each columnLists as dragItem, index (dragItem.id)}
                     {@const isPlaceholder = isPlaceholderItem(dragItem)}
                     {@const realList = isPlaceholder ? stableLists.find(list => list.id === dragItem.id) : dragItem}
-                    {@const isLast = index === columnLists.length - 1}
-                    <div data-id={dragItem.id} class="flex flex-col" style={isLast ? '' : 'margin-bottom: 1.5rem;'}>
+                    <div data-id={dragItem.id} class="flex flex-col mb-6">
                       {#if realList}
                         <TaskList
                           listId={realList.id}
@@ -533,52 +532,52 @@
                       {/if}
                     </div>
                   {/each}
+                  
+                  <!-- Create List button/input - per column, appears in all columns -->
+                  {#if createListColumnIndex === columnIndex}
+                    <h2 class="print:hidden m-0 p-0">
+                      <div class="flex items-center gap-2">
+                        <input
+                          bind:this={createListInputElement}
+                          bind:value={createListInput}
+                          type="text"
+                          class="create-list-input cursor-pointer hover:underline"
+                          placeholder="List name..."
+                          onkeydown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleCreateList(columnIndex);
+                            } else if (e.key === 'Escape') {
+                              handleCreateListInputEscape(e);
+                            }
+                          }}
+                          aria-label="Enter list name"
+                        />
+                        <button
+                          onclick={() => handleCreateList(columnIndex)}
+                          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                          aria-label="Create list"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </h2>
+                  {:else}
+                    <h2 
+                      onclick={() => handleCreateListClick(columnIndex)}
+                      onkeydown={(e) => handleCreateListKeydown(e, columnIndex)}
+                      role="button"
+                      tabindex="0"
+                      class="cursor-pointer hover:underline print:hidden m-0 p-0"
+                      aria-label="Create new list"
+                    >
+                      Create new list
+                    </h2>
+                  {/if}
                 </div>
               </div>
             {/each}
           </div>
-          
-          <!-- Create List button/input - styled to match h2 headings exactly -->
-          {#if isCreateListInputActive}
-            <h2 class="mt-4 print:hidden">
-              <div class="flex items-center gap-2">
-                <input
-                  bind:this={createListInputElement}
-                  bind:value={createListInput}
-                  type="text"
-                  class="create-list-input cursor-pointer hover:underline"
-                  placeholder="List name..."
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleCreateList();
-                    } else if (e.key === 'Escape') {
-                      handleCreateListInputEscape(e);
-                    }
-                  }}
-                  aria-label="Enter list name"
-                />
-                <button
-                  onclick={handleCreateList}
-                  class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                  aria-label="Create list"
-                >
-                  Save
-                </button>
-              </div>
-            </h2>
-          {:else}
-            <h2 
-              onclick={handleCreateListClick}
-              onkeydown={handleCreateListKeydown}
-              role="button"
-              tabindex="0"
-              class="cursor-pointer hover:underline print:hidden mt-4"
-              aria-label="Create new list"
-            >
-              Create new list
-            </h2>
-          {/if}
           
           <!-- Drop zone for creating new list from dragged task -->
           <div class="relative print:hidden">
@@ -718,6 +717,16 @@
   
   .create-list-input::placeholder {
     opacity: 0.5;
+  }
+  
+  /* Explicitly reset h2 margins for "Create new list" in columns */
+  [data-column-index] h2 {
+    margin: 0;
+  }
+  
+  /* Ensure list wrapper margins are applied even with dndzone inline styles */
+  [data-column-index] [data-id] {
+    margin-bottom: 1.5rem !important;
   }
   
   @media print {

@@ -37,9 +37,10 @@ export async function getAllListsIncludingArchived() {
 /**
  * Create a new list
  * @param {string} name - The list name (cannot be empty or whitespace-only)
+ * @param {number} [columnIndex] - Optional column index (0-4). If not provided, distributes evenly across columns.
  * @returns {Promise<number>} The ID of the created list
  */
-export async function createList(name) {
+export async function createList(name, columnIndex = null) {
   // Validate: name cannot be empty string '' or whitespace-only
   const trimmedName = name.trim();
   if (trimmedName === '') {
@@ -50,11 +51,22 @@ export async function createList(name) {
   const existingLists = await db.lists.orderBy('order').toArray();
   const nextOrder = getNextOrderValue(existingLists);
   
+  // Assign columnIndex: use provided value, or distribute evenly across 5 columns (0-4)
+  const columnCount = 5;
+  let finalColumnIndex;
+  if (columnIndex !== null && columnIndex >= 0 && columnIndex < columnCount) {
+    finalColumnIndex = columnIndex;
+  } else {
+    // Fallback to distribution if invalid or not provided
+    finalColumnIndex = nextOrder % columnCount;
+  }
+  
   // Create the list with trimmed name
   const listId = await db.lists.add({
     name: trimmedName,
     order: nextOrder,
-    archivedAt: null
+    archivedAt: null,
+    columnIndex: finalColumnIndex
   });
   
   return listId;
@@ -69,11 +81,16 @@ export async function createUnnamedList() {
   const existingLists = await db.lists.orderBy('order').toArray();
   const nextOrder = getNextOrderValue(existingLists);
   
+  // Assign columnIndex: distribute evenly across 5 columns (0-4)
+  const columnCount = 5;
+  const columnIndex = nextOrder % columnCount;
+  
   // Create the list with name set to null
   const listId = await db.lists.add({
     name: null,
     order: nextOrder,
-    archivedAt: null
+    archivedAt: null,
+    columnIndex: columnIndex
   });
   
   return listId;
