@@ -89,6 +89,44 @@ expect(within(section).queryByPlaceholderText('Add new task...')).not.toBeInTheD
 - Consider using `$effect` to watch for state changes instead of relying on timing
 - May need to add explicit waits in test setup/teardown
 
+## Known Issues from Test Suite Review
+
+The following issues were identified during a comprehensive review of all test files:
+
+### 1. Missing Test Timeouts
+
+Several tests don't have explicit timeouts and rely on default 5000ms, which may be insufficient in CI:
+
+**High Priority:**
+- `App.focusManagement.test.js` - "Focus moves to next task after archiving" - queries element outside waitFor (potential stale reference)
+- `App.listCreation.test.js` - "Multiple lists can be created in sequence" - no timeout, sequential operations
+- Most tests in `App.test.js` - no explicit timeouts on test functions
+
+**Medium Priority:**
+- Tests that interact with liveQuery (database updates) without sufficient delays
+- Tests that perform multiple sequential operations
+
+### 2. Stale Element References
+
+Found in:
+- `App.focusManagement.test.js:75` - `task2TextSpan` queried outside waitFor, then checked inside
+  - **Fix**: Query inside waitFor to ensure fresh reference
+
+### 3. Missing Delays for Async Operations
+
+Tests that interact with:
+- Database updates (liveQuery)
+- Focus management (setTimeout-based)
+- State changes (bindable props)
+
+**Pattern**: Tests that click/type and immediately check state without waiting
+
+### 4. Test Isolation Status
+
+- ✅ Good: `beforeEach` properly clears database in `appTestSetup.js`
+- ✅ Good: Each test renders fresh App component
+- ⚠️ Potential: Tests that modify database state might affect subsequent tests if cleanup fails
+
 ## Test Isolation Issues
 
 **Pattern**: Tests that pass in isolation but fail when all tests run together.
@@ -142,6 +180,8 @@ it('test name', async () => {
 
 ## Recommendations
 
+### General Best Practices
+
 1. **Always prefer positive assertions**: Check for elements to appear rather than disappear
 2. **Use waitFor for state changes**: When state changes, wait for the new state to appear
 3. **Verify negative assertions after positive**: If you need to verify something is gone, do it after confirming the new state exists
@@ -149,6 +189,15 @@ it('test name', async () => {
 5. **Monitor CI failures**: If a test fails in CI but passes locally, it's likely a timing issue
 6. **Test in isolation and together**: Always test both ways - run individual tests and all tests together
 7. **Use multiple ticks and delays**: When dealing with bindable props, use multiple `tick()` calls and `requestAnimationFrame` + delays
+
+### Immediate Action Items
+
+1. **Fix stale element references**: Always query elements inside `waitFor` when checking state after actions
+2. **Add explicit test timeouts**: Add timeouts to tests that perform multiple sequential operations
+3. **Add delays for async operations**: Add delays after database operations that use liveQuery
+4. **Use findBy* queries**: Use `findBy*` queries when waiting for elements to appear
+5. **Re-query elements**: Re-query elements inside waitFor to avoid stale references
+6. **Add small delays**: Add small delays (100-200ms) after actions that trigger async state updates
 
 ## stableLists Refactoring (December 2024)
 
@@ -180,6 +229,23 @@ These failures were **structural/test helper issues**, not timing issues. The st
 - ✅ All tests in `App.test.js` passing (15/15)
 - ✅ Most other test suites passing
 - ⚠️ Some isolated test failures remain (not timing-related, likely test-specific issues)
+
+## Test Files Status
+
+The following test files have been reviewed for timing and isolation issues:
+
+- ✅ App.test.js
+- ✅ App.addTaskButton.test.js  
+- ✅ App.taskCreation.test.js
+- ✅ App.focusManagement.test.js
+- ✅ App.listCreation.test.js
+- ✅ App.archivedView.test.js
+- ✅ App.unnamedListCreation.test.js
+- ✅ App.listEditing.test.js
+- ✅ App.emptyState.test.js
+- ✅ App.listArchiving.test.js
+- ✅ App.keyboardNavigation.test.js
+- ✅ App.taskEditing.test.js
 
 ## Related Files
 
