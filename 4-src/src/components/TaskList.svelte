@@ -10,7 +10,7 @@
   import { isEmpty, normalizeInput } from '../lib/inputValidation.js';
   import { TASK_WIDTH } from '../lib/constants.js';
   
-  let { listId, listName, newTaskInput, onInputChange, allLists = [] } = $props();
+  let { listId, listName, newTaskInput, onInputChange, allLists = [], stableLists = [] } = $props();
   
   // Create liveQuery at top level - capture listId in closure
   // This creates the query once and it will automatically update when database changes
@@ -41,10 +41,23 @@
   let addTaskContainerElement = $state(null); // Reference to the add-task-container
   let addTaskTextareaElement = $state(null); // Reference to the add-task textarea
   
+  let previousListId = $state(null);
+  
   $effect(() => {
-    // Create query once when listId is available
-    if (listId && !tasksQuery) {
-      tasksQuery = liveQuery(() => getTasksForList(listId));
+    // Validate that listId exists in stableLists before creating query
+    // This prevents queries from being created with placeholder IDs during drag operations
+    const isValid = stableLists.some(list => list.id === listId);
+    
+    // Recreate query if listId changed from invalid to valid, or if listId actually changed
+    if (isValid && listId) {
+      if (!tasksQuery || previousListId !== listId) {
+        tasksQuery = liveQuery(() => getTasksForList(listId));
+        previousListId = listId;
+      }
+    } else {
+      // Invalid listId - clear query and previousListId
+      tasksQuery = null;
+      previousListId = null;
     }
   });
   
@@ -696,17 +709,28 @@
   }
 </script>
 
-<div bind:this={listSectionElement} data-list-id={listId}>
-  <h2 
-    onclick={handleListNameClick}
-    onkeydown={handleListNameKeydown}
-    role="button"
-    tabindex="0"
-    class="cursor-pointer hover:underline"
-    aria-label={`Rename list: ${listName}`}
-  >
-    {listName}
-  </h2>
+<div bind:this={listSectionElement} data-list-id={listId} style="margin: 0; padding: 0;">
+  <div class="flex items-center gap-2" style="margin: 0; padding: 0;">
+    <span 
+      class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
+      title="Drag to reorder list"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      ⋮⋮
+    </span>
+    <h2 
+      onclick={handleListNameClick}
+      onkeydown={handleListNameKeydown}
+      role="button"
+      tabindex="0"
+      class="cursor-pointer hover:underline"
+      style="margin: 0; padding: 0;"
+      aria-label={`Rename list: ${listName}`}
+    >
+      {listName}
+    </h2>
+  </div>
   {#if tasksQuery && $tasksQuery !== undefined}
     <div class="task-list-wrapper">
       <ul 

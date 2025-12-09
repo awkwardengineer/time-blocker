@@ -13,7 +13,13 @@
   // Reactive query for lists - automatically updates when lists change
   let lists = liveQuery(() => getAllLists());
   
+  // Stable lists derived from source of truth - never contains placeholders
+  // Used for rendering TaskList components to prevent remounting during drag
+  let stableLists = $derived($lists || []);
+  
+  
   // Local state for drag-and-drop lists - synced from liveQuery
+  // Used only by drag library for drag operations
   let draggableLists = $state([]);
   
   // Track new task inputs per list
@@ -335,20 +341,27 @@
     }
   }
   
+  // Helper function to check if an item is a placeholder
+  function isPlaceholderItem(item) {
+    return item && (item.isDndShadowItem === true || 
+                    (typeof item.id === 'string' && item.id.startsWith('id:dnd-shadow-placeholder-')));
+  }
+  
   // Handle list drag events - consider event for visual reordering only
   function handleListConsider(event) {
-    // Update local state for immediate visual feedback (no database updates)
+    // Update draggableLists with placeholders - drag library needs them for visual feedback
     draggableLists = event.detail.items;
   }
   
   // Handle list drag events - finalize event for database updates
   async function handleListFinalize(event) {
-    // Update local state for immediate visual feedback
-    draggableLists = event.detail.items;
+    // Update draggableLists - placeholders should be gone by finalize, but filter just in case
+    const validItems = event.detail.items.filter(item => !isPlaceholderItem(item));
+    draggableLists = validItems;
     
     // Update database with new order values
     try {
-      await updateListOrder(event.detail.items);
+      await updateListOrder(validItems);
       // liveQuery will automatically update the UI after database changes
     } catch (error) {
       console.error('Error updating list order:', error);
@@ -466,23 +479,23 @@
             onconsider={handleListConsider}
             onfinalize={handleListFinalize}
           >
-            {#each draggableLists as list (list.id)}
-              <div data-id={list.id} class="list-item-wrapper flex items-center gap-2 cursor-move">
-                <span 
-                  class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
-                  title="Drag to reorder list"
-                  tabindex="-1"
-                  aria-hidden="true"
-                >
-                  ⋮⋮
-                </span>
-                <TaskList
-                  listId={list.id}
-                  listName={list.name ?? 'Unnamed list'}
-                  newTaskInput={newTaskInputs[list.id] || ''}
-                  onInputChange={(value) => handleInputChange(list.id, value)}
-                  allLists={$lists}
-                />
+            <!-- Render from draggableLists to match drag library's expected order -->
+            <!-- Always render wrapper div so drag library can find elements -->
+            <!-- TaskList query will recreate when listId becomes valid (handles placeholders) -->
+            {#each draggableLists as dragItem (dragItem.id)}
+              {@const isPlaceholder = isPlaceholderItem(dragItem)}
+              {@const realList = isPlaceholder ? stableLists.find(list => list.id === dragItem.id) : dragItem}
+              <div data-id={dragItem.id} class="list-item-wrapper">
+                {#if realList}
+                  <TaskList
+                    listId={realList.id}
+                    listName={realList.name ?? 'Unnamed list'}
+                    newTaskInput={newTaskInputs[realList.id] || ''}
+                    onInputChange={(value) => handleInputChange(realList.id, value)}
+                    allLists={$lists}
+                    stableLists={stableLists}
+                  />
+                {/if}
               </div>
             {/each}
           </div>
@@ -679,6 +692,20 @@
     list-style: none;
     min-height: 0;
     padding-bottom: 0.5rem; /* Small padding for drop zone */
+  }
+  
+  /* Ensure list wrapper aligns with visual content for accurate drag offset */
+  .list-item-wrapper {
+    margin: 0;
+    margin-bottom: 1rem; /* Space between lists */
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Remove margin from last list */
+  .list-item-wrapper:last-child {
+    margin-bottom: 0;
   }
   
   @media print {
