@@ -54,6 +54,25 @@ db.version(4).stores({
   });
 });
 
+// Version 5: Add columnIndex field to lists for multi-column layout
+db.version(5).stores({
+  lists: '++id, name, order, archivedAt, columnIndex',
+  tasks: '++id, text, listId, order, status, archivedAt',
+  preferences: 'key',
+  calendarSyncState: 'key'
+}).upgrade(tx => {
+  // Migration: Assign columnIndex to existing lists (distribute evenly across 5 columns)
+  // Lists are already ordered by 'order', so we can assign columnIndex based on order
+  return tx.lists.toCollection().modify((list, cursor) => {
+    if (list.columnIndex === undefined) {
+      // Distribute lists evenly across 5 columns (0-4) based on their order
+      // This preserves the existing order while assigning column indices
+      const columnCount = 5;
+      list.columnIndex = list.order % columnCount;
+    }
+  });
+});
+
 export default db;
 
 

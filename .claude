@@ -24,6 +24,7 @@
 
 ## Task Tracking
 - **Mark tasks complete with ✅ checkmark emojis as they're being done** (not just at merge time)
+- **When starting work on a milestone**: Update the master plan (`3-project-plans/000-master-project-plan.md`) to mark the milestone status as "🔄 IN PROGRESS"
 - Update milestone files immediately when:
   - Acceptance criteria are met
   - Technical work items are completed

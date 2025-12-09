@@ -52,7 +52,7 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('Enter in input creates named list and closes input', async () => {
+  it('Enter in input creates named list and keeps input open', async () => {
     const user = userEvent.setup()
     render(App)
     
@@ -62,19 +62,16 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     // Press Enter
     await user.keyboard('{Enter}')
     
-    // Wait for input to close
-    await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
-    }, { timeout: 5000 })
-    
-    // Verify list was created
+    // Wait for list to be created
     await waitFor(() => {
       expect(screen.getByText('New List Name')).toBeInTheDocument()
     }, { timeout: 5000 })
     
-    // Verify Create List button appears again
+    // Verify input stays open and is cleared
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /create new list/i })).toBeInTheDocument()
+      const createListInput = screen.getByRole('textbox', { name: /enter list name/i })
+      expect(createListInput).toBeInTheDocument()
+      expect(createListInput).toHaveValue('')
     }, { timeout: 5000 })
   })
 
@@ -127,7 +124,7 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     expect(finalListSections.length).toBe(initialCount)
   })
 
-  it('Save button creates named list', async () => {
+  it('Save button creates named list and keeps input open', async () => {
     const user = userEvent.setup()
     render(App)
     
@@ -138,15 +135,17 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     const saveButton = screen.getByRole('button', { name: /create list/i })
     await user.click(saveButton)
     
-    // Wait for input to close
-    await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
-    })
-    
-    // Verify list was created
+    // Wait for list to be created
     await waitFor(() => {
       expect(screen.getByText('Created via Save button')).toBeInTheDocument()
     })
+    
+    // Verify input stays open and is cleared
+    await waitFor(() => {
+      const createListInput = screen.getByRole('textbox', { name: /enter list name/i })
+      expect(createListInput).toBeInTheDocument()
+      expect(createListInput).toHaveValue('')
+    }, { timeout: 5000 })
   })
 
   it('Escape key cancels and closes input', async () => {
@@ -239,7 +238,7 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     expect(screen.getByText('Immediate List')).toBeInTheDocument()
   })
 
-  it('Multiple lists can be created in sequence', async () => {
+  it('Multiple lists can be created in sequence without reactivating input', async () => {
     const user = userEvent.setup()
     render(App)
     
@@ -248,32 +247,40 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     await user.type(input, 'First New List')
     await user.keyboard('{Enter}')
     
-    // Wait for first list to be created and input to close
+    // Wait for first list to be created
     await waitFor(() => {
       expect(screen.getByText('First New List')).toBeInTheDocument()
-      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     }, { timeout: 10000 })
     
-    // Small delay to ensure first list creation is fully processed
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // Verify input stays open and is cleared
+    await waitFor(() => {
+      input = screen.getByRole('textbox', { name: /enter list name/i })
+      expect(input).toBeInTheDocument()
+      expect(input).toHaveValue('')
+    }, { timeout: 5000 })
     
-    // Create second list
-    input = await activateCreateListInput(user)
+    // Create second list using the same input (no need to reactivate)
     await user.type(input, 'Second New List')
     await user.keyboard('{Enter}')
     
-    // Wait for second list to be created and input to close
+    // Wait for second list to be created
     await waitFor(() => {
       expect(screen.getByText('Second New List')).toBeInTheDocument()
-      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     }, { timeout: 10000 })
+    
+    // Verify input is still open and cleared
+    await waitFor(() => {
+      input = screen.getByRole('textbox', { name: /enter list name/i })
+      expect(input).toBeInTheDocument()
+      expect(input).toHaveValue('')
+    }, { timeout: 5000 })
     
     // Verify both lists exist
     expect(screen.getByText('First New List')).toBeInTheDocument()
     expect(screen.getByText('Second New List')).toBeInTheDocument()
   }, 20000)
 
-  it('Focus moves to first task input after creating list', async () => {
+  it('Focus moves back to create list input after creating list', async () => {
     const user = userEvent.setup()
     render(App)
     
@@ -286,18 +293,26 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
       expect(screen.getByText('List for Focus Test')).toBeInTheDocument()
     })
     
-    // Wait for task input to appear and verify it has focus
+    // Wait for create list input to be refocused
     // The focus management happens via setTimeout in App.svelte, wait for focus to move
     await waitFor(() => {
-      const listSection = Array.from(document.querySelectorAll('[data-list-id]')).find(section => {
-        const h2 = section.querySelector('h2')
-        return h2 && h2.textContent === 'List for Focus Test'
-      })
-      expect(listSection).toBeDefined()
-      const taskInput = listSection?.querySelector('textarea[placeholder="Add new task..."]')
-      expect(taskInput).toBeInTheDocument()
-      expect(taskInput).toHaveFocus()
+      const createListInput = screen.getByRole('textbox', { name: /enter list name/i })
+      expect(createListInput).toBeInTheDocument()
+      expect(createListInput).toHaveFocus()
+      // Verify input is cleared and ready for next list
+      expect(createListInput).toHaveValue('')
+    }, { timeout: 5000 })
+    
+    // Verify the "add a new task" empty state appears below the newly created list
+    const listSection = Array.from(document.querySelectorAll('[data-list-id]')).find(section => {
+      const h2 = section.querySelector('h2')
+      return h2 && h2.textContent === 'List for Focus Test'
     })
+    expect(listSection).toBeDefined()
+    const taskInput = listSection?.querySelector('textarea[placeholder="Add new task..."]')
+    expect(taskInput).toBeInTheDocument()
+    // But focus should NOT be on the task input
+    expect(taskInput).not.toHaveFocus()
   })
 })
 

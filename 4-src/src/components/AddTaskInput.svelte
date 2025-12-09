@@ -74,7 +74,7 @@
 
 <div 
   bind:this={containerRef}
-  class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-fit print:hidden add-task-container add-task-button mt-2"
+  class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-full print:hidden add-task-container add-task-button mt-2"
   style={marginLeft ? "margin-left: 1.5rem;" : ""}
 >
   {#if isInputActive}
@@ -95,8 +95,7 @@
         value={inputValue}
         oninput={(e) => onInputChange?.(e.currentTarget.value)}
         onkeydown={handleKeydown}
-        class="flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
-        style="width: {TASK_WIDTH}px;"
+        class="flex-1 break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
         rows="1"
       ></textarea>
       <button
@@ -118,8 +117,7 @@
       tabindex="-1"
     />
     <span 
-      class="cursor-pointer hover:underline break-words"
-      style="width: {TASK_WIDTH}px;"
+      class="cursor-pointer hover:underline break-words flex-1"
       onclick={onActivate}
       onkeydown={handleButtonKeydown}
       role="button"

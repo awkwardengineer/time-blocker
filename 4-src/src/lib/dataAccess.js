@@ -74,23 +74,30 @@ export async function createList(name, columnIndex = null) {
 
 /**
  * Create a new unnamed list (name set to null)
+ * @param {number} [columnIndex] - Optional column index (0-4). If not provided, distributes evenly across columns.
  * @returns {Promise<number>} The ID of the created list
  */
-export async function createUnnamedList() {
+export async function createUnnamedList(columnIndex = null) {
   // Get all existing lists to determine the next order value
   const existingLists = await db.lists.orderBy('order').toArray();
   const nextOrder = getNextOrderValue(existingLists);
   
-  // Assign columnIndex: distribute evenly across 5 columns (0-4)
+  // Assign columnIndex: use provided value, or distribute evenly across 5 columns (0-4)
   const columnCount = 5;
-  const columnIndex = nextOrder % columnCount;
+  let finalColumnIndex;
+  if (columnIndex !== null && columnIndex >= 0 && columnIndex < columnCount) {
+    finalColumnIndex = columnIndex;
+  } else {
+    // Fallback to distribution if invalid or not provided
+    finalColumnIndex = nextOrder % columnCount;
+  }
   
   // Create the list with name set to null
   const listId = await db.lists.add({
     name: null,
     order: nextOrder,
     archivedAt: null,
-    columnIndex: columnIndex
+    columnIndex: finalColumnIndex
   });
   
   return listId;
@@ -165,13 +172,14 @@ export async function getArchivedTasks() {
  *   Note: null is only used as a parameter convention; the stored listId is always a number.
  *   The list's name field can be null (for unnamed lists), but listId is never null in the database.
  * @param {string} text - The task text content
+ * @param {number} [columnIndex] - Optional column index (0-4) when creating unnamed list (only used if listId is null)
  * @returns {Promise<number>} The ID of the created task
  */
-export async function createTask(listId, text) {
+export async function createTask(listId, text, columnIndex = null) {
   // If listId is null, create an unnamed list first (listId will be a number after this)
   let targetListId = listId;
   if (listId === null) {
-    targetListId = await createUnnamedList(); // Returns a number (database ID)
+    targetListId = await createUnnamedList(columnIndex); // Returns a number (database ID)
   }
   
   // At this point, targetListId is always a number (never null)

@@ -30,8 +30,8 @@
   let createListInput = $state('');
   let createListInputElement = $state(null);
   
-  // State for creating task in unnamed list (task 3b)
-  let isUnnamedListInputActive = $state(false);
+  // State for creating task in unnamed list (task 3b) - per column
+  let unnamedListColumnIndex = $state(null); // null means not active, 0-4 means active for that column
   let unnamedListTaskInput = $state('');
   let unnamedListInputElement = $state(null);
   
@@ -230,40 +230,47 @@
     }
     
     try {
-      const listId = await createList(normalizedText, columnIndex);
+      await createList(normalizedText, columnIndex);
+      // Clear input but keep it open for creating another list
       createListInput = '';
-      createListColumnIndex = null;
-      
-      // Focus moves to creating the first task in that list
+      // Keep createListColumnIndex set to columnIndex so input stays open
       // Lists will update automatically via liveQuery
-      await activateAddTaskInput(listId);
+      // The "add a new task" empty state will appear below the newly created list automatically
+      
+      // Refocus the create list input after the list is created
+      await tick();
+      if (createListInputElement) {
+        setTimeout(() => {
+          createListInputElement?.focus();
+        }, 0);
+      }
     } catch (error) {
       console.error('Error creating list:', error);
     }
   }
   
-  // Unnamed list task creation handlers (task 3b)
-  function handleUnnamedListAddTaskClick() {
-    isUnnamedListInputActive = true;
+  // Unnamed list task creation handlers (task 3b) - per column
+  function handleUnnamedListAddTaskClick(columnIndex) {
+    unnamedListColumnIndex = columnIndex;
   }
   
   function handleUnnamedListInputEscape(e) {
     if (e.key === 'Escape') {
-      isUnnamedListInputActive = false;
+      unnamedListColumnIndex = null;
       unnamedListTaskInput = '';
     }
   }
   
   // Handle click outside unnamed list input to close it (only if no content)
   $effect(() => {
-    if (!isUnnamedListInputActive) return;
+    if (unnamedListColumnIndex === null) return;
     
     return useClickOutside(
       unnamedListInputElement,
       () => {
         // Only close if still active (prevents race conditions with programmatic closes)
-        if (isUnnamedListInputActive) {
-          isUnnamedListInputActive = false;
+        if (unnamedListColumnIndex !== null) {
+          unnamedListColumnIndex = null;
           unnamedListTaskInput = '';
         }
       },
@@ -283,7 +290,7 @@
   
   // Focus input when it becomes active
   $effect(() => {
-    if (isUnnamedListInputActive && unnamedListInputElement) {
+    if (unnamedListColumnIndex !== null && unnamedListInputElement) {
       setTimeout(() => {
         unnamedListInputElement?.focus();
         // Auto-resize textarea to fit content
@@ -310,12 +317,12 @@
     }
   });
   
-  async function handleUnnamedListCreateTask() {
+  async function handleUnnamedListCreateTask(columnIndex) {
     const inputValue = unnamedListTaskInput || '';
     
     // Check if input is empty string "" - exit task creation
     if (isEmpty(inputValue)) {
-      isUnnamedListInputActive = false;
+      unnamedListColumnIndex = null;
       unnamedListTaskInput = '';
       return;
     }
@@ -324,18 +331,18 @@
     const { text: taskText } = normalizeInput(inputValue);
     
     try {
-      // Pass null as listId to create task in unnamed list (which will be created)
-      const taskId = await createTask(null, taskText);
+      // Pass null as listId to create task in unnamed list (which will be created in the specified column)
+      const taskId = await createTask(null, taskText, columnIndex);
       unnamedListTaskInput = '';
-      isUnnamedListInputActive = false;
+      // Keep input open for creating another task in the same column
+      // The "add a new task" empty state will appear below the newly created list automatically
       
-      // Get the listId from the created task to focus the correct list
-      const task = await db.tasks.get(taskId);
-      const listId = task?.listId;
-      
-      if (listId) {
-        // Focus moves to creating the next task in the newly created unnamed list
-        await activateAddTaskInput(listId);
+      // Refocus the unnamed list input after the task is created
+      await tick();
+      if (unnamedListInputElement) {
+        setTimeout(() => {
+          unnamedListInputElement?.focus();
+        }, 0);
       }
     } catch (error) {
       console.error('Error creating task in unnamed list:', error);
@@ -459,47 +466,6 @@
                 Create Your First List
               </h2>
             {/if}
-            
-            <!-- Add your first task button -->
-            {#if !isUnnamedListInputActive}
-              <div class="mt-4">
-                <span
-                  class="inline-block px-4 py-2 bg-gray-100 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 text-sm"
-                  style="width: {TASK_WIDTH}px;"
-                  onclick={handleUnnamedListAddTaskClick}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleUnnamedListAddTaskClick();
-                    }
-                  }}
-                  role="button"
-                  tabindex="0"
-                  aria-label="Add your first task"
-                >
-                  Add your first task
-                </span>
-              </div>
-            {:else}
-              <div class="mt-4">
-                <textarea
-                  bind:this={unnamedListInputElement}
-                  bind:value={unnamedListTaskInput}
-                  class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  style="width: {TASK_WIDTH}px; max-height: {MAX_TEXTAREA_HEIGHT}px;"
-                  placeholder="Add new task..."
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleUnnamedListCreateTask();
-                    } else if (e.key === 'Escape') {
-                      handleUnnamedListInputEscape(e);
-                    }
-                  }}
-                  aria-label="Enter task text"
-                ></textarea>
-              </div>
-            {/if}
           </div>
         {:else if Array.isArray($lists)}
           <!-- 5-column grid layout with column containers -->
@@ -619,76 +585,6 @@
               {/each}
             </ul>
           </div>
-          
-          <!-- Add task button for creating unnamed list (task 3b) -->
-          {#if isUnnamedListInputActive}
-            <div class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-fit print:hidden mt-2" style="margin-left: 1.5rem;">
-              <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
-                ⋮⋮
-              </span>
-              <input
-                type="checkbox"
-                disabled
-                class="cursor-pointer opacity-0"
-                aria-hidden="true"
-                tabindex="-1"
-              />
-              <div class="flex gap-2">
-                <textarea
-                  bind:this={unnamedListInputElement}
-                  placeholder="Add new task..."
-                  value={unnamedListTaskInput}
-                  oninput={(e) => unnamedListTaskInput = e.currentTarget.value}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleUnnamedListCreateTask();
-                    } else if (e.key === 'Escape') {
-                      handleUnnamedListInputEscape(e);
-                    }
-                  }}
-                  class="flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
-                  style="width: {TASK_WIDTH}px;"
-                  rows="1"
-                ></textarea>
-                <button
-                  onclick={handleUnnamedListCreateTask}
-                  aria-label="Save new task"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-          {:else}
-            <div class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-fit print:hidden mt-2" style="margin-left: 1.5rem;">
-              <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
-                ⋮⋮
-              </span>
-              <input
-                type="checkbox"
-                disabled
-                class="cursor-pointer opacity-0"
-                aria-hidden="true"
-                tabindex="-1"
-              />
-              <span 
-                class="cursor-pointer hover:underline break-words"
-                style="width: {TASK_WIDTH}px;"
-                onclick={handleUnnamedListAddTaskClick}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleUnnamedListAddTaskClick();
-                  }
-                }}
-                role="button"
-                tabindex="0"
-                aria-label="Add your first task"
-              >
-                Add your first task
-              </span>
-            </div>
-          {/if}
         {/if}
       </div>
     </div>

@@ -38,6 +38,13 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    - ✅ Ensure proper spacing and layout
    - ✅ **Visual separator**: Add thin vertical lines between columns for visual separation
    - **Create new list per column**: "Create new list" should appear in each column - at the bottom of columns that have lists, or in empty columns. When a list is created, it should be created within that specific column (using the column's index).
+   - ✅ **Update create new list behavior**:
+     - ✅ After creating a new list, the "add a new task" empty state should appear below the newly created list
+     - ✅ Focus should move to the input for creating another new list (in the same column)
+     - ✅ **Important**: The "Add your first task" button should only appear below named lists (via TaskList empty state), NOT in the "Create new list" section
+     - ✅ **Note**: This behavior was updated in milestone [[040-list-crud-ordering]]
+     - ✅ Undo old behaviors that conflict with this new behavior
+     - ✅ Update tests to reflect the new behavior
    - **Future rows consideration**: Structure should be extensible to support row-based layouts
 
 3. **Update Drag-and-Drop for Columns**
