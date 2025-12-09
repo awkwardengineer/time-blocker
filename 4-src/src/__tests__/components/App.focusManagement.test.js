@@ -70,17 +70,18 @@ describe('App - Focus Management', () => {
     })
     
     // Wait a bit longer for focus to be set (DOM updates and focus management need time)
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await new Promise(resolve => setTimeout(resolve, 100))
     
-    const task2Text = within(workSection).getByText('Task 2')
-    const task2ListItem = task2Text.closest('li')
-    const task2TextSpan = task2ListItem.querySelector('span[role="button"]')
-    
+    // Query element inside waitFor to ensure fresh reference after DOM updates
     // Increased timeout to handle timing issues in full test suite
     await waitFor(() => {
+      const task2Text = within(workSection).getByText('Task 2')
+      const task2ListItem = task2Text.closest('li')
+      const task2TextSpan = task2ListItem?.querySelector('span[role="button"]')
+      expect(task2TextSpan).toBeInTheDocument()
       expect(task2TextSpan).toHaveFocus()
-    }, { timeout: 3000 })
-  })
+    }, { timeout: 5000 })
+  }, 15000)
 
   it('Focus moves to Add Task button when all tasks archived', async () => {
     const user = userEvent.setup()

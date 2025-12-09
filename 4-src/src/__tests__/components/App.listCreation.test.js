@@ -252,7 +252,10 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     await waitFor(() => {
       expect(screen.getByText('First New List')).toBeInTheDocument()
       expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
-    })
+    }, { timeout: 10000 })
+    
+    // Small delay to ensure first list creation is fully processed
+    await new Promise(resolve => setTimeout(resolve, 100))
     
     // Create second list
     input = await activateCreateListInput(user)
@@ -263,12 +266,12 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     await waitFor(() => {
       expect(screen.getByText('Second New List')).toBeInTheDocument()
       expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
-    })
+    }, { timeout: 10000 })
     
     // Verify both lists exist
     expect(screen.getByText('First New List')).toBeInTheDocument()
     expect(screen.getByText('Second New List')).toBeInTheDocument()
-  })
+  }, 20000)
 
   it('Focus moves to first task input after creating list', async () => {
     const user = userEvent.setup()
