@@ -471,3 +471,83 @@ export async function updateListOrder(reorderedLists) {
   });
 }
 
+/**
+ * Update list order with column support
+ * Handles both same-column reordering and cross-column dragging
+ * @param {number} targetColumnIndex - The column index where lists were dropped (0-4)
+ * @param {Array<{id: number}>} reorderedLists - Array of lists in their new order in the target column (must include id field)
+ * @returns {Promise<void>}
+ */
+export async function updateListOrderWithColumn(targetColumnIndex, reorderedLists) {
+  if (!reorderedLists || reorderedLists.length === 0) {
+    return; // No lists to update
+  }
+  
+  // Validate column index
+  if (targetColumnIndex < 0 || targetColumnIndex >= 5) {
+    throw new Error(`Invalid column index: ${targetColumnIndex}`);
+  }
+  
+  // Validate that all lists exist
+  const listIds = reorderedLists.map(l => l.id);
+  const lists = await db.lists.bulkGet(listIds);
+  const invalidLists = lists.filter(l => !l);
+  if (invalidLists.length > 0) {
+    throw new Error('Cannot update order: some lists do not exist');
+  }
+  
+  // Get current list data to detect column changes
+  const currentLists = lists.filter(l => l !== undefined);
+  
+  // Identify lists that changed columns (moved from another column to this one)
+  const movedLists = currentLists.filter(l => (l.columnIndex ?? 0) !== targetColumnIndex);
+  const sourceColumnIndices = new Set(movedLists.map(l => l.columnIndex ?? 0));
+  
+  // Update all lists in a transaction for atomicity
+  await db.transaction('rw', db.lists, async () => {
+    // Step 1: Update columnIndex and order for lists in target column
+    const affectedSourceColumns = new Set();
+    for (let index = 0; index < reorderedLists.length; index++) {
+      const listId = reorderedLists[index].id;
+      const currentList = currentLists.find(l => l.id === listId);
+      if (!currentList) continue;
+      
+      const updates = { order: index };
+      // Update columnIndex if list moved from another column
+      const oldColumnIndex = currentList.columnIndex ?? 0;
+      if (oldColumnIndex !== targetColumnIndex) {
+        updates.columnIndex = targetColumnIndex;
+        affectedSourceColumns.add(oldColumnIndex);
+      }
+      
+      await db.lists.update(listId, updates);
+    }
+    
+    // Step 2: Recalculate order for affected columns
+    // Get all active lists
+    const allLists = await db.lists.orderBy('order').toArray();
+    const activeLists = allLists.filter(list => list.archivedAt == null);
+    
+    // Group lists by column
+    const listsByColumn = Array(5).fill(null).map(() => []);
+    for (const list of activeLists) {
+      const colIndex = list.columnIndex ?? 0;
+      const safeColIndex = colIndex >= 5 ? 4 : colIndex;
+      listsByColumn[safeColIndex].push(list);
+    }
+    
+    // Recalculate order for target column and affected source columns
+    const columnsToRecalculate = new Set([targetColumnIndex, ...affectedSourceColumns]);
+    for (const colIndex of columnsToRecalculate) {
+      const columnLists = listsByColumn[colIndex];
+      // Sort by current order to maintain relative order
+      columnLists.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      
+      // Update order values sequentially
+      for (let index = 0; index < columnLists.length; index++) {
+        await db.lists.update(columnLists[index].id, { order: index });
+      }
+    }
+  });
+}
+

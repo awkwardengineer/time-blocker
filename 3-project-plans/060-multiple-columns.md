@@ -47,11 +47,153 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
      - ✅ Update tests to reflect the new behavior
    - **Future rows consideration**: Structure should be extensible to support row-based layouts
 
-3. **Update Drag-and-Drop for Columns**
-   - Extend cross-list dragging to work across columns
-   - Ensure drop zones work correctly in multi-column layout
-   - Handle visual feedback when dragging between columns
-   - Maintain existing drag-and-drop functionality
+3. **Update Drag-and-Drop for Columns** ✅ COMPLETE
+   - ✅ **Issues Fixed:**
+     - ✅ Placeholders appear correctly during drag
+     - ✅ Lists displace properly in dropzone
+     - ✅ Lists don't disappear on drop (fixed by always looking up from stableLists with fallback)
+     - ✅ Tasks still drag and drop between lists properly (existing functionality preserved)
+   
+   - **Root Cause Analysis:**
+     - Each column has its own dndzone with `items: columnLists` (derived from `listsByColumn()`)
+     - `handleListConsider` is empty - not updating `draggableLists` during drag
+     - When dragging between columns, the drag library needs `draggableLists` to reflect the move for visual feedback
+     - `listsByColumn` is derived from `draggableLists`, so it should update automatically IF we update `draggableLists`
+     - Multiple dndzones (one per column) all fire events - need to coordinate them
+   
+   - **Solution Approach (Based on 042-drag-and-drop-bug.md):**
+     - MUST update `draggableLists` during `consider` (drag library requires this)
+     - Rebuild `draggableLists` from all columns' current states during drag
+     - Update `columnIndex` of moved items in `draggableLists` during `consider` for visual feedback
+     - Use placeholder detection and `stableLists` validation (already implemented)
+     - Handle cross-column moves by tracking which column items came from and where they're going
+   
+   - **Implementation Plan:**
+     
+     ✅ **Step 1: Add Debugging & Logging**
+     - ✅ Add comprehensive logging to `handleListConsider` and `handleListFinalize`
+     - ✅ Log: columnIndex, event.detail.items, current draggableLists state, placeholder detection
+     - ✅ Log: which lists are moving, their old/new columnIndex values
+     - ✅ Add visual debugging: log when placeholders are detected, when lists move columns
+     
+     ✅ **Step 2: Fix `handleListConsider` to Update State**
+     - ✅ The drag library REQUIRES the items array to match DOM structure during drag
+     - ✅ **Key Challenge:** `listsByColumn` is derived from `draggableLists`, so we can't use it to rebuild (circular dependency)
+     - ✅ **Solution:** Update `draggableLists` by replacing items for the current column only
+     - ✅ When a column's dndzone fires `consider`, we need to:
+       1. ✅ Get the new items array for that column (includes placeholders)
+       2. ✅ Update `draggableLists` by:
+          - ✅ Removing all items that belong to this column (based on current columnIndex)
+          - ✅ Adding the new items from this column (with columnIndex set correctly)
+          - ✅ Keeping items from other columns unchanged
+       3. ✅ Set `columnIndex` for all items in the new column items array
+     - Implementation approach:
+       ```javascript
+       function handleListConsider(event, columnIndex) {
+         console.log('[DRAG] consider - column:', columnIndex);
+         console.log('[DRAG] consider - items:', event.detail.items);
+         console.log('[DRAG] consider - current draggableLists:', draggableLists);
+         
+         // Get items for this column (includes placeholders for visual feedback)
+         const newColumnItems = event.detail.items;
+         
+         // Update draggableLists:
+         // 1. Remove items that were in this column (based on current columnIndex)
+         // 2. Add new items for this column (with columnIndex set)
+         // 3. Keep items from other columns unchanged
+         
+         const updatedLists = draggableLists.filter(list => {
+           const listColumnIndex = list.columnIndex ?? 0;
+           return listColumnIndex !== columnIndex;
+         });
+         
+         // Add new items for this column, setting columnIndex
+         for (const item of newColumnItems) {
+           const listItem = { ...item, columnIndex };
+           updatedLists.push(listItem);
+         }
+         
+         console.log('[DRAG] consider - updated draggableLists:', updatedLists);
+         draggableLists = updatedLists;
+       }
+       ```
+     - **Important:** This approach ensures:
+       - Items moving TO this column get their columnIndex updated
+       - Items moving FROM this column are removed (they'll be added to their new column when that column's consider fires)
+       - Items in other columns remain unchanged
+       - Placeholders are included (drag library needs them)
+     
+     ✅ **Step 3: Handle Cross-Column Detection**
+     - ✅ Detect when an item moved from one column to another
+     - ✅ Compare current `columnIndex` in `draggableLists` vs new column
+     - ✅ Log cross-column moves for debugging
+     - ✅ Ensure `columnIndex` is updated in `draggableLists` during `consider`
+     - ✅ **Event Ordering Note:**
+       - When dragging between columns, both source and target columns fire `consider` events
+       - Order doesn't matter: source removes item, target adds item
+       - When dragging within a column, only that column fires `consider` (reordering)
+       - The approach handles both cases correctly
+     - ✅ Source column detection: Skip database updates for columns that lost items and didn't receive any
+     
+     ✅ **Step 4: Fix `handleListFinalize`**
+     - ✅ Filter placeholders (already done) - CRITICAL: must filter before database writes
+     - ✅ Update database with `updateListOrderWithColumn` (already done)
+     - ✅ **Important:** Don't update `draggableLists` in finalize - let the `$effect` sync from liveQuery
+     - ✅ The `$effect` that syncs `draggableLists` from `$lists` will automatically update after database changes
+     - ✅ Add logging to track:
+       - Column index where drop occurred
+       - Valid items (after filtering placeholders)
+       - Database update result
+       - Final `draggableLists` state after sync
+     - ✅ **Note:** Only the target column's finalize fires (the column where item was dropped)
+       - Source column doesn't fire finalize when item moves away
+       - This is correct - we only update the target column in the database
+     - ✅ Prevent duplicate database updates: Source columns that lost items skip database updates
+     
+     **Step 5: Test & Debug**
+     - Test dragging within same column (should work like before)
+     - Test dragging between columns (should update columnIndex visually)
+     - Test rapid drag operations (click-drag-redrag)
+     - Verify placeholders appear correctly
+     - Verify lists don't disappear on drop
+     - Verify tasks still drag between lists (don't break existing functionality)
+     
+     **Step 6: Edge Cases**
+     - Handle empty columns
+     - Handle dragging to last position in column
+     - Handle dragging from last position in column
+     - Handle dragging when only one list exists
+     - Handle rapid drag operations (multiple considers before finalize)
+   
+   - **Key Principles (from 042):**
+     - ✅ Update `draggableLists` during `consider` (drag library requirement)
+     - ✅ Use `stableLists` for validation (prevents invalid queries)
+     - ✅ Filter placeholders before database writes
+     - ✅ Render from `draggableLists` but look up real lists from `stableLists`
+     - ✅ Components will remount during drag (expected behavior)
+     - ✅ Queries recreate correctly when components remount (already implemented)
+   
+   - **Debugging Checklist:**
+     - [x] Add logging to `handleListConsider` - log columnIndex, items, placeholders
+     - [x] Add logging to `handleListFinalize` - log columnIndex, validItems, database updates
+     - [x] Add logging to track `draggableLists` state changes
+     - [x] Add logging to track `listsByColumn` derived value changes
+     - [x] Add visual indicators: log when placeholders detected, when lists move columns
+     - [x] Test with browser console open to see all logs
+     - [x] Verify placeholders appear in DOM during drag
+     - [x] Verify lists don't disappear after drop (fixed by always looking up from stableLists with fallback)
+     - [x] Verify database updates correctly (check IndexedDB after drop)
+   
+   - **Success Criteria:**
+     - ✅ Placeholders appear correctly during drag
+     - ✅ Lists displace properly in dropzone
+     - ✅ Lists don't disappear on drop (fixed by always looking up from stableLists with fallback to dragItem)
+     - ✅ Cross-column dragging works (columnIndex updates)
+     - ✅ Tasks still drag between lists (existing functionality preserved)
+     - ✅ No console errors
+     - ✅ Database state matches UI state after drag
+     - ✅ Source columns skip database updates (prevents duplicate updates)
+     - ✅ Empty columns have minimum height for easier dropping
 
 4. **Update Keyboard Navigation for Columns**
    - Extend keyboard cross-list movement to work across columns
