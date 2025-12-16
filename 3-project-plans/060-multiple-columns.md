@@ -211,9 +211,9 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    
    - [x] **Task text keyboard editing** - Verify Enter/Space on task text works correctly. Already has `handleTaskTextKeydown` (lines 554-579), but verify no console errors and behavior matches click.
    
-   - [ ] **"Add your first task" button** - Verify Enter/Space works. Already has `handleButtonKeydown` in `AddTaskInput.svelte` (lines 67-72), but verify no issues.
+   - [x] **"Add your first task" button** - Verify Enter/Space works. Already has `handleButtonKeydown` in `AddTaskInput.svelte` (lines 67-72), but verify no issues.
    
-   - [ ] **"Add Task" button** - Verify Enter/Space works. Same handler as above, verify no issues.
+   - [x] **"Add Task" button** - Verify Enter/Space works. Same handler as above, verify no issues.
    
    - [ ] **"Create new list" button** - Verify Enter/Space works. Already has `handleCreateListKeydown` in `App.svelte` (lines 178-184), but verify no issues.
    

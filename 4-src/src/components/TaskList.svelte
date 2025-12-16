@@ -111,6 +111,37 @@
     };
   });
   
+  // Add capture-phase keyboard handler to prevent drag library from intercepting Enter/Space on Add Task button
+  $effect(() => {
+    if (!addTaskContainerElement) return;
+    
+    function handleAddTaskButtonKeydownCapture(e) {
+      const target = e.target;
+      
+      // Handle Enter/Space on Add Task button (span with role="button")
+      if ((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.hasAttribute('role') && target.getAttribute('role') === 'button') {
+        // Check if this is the Add Task button (within the add task container)
+        const addTaskButton = addTaskContainerElement?.querySelector('span[role="button"]');
+        if (addTaskButton && target === addTaskButton) {
+          e.preventDefault();
+          e.stopImmediatePropagation(); // Stop ALL handlers including drag library
+          
+          // Activate the input (same as clicking)
+          handleAddTaskClick();
+        }
+      }
+    }
+    
+    // Use capture phase to intercept before drag library
+    addTaskContainerElement.addEventListener('keydown', handleAddTaskButtonKeydownCapture, true);
+    
+    return () => {
+      if (addTaskContainerElement) {
+        addTaskContainerElement.removeEventListener('keydown', handleAddTaskButtonKeydownCapture, true);
+      }
+    };
+  });
+  
   // Add capture-phase keyboard handler to prevent drag library from intercepting Enter on task text
   // Also handles cross-list movement when tasks are at boundaries
   $effect(() => {
