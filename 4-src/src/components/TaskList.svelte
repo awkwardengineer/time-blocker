@@ -805,6 +805,13 @@
               type="checkbox"
               checked={task.status === 'checked'}
               onchange={() => handleToggleTaskStatus(task.id, task.status)}
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleToggleTaskStatus(task.id, task.status);
+                }
+              }}
               class="cursor-pointer"
               aria-label={`Mark task "${task.text || 'blank task'}" as ${task.status === 'checked' ? 'unchecked' : 'checked'}`}
             />

@@ -239,5 +239,67 @@ describe('App - Task Editing Modal UX Behaviors', () => {
       expect(within(workSection).getByText('Saved via button')).toBeInTheDocument()
     })
   })
+
+  it('Keyboard navigation: Enter key on task text opens edit modal', async () => {
+    const user = userEvent.setup()
+    render(App)
+    const workSection = await waitForListSection('Work')
+    
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
+    // Find task text span (has role="button")
+    const task1Text = within(workSection).getByText('Task 1')
+    const task1ListItem = task1Text.closest('li')
+    const taskTextSpan = within(task1ListItem).getByRole('button', { name: /edit task: task 1/i })
+    
+    // Focus the task text
+    taskTextSpan.focus()
+    await new Promise(resolve => setTimeout(resolve, 10))
+    
+    // Press Enter - should open modal
+    await user.keyboard('{Enter}')
+    
+    // Wait for modal to open
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    }, { timeout: 3000 })
+    
+    // Verify modal opened correctly
+    const modalInput = screen.getByRole('textbox', { name: /edit task/i })
+    expect(modalInput).toHaveValue('Task 1')
+  })
+
+  it('Keyboard navigation: Space key on task text opens edit modal', async () => {
+    const user = userEvent.setup()
+    render(App)
+    const workSection = await waitForListSection('Work')
+    
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
+    // Find task text span (has role="button")
+    const task1Text = within(workSection).getByText('Task 1')
+    const task1ListItem = task1Text.closest('li')
+    const taskTextSpan = within(task1ListItem).getByRole('button', { name: /edit task: task 1/i })
+    
+    // Focus the task text
+    taskTextSpan.focus()
+    await new Promise(resolve => setTimeout(resolve, 10))
+    
+    // Press Space - should open modal
+    await user.keyboard(' ')
+    
+    // Wait for modal to open
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    }, { timeout: 3000 })
+    
+    // Verify modal opened correctly
+    const modalInput = screen.getByRole('textbox', { name: /edit task/i })
+    expect(modalInput).toHaveValue('Task 1')
+  })
 })
 

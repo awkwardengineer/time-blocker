@@ -207,9 +207,9 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
 
    - [x] **Fix: List title keyboard editing** - Currently causes console error when pressing Enter/Space on list title. Fix the `handleListNameKeydown` function in `TaskList.svelte` (lines 654-673).
    
-   - [ ] **Checkbox keyboard toggle** - Add `onkeydown` handler to task checkbox in `TaskList.svelte` (line ~765). When Enter or Space is pressed while checkbox is focused, toggle task checked state (call `handleToggleTaskStatus`).
+   - [x] **Checkbox keyboard toggle** - Add `onkeydown` handler to task checkbox in `TaskList.svelte` (line ~765). When Enter or Space is pressed while checkbox is focused, toggle task checked state (call `handleToggleTaskStatus`).
    
-   - [ ] **Task text keyboard editing** - Verify Enter/Space on task text works correctly. Already has `handleTaskTextKeydown` (lines 554-579), but verify no console errors and behavior matches click.
+   - [x] **Task text keyboard editing** - Verify Enter/Space on task text works correctly. Already has `handleTaskTextKeydown` (lines 554-579), but verify no console errors and behavior matches click.
    
    - [ ] **"Add your first task" button** - Verify Enter/Space works. Already has `handleButtonKeydown` in `AddTaskInput.svelte` (lines 67-72), but verify no issues.
    

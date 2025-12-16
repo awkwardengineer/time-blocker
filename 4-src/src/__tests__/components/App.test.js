@@ -144,6 +144,54 @@ describe('App', () => {
     }, { timeout: 10000 })
   }, 15000)
 
+  it('Keyboard navigation: Enter/Space on checkbox toggles task checked state', async () => {
+    const user = userEvent.setup()
+    render(App)
+    const workSection = await waitForListSection('Work')
+    
+    // Wait for initial tasks to load
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
+    // Find Task 1's checkbox
+    const task1Text = within(workSection).getByText('Task 1')
+    const task1ListItem = task1Text.closest('li')
+    const task1Checkbox = within(task1ListItem).getByRole('checkbox')
+    
+    // Verify Task 1 starts unchecked
+    expect(task1Checkbox).not.toBeChecked()
+    
+    // Focus the checkbox
+    task1Checkbox.focus()
+    await new Promise(resolve => setTimeout(resolve, 10))
+    
+    // Press Enter - should toggle checkbox
+    await user.keyboard('{Enter}')
+    
+    // Wait for checkbox to become checked
+    await waitFor(() => {
+      const updatedCheckbox = within(task1ListItem).getByRole('checkbox')
+      expect(updatedCheckbox).toBeChecked()
+    }, { timeout: 10000 })
+    
+    // Small delay before next toggle
+    await new Promise(resolve => setTimeout(resolve, 200))
+    
+    // Focus again and press Space - should toggle back
+    task1Checkbox.focus()
+    await new Promise(resolve => setTimeout(resolve, 10))
+    
+    // Press Space - should toggle checkbox back
+    await user.keyboard(' ')
+    
+    // Wait for checkbox to become unchecked
+    await waitFor(() => {
+      const finalCheckbox = within(task1ListItem).getByRole('checkbox')
+      expect(finalCheckbox).not.toBeChecked()
+    }, { timeout: 10000 })
+  }, 15000)
+
   it('allows archiving and restoring tasks via the archived view', async () => {
     const user = userEvent.setup()
     render(App)
