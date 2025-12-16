@@ -214,7 +214,10 @@
   function handleConsider(event) {
     // Update local state for visual feedback during drag
     // No database updates here - prevents liveQuery interference
-    draggableTasks = event.detail.items;
+    // Filter out any invalid items (only keep items with numeric IDs - real tasks)
+    draggableTasks = event.detail.items.filter(item => 
+      item && typeof item.id === 'number'
+    );
   }
   
   // Add document-level keyboard listener for cross-list boundary movement
@@ -282,13 +285,18 @@
   
   // Handle drag events - finalize event for database updates
   async function handleFinalize(event) {
+    // Filter out any invalid items (only keep items with numeric IDs - real tasks)
+    const validItems = event.detail.items.filter(item => 
+      item && typeof item.id === 'number'
+    );
+    
     // Update local state for immediate visual feedback
-    draggableTasks = event.detail.items;
+    draggableTasks = validItems;
     
     // Update database with new order values
     // Supports both same-list reordering and cross-list moves
     try {
-      await updateTaskOrderCrossList(listId, event.detail.items);
+      await updateTaskOrderCrossList(listId, validItems);
       // liveQuery will automatically update the UI after database changes
     } catch (error) {
       console.error('Error updating task order:', error);
@@ -742,7 +750,7 @@
         }}
         onconsider={handleConsider}
         onfinalize={handleFinalize}
-        class="space-y-2 m-0 p-0 list-none {draggableTasks.length === 0 ? 'empty-drop-zone min-h-0 pb-2' : ''}"
+        class="space-y-2 m-0 p-0 list-none {draggableTasks.length === 0 ? 'empty-drop-zone min-h-[24px]' : ''}"
       >
         {#each draggableTasks as task (task.id)}
           <li data-id={task.id} class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-full m-0 list-none">
@@ -788,20 +796,22 @@
       
       <!-- Add Task button - styled like a task item, positioned to align with list items -->
       {#if draggableTasks.length === 0}
-        <AddTaskInput
-          bind:isInputActive={isInputActive}
-          bind:containerElement={addTaskContainerElement}
-          bind:textareaElement={addTaskTextareaElement}
-          inputValue={newTaskInput}
-          onInputChange={onInputChange}
-          onSave={handleCreateTask}
-          onEscape={handleInputEscape}
-          onActivate={handleAddTaskClick}
-          buttonText="Add your first task"
-          placeholder="Add new task..."
-          ariaLabel="Add your first task to {listName}"
-          marginLeft={false}
-        />
+        <div class="empty-list-add-task-wrapper">
+          <AddTaskInput
+            bind:isInputActive={isInputActive}
+            bind:containerElement={addTaskContainerElement}
+            bind:textareaElement={addTaskTextareaElement}
+            inputValue={newTaskInput}
+            onInputChange={onInputChange}
+            onSave={handleCreateTask}
+            onEscape={handleInputEscape}
+            onActivate={handleAddTaskClick}
+            buttonText="Add your first task"
+            placeholder="Add new task..."
+            ariaLabel="Add your first task to {listName}"
+            marginLeft={false}
+          />
+        </div>
       {:else}
         <AddTaskInput
           bind:isInputActive={isInputActive}
@@ -850,6 +860,12 @@
     margin: 0;
     padding: 0;
     list-style: none;
+    box-sizing: border-box; /* Include borders in width calculation */
+  }
+  
+  /* Position "Add your first task" to cover empty drop zone space */
+  .empty-list-add-task-wrapper {
+    margin-top: -24px; /* Shift up to cover min-h-[24px] from empty ul */
   }
   
   /* Explicitly reset h2 margins to ensure no browser defaults */

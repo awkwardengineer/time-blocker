@@ -128,3 +128,9 @@
     </span>
   {/if}
 </div>
+
+<style>
+  .add-task-container {
+    box-sizing: border-box; /* Include borders in width calculation */
+  }
+</style>
