@@ -201,6 +201,26 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    - Ensure keyboard navigation flows naturally across column boundaries
    - Maintain existing keyboard navigation functionality
 
+4.5. **Keyboard Focus Actions - Feature Checklist**
+
+   Work through these features one at a time, testing and running drag-and-drop integration tests after each:
+
+   - [x] **Fix: List title keyboard editing** - Currently causes console error when pressing Enter/Space on list title. Fix the `handleListNameKeydown` function in `TaskList.svelte` (lines 654-673).
+   
+   - [ ] **Checkbox keyboard toggle** - Add `onkeydown` handler to task checkbox in `TaskList.svelte` (line ~765). When Enter or Space is pressed while checkbox is focused, toggle task checked state (call `handleToggleTaskStatus`).
+   
+   - [ ] **Task text keyboard editing** - Verify Enter/Space on task text works correctly. Already has `handleTaskTextKeydown` (lines 554-579), but verify no console errors and behavior matches click.
+   
+   - [ ] **"Add your first task" button** - Verify Enter/Space works. Already has `handleButtonKeydown` in `AddTaskInput.svelte` (lines 67-72), but verify no issues.
+   
+   - [ ] **"Add Task" button** - Verify Enter/Space works. Same handler as above, verify no issues.
+   
+   - [ ] **"Create new list" button** - Verify Enter/Space works. Already has `handleCreateListKeydown` in `App.svelte` (lines 178-184), but verify no issues.
+   
+   - [ ] **Task keyboard drag-and-drop entry** - Make task list items focusable (add `tabindex="0"` to task `li` elements) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
+   
+   - [ ] **List keyboard drag-and-drop entry** - Make list containers focusable (add `tabindex="0"` to list section element) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
+
 5. **Handle Print Layout**
    - Determine how multiple columns should render in print
    - Ensure print layout is readable and functional

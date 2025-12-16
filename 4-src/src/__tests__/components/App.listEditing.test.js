@@ -272,5 +272,52 @@ describe('App - List Editing Modal UX Behaviors', () => {
     const modalInput = screen.getByRole('textbox', { name: /edit list name/i })
     expect(modalInput).toHaveValue('Work')
   })
+
+  it('Keyboard navigation: Enter/Space on focused list name opens modal', async () => {
+    const user = userEvent.setup()
+    render(App)
+    const workSection = await waitForListSection('Work')
+    
+    // Get the list heading
+    const listHeading = within(workSection).getByRole('button', { name: /Rename list: Work/i })
+    
+    // Focus the list heading directly (simulating keyboard navigation)
+    listHeading.focus()
+    await new Promise(resolve => setTimeout(resolve, 10))
+    
+    // Press Enter - should open modal
+    await user.keyboard('{Enter}')
+    
+    // Wait for modal to open
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    }, { timeout: 3000 })
+    
+    // Verify modal opened correctly
+    const modalInput = screen.getByRole('textbox', { name: /edit list name/i })
+    expect(modalInput).toHaveValue('Work')
+    
+    // Close modal for next test
+    await user.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+    
+    // Focus again and test Space key
+    listHeading.focus()
+    await new Promise(resolve => setTimeout(resolve, 10))
+    
+    // Press Space - should open modal
+    await user.keyboard(' ')
+    
+    // Wait for modal to open
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    }, { timeout: 3000 })
+    
+    // Verify modal opened correctly
+    const modalInput2 = screen.getByRole('textbox', { name: /edit list name/i })
+    expect(modalInput2).toHaveValue('Work')
+  })
 })
 

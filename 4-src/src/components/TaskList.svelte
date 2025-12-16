@@ -72,6 +72,45 @@
     }
   });
   
+  // Add capture-phase keyboard handler to prevent drag library from intercepting Enter/Space on list title
+  $effect(() => {
+    if (!listSectionElement) return;
+    
+    function handleListTitleKeydownCapture(e) {
+      const target = e.target;
+      
+      // Handle Enter/Space on list title (h2 element) for editing
+      if ((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.tagName === 'H2' && target.hasAttribute('role') && target.getAttribute('role') === 'button') {
+        // Check if this is our list title (within this list section)
+        const h2Element = listSectionElement?.querySelector('h2[role="button"]');
+        if (h2Element && target === h2Element) {
+          e.preventDefault();
+          e.stopImmediatePropagation(); // Stop ALL handlers including drag library
+          
+          // Open the list edit modal
+          const rect = target.getBoundingClientRect();
+          editingListPosition = {
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height
+          };
+          listNameElement = target;
+          listEditModalOpen = true;
+        }
+      }
+    }
+    
+    // Use capture phase to intercept before drag library
+    listSectionElement.addEventListener('keydown', handleListTitleKeydownCapture, true);
+    
+    return () => {
+      if (listSectionElement) {
+        listSectionElement.removeEventListener('keydown', handleListTitleKeydownCapture, true);
+      }
+    };
+  });
+  
   // Add capture-phase keyboard handler to prevent drag library from intercepting Enter on task text
   // Also handles cross-list movement when tasks are at boundaries
   $effect(() => {
