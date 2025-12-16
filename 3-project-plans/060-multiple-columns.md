@@ -215,7 +215,7 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    
    - [x] **"Add Task" button** - Verify Enter/Space works. Same handler as above, verify no issues.
    
-   - [ ] **"Create new list" button** - Verify Enter/Space works. Already has `handleCreateListKeydown` in `App.svelte` (lines 178-184), but verify no issues.
+   - [x] **"Create new list" button** - Verify Enter/Space works. Already has `handleCreateListKeydown` in `App.svelte` (lines 178-184), but verify no issues.
    
    - [ ] **Task keyboard drag-and-drop entry** - Make task list items focusable (add `tabindex="0"` to task `li` elements) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
    

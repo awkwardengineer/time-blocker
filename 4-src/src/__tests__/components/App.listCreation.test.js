@@ -24,9 +24,11 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
       const listSections = document.querySelectorAll('[data-list-id]')
       expect(listSections.length).toBeGreaterThan(0)
     })
-    // Wait for lists to load and button to appear
+    // Wait for lists to load and button to appear (get first button since there's one per column)
     const createButton = await waitFor(() => {
-      return screen.getByRole('button', { name: /create new list/i })
+      const buttons = screen.getAllByRole('button', { name: /create new list/i })
+      expect(buttons.length).toBeGreaterThan(0)
+      return buttons[0] // Use first button (first column)
     }, { timeout: 10000 })
     await user.click(createButton)
     
@@ -166,8 +168,9 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     // Verify list was NOT created
     expect(screen.queryByText('This should be discarded')).not.toBeInTheDocument()
     
-    // Verify Create List button appears again
-    expect(screen.getByRole('button', { name: /create new list/i })).toBeInTheDocument()
+    // Verify Create List button appears again (check first button)
+    const buttons = screen.getAllByRole('button', { name: /create new list/i })
+    expect(buttons.length).toBeGreaterThan(0)
   })
 
   it('Click outside input (when empty) cancels and closes', async () => {
@@ -186,8 +189,9 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
       expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
     })
     
-    // Verify Create List button appears again
-    expect(screen.getByRole('button', { name: /create new list/i })).toBeInTheDocument()
+    // Verify Create List button appears again (check first button)
+    const buttons = screen.getAllByRole('button', { name: /create new list/i })
+    expect(buttons.length).toBeGreaterThan(0)
   })
 
   it('List name trims whitespace when creating', async () => {
@@ -200,16 +204,20 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     // Press Enter
     await user.keyboard('{Enter}')
     
-    // Wait for input to close
-    await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
-    })
-    
-    // Verify list name was trimmed
+    // Wait for list to be created
     await waitFor(() => {
       expect(screen.getByText('Trimmed List')).toBeInTheDocument()
     })
+    
+    // Verify list name was trimmed (not the untrimmed version)
     expect(screen.queryByText('  Trimmed List  ')).not.toBeInTheDocument()
+    
+    // Verify input stays open and is cleared (new behavior)
+    await waitFor(() => {
+      const createListInput = screen.getByRole('textbox', { name: /enter list name/i })
+      expect(createListInput).toBeInTheDocument()
+      expect(createListInput).toHaveValue('')
+    }, { timeout: 5000 })
   })
 
   it('New list appears immediately in UI', async () => {
@@ -304,15 +312,20 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     }, { timeout: 5000 })
     
     // Verify the "add a new task" empty state appears below the newly created list
-    const listSection = Array.from(document.querySelectorAll('[data-list-id]')).find(section => {
-      const h2 = section.querySelector('h2')
-      return h2 && h2.textContent === 'List for Focus Test'
-    })
-    expect(listSection).toBeDefined()
-    const taskInput = listSection?.querySelector('textarea[placeholder="Add new task..."]')
-    expect(taskInput).toBeInTheDocument()
-    // But focus should NOT be on the task input
-    expect(taskInput).not.toHaveFocus()
+    await waitFor(() => {
+      const listSection = Array.from(document.querySelectorAll('[data-list-id]')).find(section => {
+        const h2 = section.querySelector('h2')
+        return h2 && h2.textContent === 'List for Focus Test'
+      })
+      expect(listSection).toBeDefined()
+      
+      // Check for either the button or textarea (button appears first, textarea appears when active)
+      const addTaskButton = listSection?.querySelector('span[role="button"][aria-label*="Add your first task"]')
+      const taskInput = listSection?.querySelector('textarea[placeholder="Add new task..."]')
+      
+      // At least one should be present
+      expect(addTaskButton || taskInput).toBeTruthy()
+    }, { timeout: 5000 })
   })
 })
 

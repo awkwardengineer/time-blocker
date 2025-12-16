@@ -672,7 +672,7 @@
                   }}
                   onconsider={(e) => handleListConsider(e, columnIndex)}
                   onfinalize={(e) => handleListFinalize(e, columnIndex)}
-                  class="flex flex-col pt-0 {columnLists.length === 0 ? 'min-h-[200px]' : ''}"
+                  class="flex flex-col pt-0"
                 >
                   <!-- Render lists in this column -->
                   {#each columnLists as dragItem, index (dragItem.id)}
@@ -694,48 +694,53 @@
                     </div>
                   {/each}
                   
-                  <!-- Create List button/input - per column, appears in all columns -->
-                  {#if createListColumnIndex === columnIndex}
-                    <h2 class="print:hidden m-0 p-0">
-                      <div class="flex items-center gap-2">
-                        <input
-                          bind:this={createListInputElement}
-                          bind:value={createListInput}
-                          type="text"
-                          class="create-list-input cursor-pointer hover:underline"
-                          placeholder="List name..."
-                          onkeydown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleCreateList(columnIndex);
-                            } else if (e.key === 'Escape') {
-                              handleCreateListInputEscape(e);
-                            }
-                          }}
-                          aria-label="Enter list name"
-                        />
-                        <button
-                          onclick={() => handleCreateList(columnIndex)}
-                          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                          aria-label="Create list"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </h2>
-                  {:else}
-                    <h2 
-                      onclick={() => handleCreateListClick(columnIndex)}
-                      onkeydown={(e) => handleCreateListKeydown(e, columnIndex)}
-                      role="button"
-                      tabindex="0"
-                      class="cursor-pointer hover:underline print:hidden m-0 p-0"
-                      aria-label="Create new list"
-                    >
-                      Create new list
-                    </h2>
+                  <!-- Empty drop zone for empty columns -->
+                  {#if columnLists.length === 0}
+                    <div class="empty-drop-zone min-h-[48px]"></div>
                   {/if}
                 </div>
+                
+                <!-- Create List button/input - per column, appears in all columns (outside dndzone) -->
+                {#if createListColumnIndex === columnIndex}
+                  <h2 class="print:hidden m-0 p-0 create-list-wrapper {columnLists.length === 0 ? 'create-list-empty-column' : ''}">
+                    <div class="flex items-center gap-2">
+                      <input
+                        bind:this={createListInputElement}
+                        bind:value={createListInput}
+                        type="text"
+                        class="create-list-input cursor-pointer hover:underline"
+                        placeholder="List name..."
+                        onkeydown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleCreateList(columnIndex);
+                          } else if (e.key === 'Escape') {
+                            handleCreateListInputEscape(e);
+                          }
+                        }}
+                        aria-label="Enter list name"
+                      />
+                      <button
+                        onclick={() => handleCreateList(columnIndex)}
+                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                        aria-label="Create list"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </h2>
+                {:else}
+                  <h2 
+                    onclick={() => handleCreateListClick(columnIndex)}
+                    onkeydown={(e) => handleCreateListKeydown(e, columnIndex)}
+                    role="button"
+                    tabindex="0"
+                    class="cursor-pointer hover:underline print:hidden m-0 p-0 create-list-wrapper {columnLists.length === 0 ? 'create-list-empty-column' : ''}"
+                    aria-label="Create new list"
+                  >
+                    Create new list
+                  </h2>
+                {/if}
               </div>
             {/each}
           </div>
@@ -813,6 +818,11 @@
   /* Explicitly reset h2 margins for "Create new list" in columns */
   [data-column-index] h2 {
     margin: 0;
+  }
+  
+  /* Position "Create new list" to cover empty drop zone space (only for empty columns) */
+  [data-column-index] .create-list-empty-column {
+    margin-top: -48px; /* Shift up to cover min-h-[48px] from empty drop zone */
   }
   
   /* Ensure list wrapper margins are applied even with dndzone inline styles */
