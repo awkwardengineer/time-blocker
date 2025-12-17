@@ -226,7 +226,7 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    
    - [x] **Fix: task list `<ul>` focus** - Prevent whole task list `<ul>` elements from being focusable; focus should land on individual tasks or interactive controls instead.
    
-   - [ ] **Prevent tabbing out of modals** - Trap focus within the list title modal and task modal so Tab/Shift+Tab cycles inside the modal until it is closed.
+   - [x] **Prevent tabbing out of modals** - Trap focus within the list title modal and task modal so Tab/Shift+Tab cycles inside the modal until it is closed.
    
    - [ ] **Tabbing out of list creation input** - When tabbing away from the "create new list" input, close the input if empty; if it contains text, create the list before moving focus.
    

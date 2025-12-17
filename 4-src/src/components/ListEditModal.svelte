@@ -91,7 +91,57 @@
   }
   
   function handleKeydown(e) {
-    if (e.key === 'Escape') {
+    if (e.key === 'Tab') {
+      // Trap focus within the modal when Tab/Shift+Tab is pressed
+      if (!modalElement) return;
+      
+      const focusableSelectors = [
+        'button',
+        '[href]',
+        'input',
+        'select',
+        'textarea',
+        '[tabindex]:not([tabindex="-1"])'
+      ].join(',');
+      
+      const focusableElements = Array.from(
+        modalElement.querySelectorAll(focusableSelectors)
+      ).filter((el) => {
+        if (!(el instanceof HTMLElement)) return false;
+        if (el.hasAttribute('disabled')) return false;
+        if (el.getAttribute('aria-hidden') === 'true') return false;
+        return true;
+      });
+      
+      if (focusableElements.length === 0) return;
+      
+      const currentElement = document.activeElement;
+      const currentIndex = focusableElements.indexOf(currentElement);
+      
+      let nextIndex;
+      if (e.shiftKey) {
+        // Shift+Tab: move backwards, wrap to last when before first
+        if (currentIndex <= 0) {
+          nextIndex = focusableElements.length - 1;
+        } else {
+          nextIndex = currentIndex - 1;
+        }
+      } else {
+        // Tab: move forwards, wrap to first when after last
+        if (currentIndex === -1 || currentIndex === focusableElements.length - 1) {
+          nextIndex = 0;
+        } else {
+          nextIndex = currentIndex + 1;
+        }
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+      const nextElement = focusableElements[nextIndex];
+      if (nextElement && nextElement instanceof HTMLElement) {
+        nextElement.focus();
+      }
+    } else if (e.key === 'Escape') {
       if (modalState === 'confirm-archive') {
         handleArchiveCancel();
       } else {
