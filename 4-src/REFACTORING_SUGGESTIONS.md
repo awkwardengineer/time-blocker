@@ -45,7 +45,7 @@ export function shouldSkipFinalizeUpdate(items, columnIndex, sourceLists) {
 
 **Status**: ✅ Completed - Removed 30+ console.log statements from Board.svelte, all tests passing
 
-### 3. Extract Keyboard Drag Composable
+### 3. Extract Keyboard Drag Composable ✅
 **Location**: `Board.svelte` lines 119-330
 
 **Problem**: 
@@ -53,20 +53,11 @@ export function shouldSkipFinalizeUpdate(items, columnIndex, sourceLists) {
 - Similar pattern exists in TaskList.svelte
 - Hard to test and reuse
 
-**Solution**: Create `src/lib/useKeyboardDrag.js`
+**Solution**: Create `src/lib/useKeyboardListDrag.js`
 ```javascript
-export function useKeyboardDrag(options) {
-  const { 
-    active, 
-    listId, 
-    onMove, 
-    onStop,
-    focusElement 
-  } = options;
-  
+export function setupKeyboardListDragHandler(state, onMove, onStop, onBlur) {
   // Document-level keydown handler
-  // Focus management
-  // Return cleanup function
+  // Returns cleanup function
 }
 ```
 
@@ -74,6 +65,8 @@ export function useKeyboardDrag(options) {
 - Reusable for tasks and lists
 - Easier to test
 - Cleaner component code
+
+**Status**: ✅ Completed - Extracted document-level handler to composable, reduced $effect from 88 lines to 10 lines, all tests passing
 
 ## Priority 2: Medium Impact, Medium Risk
 
