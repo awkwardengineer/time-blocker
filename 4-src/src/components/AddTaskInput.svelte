@@ -74,6 +74,15 @@
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onActivate?.();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      // Blur the button
+      const buttonElement = e.currentTarget;
+      if (buttonElement && buttonElement instanceof HTMLElement) {
+        buttonElement.blur();
+      }
     }
   }
 </script>

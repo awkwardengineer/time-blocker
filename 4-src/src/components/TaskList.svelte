@@ -372,6 +372,16 @@
         lastKeyboardDraggedTaskId = taskId;
         lastBlurredTaskElement = currentTarget;
         shouldRefocusTaskOnNextTab = true;
+      } else {
+        // Escape when not in drag state - blur the task item
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        lastBlurredTaskElement = currentTarget;
+        shouldRefocusTaskOnNextTab = true;
+        if (currentTarget instanceof HTMLElement) {
+          currentTarget.blur();
+        }
       }
     }
   }
@@ -910,6 +920,14 @@
         listNameElement = h2Element;
         listEditModalOpen = true;
       }
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      const h2Element = event.currentTarget;
+      if (h2Element && h2Element instanceof HTMLElement) {
+        h2Element.blur();
+      }
     }
   }
   
@@ -1018,6 +1036,21 @@
                   e.preventDefault();
                   e.stopPropagation();
                   handleToggleTaskStatus(task.id, task.status);
+                } else if (e.key === 'Escape') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                  // Blur the checkbox itself
+                  const checkbox = e.currentTarget;
+                  if (checkbox && checkbox instanceof HTMLElement) {
+                    // Find the parent task item (li) for Tab-resume behavior
+                    const taskItem = checkbox.closest('li[data-id]');
+                    if (taskItem && taskItem instanceof HTMLElement) {
+                      lastBlurredTaskElement = taskItem;
+                      shouldRefocusTaskOnNextTab = true;
+                    }
+                    checkbox.blur();
+                  }
                 }
               }}
               class="cursor-pointer"

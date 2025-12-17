@@ -235,6 +235,8 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    - [x] **Task blur on Escape** - Ensure task-related interactive elements (e.g., task text, inputs, modals) blur or close appropriately when pressing Escape, without leaving stray focus.
    
    - [x] **Task Tab resume after blur** - After a blur or close action on a task (e.g., Escape), ensure the next Tab re-focuses the task element that was just blurred (mirroring list behavior) so keyboard users can resume interaction with that item before moving on. Implemented via keyboard drag state tracking and Tab-resume logic in `TaskList.svelte`, with coverage in `App.taskKeyboardDrag.test.js`.
+   
+   - [ ] **Fix: Escape blur for all focus states** - Currently, pressing Escape only causes blur when focused on task text. When focused on task lists, tasks, task checkboxes, "add task" button, or "add your first task" button, pressing Escape does nothing (unless in a drag state, where it does blur). Add Escape key handlers to blur these elements appropriately, ensuring consistent behavior across all interactive elements.
  
 5. **Handle Print Layout**
    - Determine how multiple columns should render in print

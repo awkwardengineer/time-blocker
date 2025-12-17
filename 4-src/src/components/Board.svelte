@@ -220,6 +220,20 @@
             startKeyboardListDrag(listId);
           }
         }
+      } else if (key === 'Escape') {
+        // Escape when not in drag state - blur the list element
+        // Only handle when focus is on the list wrapper itself, not inner controls.
+        if (currentTarget instanceof HTMLElement && currentTarget === target) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          // Set up Tab-resume behavior (mirrors task behavior)
+          if (listId != null) {
+            lastKeyboardDraggedListId = listId;
+            shouldRefocusListOnNextTab = true;
+          }
+          currentTarget.blur();
+        }
       }
       return;
     }
@@ -365,6 +379,15 @@
       event.preventDefault();
       event.stopPropagation();
       handleCreateListClick(columnIndex);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      // Blur the "Create new list" button
+      const buttonElement = event.currentTarget;
+      if (buttonElement && buttonElement instanceof HTMLElement) {
+        buttonElement.blur();
+      }
     }
   }
   
