@@ -264,6 +264,40 @@
       console.error('Error creating list:', error);
     }
   }
+
+  /**
+   * Handle "Tab" key from the create list input.
+   * When tabbing away:
+   * - If input is empty/whitespace-only, close the input (no list created).
+   * - If input has content, create the list once, then close the input so focus can move on.
+   */
+  async function handleCreateListOnTab(columnIndex) {
+    const inputValue = createListInput || '';
+    
+    // Empty string - just close the input
+    if (isEmpty(inputValue)) {
+      createListColumnIndex = null;
+      createListInput = '';
+      return;
+    }
+    
+    // Whitespace-only - treat as invalid and close input without creating
+    const { text: normalizedText, isBlank } = normalizeInput(inputValue);
+    if (isBlank) {
+      createListColumnIndex = null;
+      createListInput = '';
+      return;
+    }
+    
+    try {
+      await createList(normalizedText, columnIndex);
+      // Clear and close input after creating the list so focus can move forward
+      createListInput = '';
+      createListColumnIndex = null;
+    } catch (error) {
+      console.error('Error creating list on Tab:', error);
+    }
+  }
   
   // Unnamed list task creation handlers (task 3b) - per column
   function handleUnnamedListAddTaskClick(columnIndex) {
@@ -673,6 +707,10 @@
                             handleCreateList(columnIndex);
                           } else if (e.key === 'Escape') {
                             handleCreateListInputEscape(e);
+                          } else if (e.key === 'Tab') {
+                            // When tabbing away, close empty input or create + close when it has content.
+                            // Let the browser move focus naturally; creation/close happens in the background.
+                            handleCreateListOnTab(columnIndex);
                           }
                         }}
                         aria-label="Enter list name"
