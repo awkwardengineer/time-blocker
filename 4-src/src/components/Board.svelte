@@ -82,19 +82,13 @@
     if ($lists && Array.isArray($lists)) {
       const newDraggableLists = $lists.map(list => ({ id: list.id, name: list.name, order: list.order, columnIndex: list.columnIndex }));
       
-      // Log when draggableLists changes (for debugging drag operations) - only log count to avoid performance issues
       if (newDraggableLists.length !== previousDraggableListsCount) {
-        console.log('[DRAG] draggableLists updated from liveQuery:', {
-          previousCount: previousDraggableListsCount,
-          newCount: newDraggableLists.length
-        });
         previousDraggableListsCount = newDraggableLists.length;
       }
       
       draggableLists = newDraggableLists;
     } else {
       if (previousDraggableListsCount > 0) {
-        console.log('[DRAG] draggableLists cleared (no lists)');
         previousDraggableListsCount = 0;
       }
       draggableLists = [];
@@ -529,60 +523,12 @@
   // The drag library REQUIRES the items array to match DOM structure during drag
   // We MUST update draggableLists here to provide visual feedback
   function handleListConsider(event, columnIndex) {
-    console.log('[DRAG] ===== CONSIDER EVENT =====');
-    console.log('[DRAG] consider - column:', columnIndex);
-    console.log('[DRAG] consider - event.detail.items count:', event.detail.items?.length || 0);
-    
     // Get items for this column (includes placeholders for visual feedback)
     const newColumnItems = event.detail.items || [];
     
     // Detect placeholders
     const placeholders = newColumnItems.filter(item => isPlaceholderItem(item));
     const validItems = newColumnItems.filter(item => !isPlaceholderItem(item));
-    
-    console.log('[DRAG] consider - placeholders detected:', placeholders.length);
-    if (placeholders.length > 0) {
-      console.log('[DRAG] consider - placeholder items:', placeholders.map(p => ({ id: p.id, isDndShadowItem: p.isDndShadowItem })));
-    }
-    console.log('[DRAG] consider - valid items:', validItems.length);
-    
-    // Track which lists are moving and their column changes (before update)
-    const currentColumnLists = draggableLists.filter(list => {
-      const listColumnIndex = list.columnIndex ?? 0;
-      return listColumnIndex === columnIndex;
-    });
-    
-    console.log('[DRAG] consider - current lists in column', columnIndex + ' (before update):', currentColumnLists.map(l => ({ id: l.id, name: l.name, columnIndex: l.columnIndex })));
-    console.log('[DRAG] consider - newColumnItems IDs:', newColumnItems.map(item => ({ id: item.id, isPlaceholder: isPlaceholderItem(item) })));
-    
-    // Detect if this is same-column reordering vs cross-column move
-    const isSameColumnReorder = validItems.every(item => {
-      const existingList = draggableLists.find(l => l.id === item.id);
-      return existingList && (existingList.columnIndex ?? 0) === columnIndex;
-    });
-    console.log('[DRAG] consider - isSameColumnReorder:', isSameColumnReorder);
-    
-    // Detect cross-column moves (before update)
-    for (const item of validItems) {
-      const existingList = draggableLists.find(l => l.id === item.id);
-      if (existingList) {
-        const oldColumnIndex = existingList.columnIndex ?? 0;
-        if (oldColumnIndex !== columnIndex) {
-          console.log('[DRAG] consider - CROSS-COLUMN MOVE DETECTED:', {
-            listId: item.id,
-            listName: item.name,
-            oldColumn: oldColumnIndex,
-            newColumn: columnIndex
-          });
-        }
-      } else {
-        console.log('[DRAG] consider - NEW ITEM IN COLUMN (possibly from another column):', {
-          listId: item.id,
-          listName: item.name,
-          column: columnIndex
-        });
-      }
-    }
     
     // Update draggableLists:
     // 1. Remove items that were in this column (based on current columnIndex)
@@ -606,52 +552,22 @@
       updatedLists.push(listItem);
     }
     
-    console.log('[DRAG] consider - updated draggableLists count:', updatedLists.length);
-    console.log('[DRAG] consider - updated lists in column', columnIndex + ':', updatedLists.filter(l => (l.columnIndex ?? 0) === columnIndex).map(l => ({ id: l.id, name: l.name, columnIndex: l.columnIndex })));
-    
     // Update the state
     draggableLists = updatedLists;
-    
-    // Log listsByColumn state for debugging (after update)
-    try {
-      const columnsState = listsByColumn.map((col, idx) => ({
-        columnIndex: idx,
-        listCount: col.length,
-        listIds: col.map(l => l.id)
-      }));
-      console.log('[DRAG] consider - listsByColumn state (after update):', columnsState);
-    } catch (e) {
-      console.warn('[DRAG] consider - error logging listsByColumn:', e);
-    }
-    
-    console.log('[DRAG] ===== END CONSIDER EVENT =====');
   }
   
   // Handle list drag events - finalize event for database updates
   // columnIndex indicates which column the lists were dropped into
   async function handleListFinalize(event, columnIndex) {
-    console.log('[DRAG] ===== FINALIZE EVENT =====');
-    console.log('[DRAG] finalize - column where drop occurred:', columnIndex);
-    console.log('[DRAG] finalize - event.detail.items count:', event.detail.items?.length || 0);
-    
     // Update draggableLists - placeholders should be gone by finalize, but filter just in case
     const validItems = (event.detail.items || []).filter(item => !isPlaceholderItem(item));
     const filteredPlaceholders = (event.detail.items || []).filter(item => isPlaceholderItem(item));
     
-    console.log('[DRAG] finalize - placeholders filtered out:', filteredPlaceholders.length);
     if (filteredPlaceholders.length > 0) {
       console.warn('[DRAG] finalize - WARNING: Placeholders still present in finalize!', filteredPlaceholders.length);
     }
-    console.log('[DRAG] finalize - valid items (after filtering placeholders):', validItems.length);
-    console.log('[DRAG] finalize - valid items details:', validItems.map(item => ({
-      id: item.id,
-      name: item.name,
-      order: item.order,
-      columnIndex: item.columnIndex
-    })));
     
-    // Track column changes for logging - check against $lists (source of truth) not draggableLists
-    const columnChanges = [];
+    // Track column changes - check against $lists (source of truth) not draggableLists
     let hasItemsFromOtherColumns = false;
     for (const item of validItems) {
       // Check against $lists (source of truth) to see original columnIndex
@@ -660,12 +576,6 @@
         const oldColumnIndex = originalList.columnIndex ?? 0;
         if (oldColumnIndex !== columnIndex) {
           hasItemsFromOtherColumns = true;
-          columnChanges.push({
-            listId: item.id,
-            listName: item.name,
-            oldColumn: oldColumnIndex,
-            newColumn: columnIndex
-          });
         }
       } else {
         // Item not found in $lists - might be a new item or from another column
@@ -675,10 +585,6 @@
           hasItemsFromOtherColumns = true;
         }
       }
-    }
-    
-    if (columnChanges.length > 0) {
-      console.log('[DRAG] finalize - COLUMN CHANGES DETECTED:', columnChanges);
     }
     
     // Check if this column lost items by comparing with original state
@@ -691,38 +597,25 @@
     // Skip update if: column lost items AND no items came from other columns (source column that only lost items)
     // This ensures only the target column (which received items) updates the database
     if (columnLostItems && !hasItemsFromOtherColumns) {
-      console.log('[DRAG] finalize - SKIPPING database update (source column that lost items)', {
-        originalCount: originalColumnCount,
-        currentCount: currentColumnCount,
-        hasItemsFromOtherColumns: hasItemsFromOtherColumns
-      });
-      console.log('[DRAG] ===== END FINALIZE EVENT =====');
       return;
     }
     
     // Also skip if column is empty and wasn't receiving items (edge case: all items moved away)
     if (validItems.length === 0 && !hasItemsFromOtherColumns && originalColumnCount > 0) {
-      console.log('[DRAG] finalize - SKIPPING database update (empty column that lost all items)');
-      console.log('[DRAG] ===== END FINALIZE EVENT =====');
       return;
     }
     
     // Update database with new order and columnIndex values
     try {
-      console.log('[DRAG] finalize - updating database with updateListOrderWithColumn...');
       await updateListOrderWithColumn(columnIndex, validItems);
-      console.log('[DRAG] finalize - database update successful');
       
       // Note: liveQuery will automatically update the UI after database changes
       // The $effect will sync draggableLists from liveQuery
-      console.log('[DRAG] finalize - waiting for $effect to sync draggableLists from liveQuery...');
     } catch (error) {
       console.error('[DRAG] finalize - ERROR updating list order:', error);
       // On error, revert draggableLists to match database state
       // The $effect will sync it back from liveQuery
     }
-    
-    console.log('[DRAG] ===== END FINALIZE EVENT =====');
   }
 </script>
 
