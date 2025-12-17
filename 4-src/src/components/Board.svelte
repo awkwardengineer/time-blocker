@@ -9,6 +9,7 @@
   import { groupListsIntoColumns, findListPosition, isPlaceholderItem } from '../lib/listDndUtils.js';
   import { applyListMoveInColumns } from '../lib/listKeyboardDrag.js';
   import { processListConsider, shouldSkipFinalizeUpdate } from '../lib/listDragHandlers.js';
+  import { focusListCardForKeyboardDrag, setupKeyboardListDragHandler } from '../lib/useKeyboardListDrag.js';
   import TaskList from './TaskList.svelte';
   import ListColumn from './ListColumn.svelte';
   import CreateListDropZone from './CreateListDropZone.svelte';
@@ -143,26 +144,6 @@
     return keyboardListDrag.active === true && keyboardListDrag.listId === listId;
   }
 
-  async function focusListCardForKeyboardDrag(listId) {
-    if (typeof document === 'undefined') return;
-
-    await tick();
-
-    // Find all elements with this data-id and pick the list card wrapper.
-    const candidates = Array.from(document.querySelectorAll(`[data-id="${listId}"]`));
-    let card = candidates.find(
-      (el) => el instanceof HTMLElement && el.getAttribute('role') === 'group'
-    );
-    if (!card) {
-      // Fallback: first DIV with this data-id (lists use div[data-id], tasks use li[data-id])
-      card = candidates.find(
-        (el) => el instanceof HTMLElement && el.tagName === 'DIV'
-      );
-    }
-    if (card instanceof HTMLElement) {
-      card.focus();
-    }
-  }
 
   function startKeyboardListDrag(listId) {
     // Starting a new drag clears any pending "refocus on next Tab" behavior
@@ -238,90 +219,19 @@
   $effect(() => {
     if (typeof document === 'undefined') return;
 
-    function handleDocumentKeydownForListDrag(e) {
-      const key = e.key;
-      const isActive = keyboardListDrag.active === true;
-      const activeListId = keyboardListDrag.listId;
-
-      // After a blur-on-drop via Tab, treat the very next Tab as
-      // "refocus the last dragged list card", then let Tab behave normally.
-      if (
-        !isActive &&
-        key === 'Tab' &&
-        shouldRefocusListOnNextTab &&
-        lastKeyboardDraggedListId != null
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        shouldRefocusListOnNextTab = false;
-        focusListCardForKeyboardDrag(lastKeyboardDraggedListId);
-        return;
-      }
-
-      if (!isActive || activeListId == null) {
-        return;
-      }
-
-      // Movement keys while in keyboard list drag mode
-      if (key === 'ArrowUp') {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        moveListWithKeyboard(activeListId, 'up');
-        return;
-      }
-
-      if (key === 'ArrowDown') {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        moveListWithKeyboard(activeListId, 'down');
-        return;
-      }
-
-      if (key === 'ArrowLeft') {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        moveListWithKeyboard(activeListId, 'left');
-        return;
-      }
-
-      if (key === 'ArrowRight') {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        moveListWithKeyboard(activeListId, 'right');
-        return;
-      }
-
-      // End drag mode and commit at current position
-      if (key === 'Escape' || key === 'Enter' || key === ' ') {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        stopKeyboardListDrag();
-        blurActiveElement();
-        return;
-      }
-
-      if (key === 'Tab') {
-        // Tab should drop the list and then blur (no focused element).
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        stopKeyboardListDrag();
-        blurActiveElement();
-        return;
-      }
-    }
-
-    document.addEventListener('keydown', handleDocumentKeydownForListDrag, true);
-
-    return () => {
-      document.removeEventListener('keydown', handleDocumentKeydownForListDrag, true);
+    const state = {
+      getKeyboardListDrag: () => keyboardListDrag,
+      getLastKeyboardDraggedListId: () => lastKeyboardDraggedListId,
+      getShouldRefocusListOnNextTab: () => shouldRefocusListOnNextTab,
+      setShouldRefocusListOnNextTab: (value) => { shouldRefocusListOnNextTab = value; }
     };
+
+    return setupKeyboardListDragHandler(
+      state,
+      (listId, direction) => moveListWithKeyboard(listId, direction),
+      () => stopKeyboardListDrag(),
+      () => blurActiveElement()
+    );
   });
   
   function handleInputChange(listId, value) {
