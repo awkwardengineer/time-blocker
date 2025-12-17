@@ -98,8 +98,13 @@
         handleCancel();
       }
     } else if (e.key === 'Enter' && !e.shiftKey && modalState === 'edit') {
-      e.preventDefault();
-      handleSave();
+      // Only treat Enter as "Save" when the list name input is focused.
+      // This prevents Enter on other controls (like the Archive button)
+      // from triggering a save and closing the modal.
+      if (e.target === inputElement) {
+        e.preventDefault();
+        handleSave();
+      }
     }
   }
   
@@ -148,7 +153,6 @@
             class="list-input w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 box-border"
             style="max-width: 100%; box-sizing: border-box;"
             placeholder="List name..."
-            onkeydown={handleKeydown}
             aria-label="Edit list name"
             aria-describedby={showValidation ? "validation-message" : undefined}
           />

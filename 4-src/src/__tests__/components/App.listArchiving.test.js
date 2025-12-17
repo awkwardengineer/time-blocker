@@ -39,6 +39,29 @@ describe('App - List Archiving', () => {
     expect(archiveButton).toBeInTheDocument()
   })
 
+  it('pressing Enter on Archive button opens confirmation instead of saving list', async () => {
+    const user = userEvent.setup()
+    render(App)
+    const workSection = await waitForListSection('Work')
+
+    await openListEditModal(user, workSection, 'Work')
+
+    const archiveButton = screen.getByRole('button', { name: /archive this list/i })
+    archiveButton.focus()
+    await new Promise(resolve => setTimeout(resolve, 10))
+
+    // Press Enter while Archive is focused
+    await user.keyboard('{Enter}')
+
+    // Confirmation prompt should be visible (modal stays open)
+    await waitFor(() => {
+      expect(screen.getByText('Archive List')).toBeInTheDocument()
+    })
+
+    // Original list name should still be present in the main view (no save/close)
+    expect(within(workSection).getByText('Work')).toBeInTheDocument()
+  })
+
   it('shows confirmation prompt when Archive button is clicked', async () => {
     const user = userEvent.setup()
     render(App)
