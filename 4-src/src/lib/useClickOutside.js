@@ -8,7 +8,7 @@
  * @param {Array<HTMLElement|Function>} options.ignoreElements - Elements or functions that return elements to ignore
  * @param {Function} options.shouldClose - Function that returns true if the click should trigger close
  * @param {Function} options.checkIgnoreClick - Function that receives the click event and returns true if click should be ignored
- * @returns {Function} Cleanup function to be returned from $effect
+ * @returns {() => void} Cleanup function to be returned from $effect
  */
 export function useClickOutside(element, callback, options = {}) {
   const { ignoreElements = [], shouldClose = () => true, checkIgnoreClick = null } = options;

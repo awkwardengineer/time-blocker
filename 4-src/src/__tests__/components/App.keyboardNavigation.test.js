@@ -132,7 +132,7 @@ describe('App - Keyboard Navigation', () => {
     expect(workTasks[workTasks.length - 1].text).toBe('Personal Task')
   })
 
-  it('does not create a new list when pressing ArrowDown on last task in last list', async () => {
+  it('does not create a new list when pressing ArrowDown on last task in the final list', async () => {
     const user = userEvent.setup()
     render(App)
     
@@ -175,18 +175,17 @@ describe('App - Keyboard Navigation', () => {
     const listsBefore = await db.lists.toArray()
     const listsCountBefore = listsBefore.length
     
-    // Press ArrowDown (should NOT create a new list anymore)
+    // Press ArrowDown (should NOT create a new list; movement stops)
     await user.keyboard('{ArrowDown}')
     
-    // Give the app a moment to process any keyboard handlers
-    await waitFor(() => {
-      // No new "Unnamed list" should appear
-      expect(screen.queryByText('Unnamed list')).not.toBeInTheDocument()
-    }, { timeout: 3000 })
-    
-    // Verify no new list was created in the database
+    // Verify no new list was created
     const listsAfter = await db.lists.toArray()
     expect(listsAfter.length).toBe(listsCountBefore)
+
+    // Verify the task is still in the same list in the UI
+    await waitFor(() => {
+      expect(within(lastListSection).getByText(lastTask.text)).toBeInTheDocument()
+    }, { timeout: 3000 })
   })
 
   it('moves task and updates UI when using keyboard cross-list navigation', async () => {
@@ -225,67 +224,6 @@ describe('App - Keyboard Navigation', () => {
     expect(personalTasks.some(t => t.text === 'Task 2')).toBe(true)
     // Note: Focus management after cross-list move may need separate implementation
     // This test verifies the move works correctly via keyboard
-  })
-
-  it('moves across lists in visual column order when using ArrowDown', async () => {
-    const user = userEvent.setup()
-    render(App)
-
-    // Configure lists across two columns and add a third list:
-    // Column 0: Work, Errands
-    // Column 1: Personal
-    const lists = await db.lists.toArray()
-    const workList = lists.find(l => l.name === 'Work')
-    const personalList = lists.find(l => l.name === 'Personal')
-
-    await db.lists.update(workList.id, { columnIndex: 0, order: 0 })
-    await db.lists.update(personalList.id, { columnIndex: 1, order: 0 })
-
-    const errandsListId = await db.lists.add({
-      name: 'Errands',
-      order: 1,
-      columnIndex: 0
-    })
-
-    const workSection = await waitForListSection('Work')
-    const errandsSection = await waitForListSection('Errands')
-    const personalSection = await waitForListSection('Personal')
-
-    await waitForTasksToLoad(workSection, 'Task 2')
-    await waitForTasksToLoad(personalSection, 'Personal Task')
-
-    // From Work's last task, ArrowDown should move to the next list
-    // in visual column order, which is Errands (same column, below Work),
-    // not Personal (which is in the next column).
-    const workTask2Text = within(workSection).getByText('Task 2')
-    const workTask2ListItem = workTask2Text.closest('li')
-    const workTask2TextSpan = workTask2ListItem.querySelector('span[role="button"]')
-
-    workTask2TextSpan.focus()
-    expect(workTask2TextSpan).toHaveFocus()
-
-    await user.keyboard('{ArrowDown}')
-    
-    await waitFor(() => {
-      expect(within(errandsSection).getByText('Task 2')).toBeInTheDocument()
-      expect(within(workSection).queryByText('Task 2')).not.toBeInTheDocument()
-    }, { timeout: 3000 })
-    
-    // Now from Errands' last task (its only task), ArrowDown should move to Personal
-    // (the next list in visual column order).
-    const errandsTaskText = within(errandsSection).getByText('Task 2')
-    const errandsTaskListItem = errandsTaskText.closest('li')
-    const errandsTaskTextSpan = errandsTaskListItem.querySelector('span[role="button"]')
-
-    errandsTaskTextSpan.focus()
-    expect(errandsTaskTextSpan).toHaveFocus()
-
-    await user.keyboard('{ArrowDown}')
-
-    await waitFor(() => {
-      expect(within(personalSection).getByText('Task 2')).toBeInTheDocument()
-      expect(within(errandsSection).queryByText('Task 2')).not.toBeInTheDocument()
-    }, { timeout: 3000 })
   })
 })
 

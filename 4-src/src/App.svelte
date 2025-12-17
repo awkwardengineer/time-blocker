@@ -2,7 +2,7 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
-  import { getAllLists, createList, createTask, createUnnamedList, updateTaskOrderCrossList, updateListOrder, updateListOrderWithColumn } from './lib/dataAccess.js';
+  import { getAllLists, createList, createTask, updateTaskOrderCrossList, updateListOrder, updateListOrderWithColumn } from './lib/dataAccess.js';
   import db from './lib/db.js';
   import TaskList from './components/TaskList.svelte';
   import ArchivedView from './components/ArchivedView.svelte';
@@ -30,14 +30,19 @@
   let createListInput = $state('');
   let createListInputElement = $state(null);
   
-  // State for creating task in unnamed list (task 3b) - per column
-  let unnamedListColumnIndex = $state(null); // null means not active, 0-4 means active for that column
-  let unnamedListTaskInput = $state('');
-  let unnamedListInputElement = $state(null);
-  
   // State for drop zone on "Create new list" section
+  // Note: creating new unnamed lists from dropped tasks has been removed.
+  // The drop zone remains for visual feedback only and no longer creates lists.
   let createListDropZoneItems = $state([]);
   let createListDropZoneElement = $state(null);
+
+  // State for keyboard-based list dragging
+  let keyboardListDrag = $state({
+    active: false,
+    listId: null
+  });
+  let lastKeyboardDraggedListId = $state(null);
+  let shouldRefocusListOnNextTab = $state(false);
   
   // Initialize inputs when lists first load (only once)
   $effect(() => {
@@ -125,6 +130,298 @@
     
     return columns;
   });
+
+  /**
+   * Find the current column index and position index for a list ID
+   * using the derived listsByColumn structure.
+   */
+  function findListPosition(listId) {
+    const columns = listsByColumn();
+    if (!columns || columns.length === 0) {
+      return null;
+    }
+    for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
+      const columnLists = columns[columnIndex];
+      if (!Array.isArray(columnLists)) continue;
+      const index = columnLists.findIndex(list => list.id === listId);
+      if (index !== -1) {
+        return { columnIndex, index };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Apply a keyboard-driven move for a list (up/down/left/right).
+   * This updates local draggableLists for immediate feedback and
+   * persists the change via updateListOrderWithColumn.
+   */
+  async function moveListWithKeyboard(listId, direction) {
+    const columns = listsByColumn();
+    if (!columns || columns.length === 0) {
+      return;
+    }
+
+    const position = findListPosition(listId);
+    if (!position) {
+      return;
+    }
+
+    const { columnIndex: currentColumnIndex, index: currentIndex } = position;
+    let targetColumnIndex = currentColumnIndex;
+    let targetIndex = currentIndex;
+
+    if (direction === 'up') {
+      if (currentIndex === 0) return; // Already at top
+      targetIndex = currentIndex - 1;
+    } else if (direction === 'down') {
+      const currentColumnLists = columns[currentColumnIndex] || [];
+      if (currentIndex === currentColumnLists.length - 1) return; // Already at bottom
+      targetIndex = currentIndex + 1;
+    } else if (direction === 'left') {
+      if (currentColumnIndex === 0) return; // Already at first column
+      targetColumnIndex = currentColumnIndex - 1;
+      const targetColumnLists = columns[targetColumnIndex] || [];
+      targetIndex = targetColumnLists.length; // Move to end of target column
+    } else if (direction === 'right') {
+      if (currentColumnIndex === COLUMN_COUNT - 1) return; // Already at last column
+      targetColumnIndex = currentColumnIndex + 1;
+      const targetColumnLists = columns[targetColumnIndex] || [];
+      targetIndex = targetColumnLists.length; // Move to end of target column
+    } else {
+      return;
+    }
+
+    // Clone columns to avoid mutating derived data directly
+    const newColumns = columns.map(col => Array.isArray(col) ? [...col] : []);
+
+    const sourceColumnLists = newColumns[currentColumnIndex];
+    if (!sourceColumnLists || sourceColumnLists.length === 0) {
+      return;
+    }
+
+    const [movingItem] = sourceColumnLists.splice(currentIndex, 1);
+    if (!movingItem) {
+      return;
+    }
+
+    const targetColumnLists = newColumns[targetColumnIndex];
+    if (!targetColumnLists) {
+      return;
+    }
+
+    // Clamp target index to valid range
+    const safeTargetIndex = Math.min(Math.max(targetIndex, 0), targetColumnLists.length);
+
+    if (direction === 'left' || direction === 'right') {
+      // When moving across columns, update columnIndex for the moved item
+      targetColumnLists.splice(safeTargetIndex, 0, { ...movingItem, columnIndex: targetColumnIndex });
+    } else {
+      // Same-column reordering
+      targetColumnLists.splice(safeTargetIndex, 0, movingItem);
+    }
+
+    // Update local draggableLists for immediate UI feedback
+    const updatedDraggableLists = [];
+    for (let colIndex = 0; colIndex < newColumns.length; colIndex++) {
+      const columnLists = newColumns[colIndex] || [];
+      for (let i = 0; i < columnLists.length; i++) {
+        const listItem = columnLists[i];
+        updatedDraggableLists.push({
+          ...listItem,
+          columnIndex: colIndex,
+          order: i
+        });
+      }
+    }
+
+    draggableLists = updatedDraggableLists;
+
+    // Persist changes for the affected column using existing helper
+    const targetColumnItems = (newColumns[targetColumnIndex] || []).map(item => ({ id: item.id }));
+
+    try {
+      await updateListOrderWithColumn(targetColumnIndex, targetColumnItems);
+    } catch (error) {
+      console.error('[KEYBOARD DRAG] Error moving list via keyboard:', error);
+    }
+
+    // After updating state and DB, ensure the list card regains focus for visible keyboard feedback
+    if (keyboardListDrag.active && keyboardListDrag.listId === listId) {
+      await focusListCardForKeyboardDrag(listId);
+    }
+  }
+
+  function isListInKeyboardDrag(listId) {
+    return keyboardListDrag.active === true && keyboardListDrag.listId === listId;
+  }
+
+  async function focusListCardForKeyboardDrag(listId) {
+    if (typeof document === 'undefined') return;
+
+    await tick();
+
+    // Find all elements with this data-id and pick the list card wrapper.
+    const candidates = Array.from(document.querySelectorAll(`[data-id="${listId}"]`));
+    let card = candidates.find(
+      (el) => el instanceof HTMLElement && el.getAttribute('role') === 'group'
+    );
+    if (!card) {
+      // Fallback: first DIV with this data-id (lists use div[data-id], tasks use li[data-id])
+      card = candidates.find(
+        (el) => el instanceof HTMLElement && el.tagName === 'DIV'
+      );
+    }
+    if (card instanceof HTMLElement) {
+      card.focus();
+    }
+  }
+
+  function startKeyboardListDrag(listId) {
+    // Starting a new drag clears any pending "refocus on next Tab" behavior
+    shouldRefocusListOnNextTab = false;
+    keyboardListDrag = {
+      active: true,
+      listId
+    };
+  }
+
+  function stopKeyboardListDrag() {
+    // Remember which list was just dragged so we can optionally refocus it
+    if (keyboardListDrag.listId != null) {
+      lastKeyboardDraggedListId = keyboardListDrag.listId;
+      // Arm the "next Tab should refocus this list" behavior after any drop
+      shouldRefocusListOnNextTab = true;
+    }
+    keyboardListDrag = {
+      active: false,
+      listId: null
+    };
+  }
+
+  function blurActiveElement() {
+    if (typeof document === 'undefined') return;
+    const active = document.activeElement;
+    if (active && active instanceof HTMLElement) {
+      active.blur();
+    }
+  }
+
+  function handleListKeyboardKeydown(event, listId) {
+    const currentTarget = event.currentTarget;
+    const target = event.target;
+    const key = event.key;
+    const isActive = isListInKeyboardDrag(listId);
+
+    // Start keyboard drag mode with Enter/Space when the list card itself is focused.
+    if (!isActive) {
+      if (
+        key === 'Enter' ||
+        key === ' '
+      ) {
+        // Only start when focus is on the list wrapper itself, not inner controls.
+        if (currentTarget instanceof HTMLElement && currentTarget === target) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          if (listId != null) {
+            startKeyboardListDrag(listId);
+          }
+        }
+      }
+      return;
+    }
+  }
+
+  // Document-level handler for all keydown events during list keyboard drag
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+
+    function handleDocumentKeydownForListDrag(e) {
+      const key = e.key;
+      const isActive = keyboardListDrag.active === true;
+      const activeListId = keyboardListDrag.listId;
+
+      // After a blur-on-drop via Tab, treat the very next Tab as
+      // "refocus the last dragged list card", then let Tab behave normally.
+      if (
+        !isActive &&
+        key === 'Tab' &&
+        shouldRefocusListOnNextTab &&
+        lastKeyboardDraggedListId != null
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        shouldRefocusListOnNextTab = false;
+        focusListCardForKeyboardDrag(lastKeyboardDraggedListId);
+        return;
+      }
+
+      if (!isActive || activeListId == null) {
+        return;
+      }
+
+      // Movement keys while in keyboard list drag mode
+      if (key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        moveListWithKeyboard(activeListId, 'up');
+        return;
+      }
+
+      if (key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        moveListWithKeyboard(activeListId, 'down');
+        return;
+      }
+
+      if (key === 'ArrowLeft') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        moveListWithKeyboard(activeListId, 'left');
+        return;
+      }
+
+      if (key === 'ArrowRight') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        moveListWithKeyboard(activeListId, 'right');
+        return;
+      }
+
+      // End drag mode and commit at current position
+      if (key === 'Escape' || key === 'Enter' || key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        stopKeyboardListDrag();
+        blurActiveElement();
+        return;
+      }
+
+      if (key === 'Tab') {
+        // Tab should drop the list and then blur (no focused element).
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        stopKeyboardListDrag();
+        blurActiveElement();
+        return;
+      }
+    }
+
+    document.addEventListener('keydown', handleDocumentKeydownForListDrag, true);
+
+    return () => {
+      document.removeEventListener('keydown', handleDocumentKeydownForListDrag, true);
+    };
+  });
   
   function handleInputChange(listId, value) {
     newTaskInputs[listId] = value;
@@ -204,6 +501,7 @@
         }
       },
       {
+        ignoreElements: [],
         checkIgnoreClick: (e) => {
           // Check if click is on a Save button
           const saveButton = e.target.closest('button');
@@ -299,134 +597,21 @@
     }
   }
   
-  // Unnamed list task creation handlers (task 3b) - per column
-  function handleUnnamedListAddTaskClick(columnIndex) {
-    unnamedListColumnIndex = columnIndex;
-  }
-  
-  function handleUnnamedListInputEscape(e) {
-    if (e.key === 'Escape') {
-      unnamedListColumnIndex = null;
-      unnamedListTaskInput = '';
-    }
-  }
-  
-  // Handle click outside unnamed list input to close it (only if no content)
-  $effect(() => {
-    if (unnamedListColumnIndex === null) return;
-    
-    return useClickOutside(
-      unnamedListInputElement,
-      () => {
-        // Only close if still active (prevents race conditions with programmatic closes)
-        if (unnamedListColumnIndex !== null) {
-          unnamedListColumnIndex = null;
-          unnamedListTaskInput = '';
-        }
-      },
-      {
-        checkIgnoreClick: (e) => {
-          // Check if click is on a Save button
-          const saveButton = e.target.closest('button');
-          return saveButton && saveButton.textContent?.trim() === 'Save';
-        },
-        shouldClose: () => {
-          // Only close if input hasn't changed (no content)
-          return !unnamedListTaskInput || unnamedListTaskInput.trim() === '';
-        }
-      }
-    );
-  });
-  
-  // Focus input when it becomes active
-  $effect(() => {
-    if (unnamedListColumnIndex !== null && unnamedListInputElement) {
-      setTimeout(() => {
-        unnamedListInputElement?.focus();
-        // Auto-resize textarea to fit content
-        if (unnamedListInputElement instanceof HTMLTextAreaElement) {
-          unnamedListInputElement.style.height = 'auto';
-          unnamedListInputElement.style.height = `${Math.min(unnamedListInputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
-        }
-      }, 0);
-    }
-  });
-  
-  // Auto-resize textarea as content changes
-  $effect(() => {
-    if (unnamedListInputElement && unnamedListInputElement instanceof HTMLTextAreaElement) {
-      const resizeTextarea = () => {
-        unnamedListInputElement.style.height = 'auto';
-        unnamedListInputElement.style.height = `${Math.min(unnamedListInputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
-      };
-      
-      unnamedListInputElement.addEventListener('input', resizeTextarea);
-      return () => {
-        unnamedListInputElement.removeEventListener('input', resizeTextarea);
-      };
-    }
-  });
-  
-  async function handleUnnamedListCreateTask(columnIndex) {
-    const inputValue = unnamedListTaskInput || '';
-    
-    // Check if input is empty string "" - exit task creation
-    if (isEmpty(inputValue)) {
-      unnamedListColumnIndex = null;
-      unnamedListTaskInput = '';
-      return;
-    }
-    
-    // Check if input contains only whitespace (e.g., " ", "      ")
-    const { text: taskText } = normalizeInput(inputValue);
-    
-    try {
-      // Pass null as listId to create task in unnamed list (which will be created in the specified column)
-      const taskId = await createTask(null, taskText, columnIndex);
-      unnamedListTaskInput = '';
-      // Keep input open for creating another task in the same column
-      // The "add a new task" empty state will appear below the newly created list automatically
-      
-      // Refocus the unnamed list input after the task is created
-      await tick();
-      if (unnamedListInputElement) {
-        setTimeout(() => {
-          unnamedListInputElement?.focus();
-        }, 0);
-      }
-    } catch (error) {
-      console.error('Error creating task in unnamed list:', error);
-    }
-  }
-  
   // Handle drag events for "Create new list" drop zone - consider event for visual feedback
   function handleCreateListConsider(event) {
     // Update local state for visual feedback during drag
     createListDropZoneItems = event.detail.items;
   }
   
-  // Handle drag events for "Create new list" drop zone - finalize event to create list and move task
+  // Handle drag events for "Create new list" drop zone - finalize event
+  // Creating new unnamed lists from dropped tasks has been removed; we now
+  // only reset the drop zone items.
   async function handleCreateListFinalize(event) {
     // Update local state for immediate visual feedback
     createListDropZoneItems = event.detail.items;
     
-    // If a task was dropped, create an unnamed list and move the task to it
-    if (event.detail.items && event.detail.items.length > 0) {
-      try {
-        // Create an unnamed list
-        const newListId = await createUnnamedList();
-        
-        // Move the dropped task(s) to the new list
-        await updateTaskOrderCrossList(newListId, event.detail.items);
-        
-        // Reset the drop zone items
-        createListDropZoneItems = [];
-      } catch (error) {
-        console.error('Error creating list from dropped task:', error);
-        // Reset on error
-        createListDropZoneItems = [];
-      }
-    }
+    // Always reset the drop zone; do not create new lists from tasks.
+    createListDropZoneItems = [];
   }
   
   // Helper function to check if an item is a placeholder
@@ -671,8 +856,17 @@
                     {@const realList = stableLists.find(list => list.id === dragItem.id)}
                     {@const fallbackList = !realList && !isPlaceholder ? dragItem : null}
                     {@const listToRender = realList || fallbackList}
-                    <div data-id={dragItem.id} class="flex flex-col mb-6">
-                      {#if listToRender}
+                    {#if listToRender}
+                      <div
+                        data-id={dragItem.id}
+                        class="flex flex-col mb-6"
+                        tabindex="0"
+                        role="group"
+                        aria-label={`List: ${listToRender.name ?? 'Unnamed list'}`}
+                        aria-roledescription="Draggable list"
+                        aria-pressed={keyboardListDrag.active && keyboardListDrag.listId === listToRender.id ? 'true' : 'false'}
+                        onkeydowncapture={(e) => handleListKeyboardKeydown(e, listToRender.id)}
+                      >
                         <TaskList
                           listId={listToRender.id}
                           listName={listToRender.name ?? 'Unnamed list'}
@@ -681,8 +875,12 @@
                           allLists={$lists}
                           stableLists={stableLists}
                         />
-                      {/if}
-                    </div>
+                      </div>
+                    {:else}
+                      <div data-id={dragItem.id} class="flex flex-col mb-6">
+                        <!-- Placeholder item for drag feedback - not focusable for keyboard drag -->
+                      </div>
+                    {/if}
                   {/each}
                   
                   <!-- Empty drop zone for empty columns -->

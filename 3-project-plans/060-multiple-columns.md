@@ -10,7 +10,7 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
 - [ ] Column layout is responsive and adapts to screen size
 - [ ] Lists maintain their order within columns
 - [ ] Tasks can be moved between lists across columns (extends milestone [[050-drag-between-lists]])
-- [x] Keyboard navigation works across columns (extends milestone [[050-drag-between-lists]])
+- [ ] Keyboard navigation works across columns (extends milestone [[050-drag-between-lists]])
 - [ ] Print layout handles multiple columns appropriately
 - [ ] Column layout persists user preferences (if implemented)
 - [ ] **Column placement preservation**: When reducing column count (e.g., from 5 to 3), items labeled in columns beyond the available count (e.g., columns 4-5 when only 3 columns exist) display in the last available column. This preserves column placement so that if the user changes back to 5 columns, items return to their original column positions.
@@ -196,13 +196,11 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
      - ✅ Source columns skip database updates (prevents duplicate updates)
      - ✅ Empty columns have minimum height for easier dropping
 
-4. **Update Keyboard Navigation for Columns** ✅ COMPLETE
-   - [x] Extend keyboard cross-list movement to work across columns
-   - [x] Handle boundary crossing between columns (last task in column moves to first task of next column)
-   - [x] Ensure keyboard navigation flows naturally across column boundaries
-   - [x] Maintain existing keyboard navigation functionality
-   - [ ] **Task keyboard drag-and-drop entry** - Make task list items focusable (add `tabindex="0"` to task `li` elements) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
-   - [ ] **List keyboard drag-and-drop entry** - Make list containers focusable (add `tabindex="0"` to list section element) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
+4. **Update Keyboard Navigation for Columns**
+   - Extend keyboard cross-list movement to work across columns
+   - Handle boundary crossing between columns (last task in column moves to first task of next column)
+   - Ensure keyboard navigation flows naturally across column boundaries
+   - Maintain existing keyboard navigation functionality
 
 4.5. **Keyboard Focus Actions - Feature Checklist**
 
@@ -219,7 +217,11 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    - [x] **"Add Task" button** - Verify Enter/Space works. Same handler as above, verify no issues.
    
    - [x] **"Create new list" button** - Verify Enter/Space works. Already has `handleCreateListKeydown` in `App.svelte` (lines 178-184), but verify no issues.
-
+   
+   - [x] **Task keyboard drag-and-drop entry** - Make task list items focusable (add `tabindex="0"` to task `li` elements) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
+   
+   - [x] **List keyboard drag-and-drop entry** - Make list containers focusable (add `tabindex="0"` to list section element) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
+   
    - [x] **Fix: column container focus** - Ensure entire column containers are not focusable; only interactive elements within a column should receive focus.
    
    - [x] **Fix: task list `<ul>` focus** - Prevent whole task list `<ul>` elements from being focusable; focus should land on individual tasks or interactive controls instead.
@@ -229,7 +231,11 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    - [x] **Tabbing out of list creation input** - When tabbing away from the "create new list" input, close the input if empty; if it contains text, create the list before moving focus.
    
    - [x] **Tabbing out of task creation input** - When tabbing away from the "add task" input, close the input if empty; if it contains text, create the task before moving focus.
-
+   
+   - [ ] **Task blur on Escape** - Ensure task-related interactive elements (e.g., task text, inputs, modals) blur or close appropriately when pressing Escape, without leaving stray focus.
+   
+   - [ ] **Task Tab resume after blur** - After a blur or close action on a task (e.g., Escape), ensure Tab navigation resumes from the expected next task position so keyboard users can continue where they left off.
+ 
 5. **Handle Print Layout**
    - Determine how multiple columns should render in print
    - Ensure print layout is readable and functional
