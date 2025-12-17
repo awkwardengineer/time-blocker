@@ -132,7 +132,7 @@ describe('App - Keyboard Navigation', () => {
     expect(workTasks[workTasks.length - 1].text).toBe('Personal Task')
   })
 
-  it('creates new unnamed list when pressing ArrowDown on last task in last list', async () => {
+  it('does not create a new list when pressing ArrowDown on last task in the final list', async () => {
     const user = userEvent.setup()
     render(App)
     
@@ -175,30 +175,17 @@ describe('App - Keyboard Navigation', () => {
     const listsBefore = await db.lists.toArray()
     const listsCountBefore = listsBefore.length
     
-    // Press ArrowDown (should create new unnamed list)
+    // Press ArrowDown (should NOT create a new list; movement stops)
     await user.keyboard('{ArrowDown}')
     
-    // Wait for new unnamed list to appear
-    await waitFor(() => {
-      expect(screen.getByText('Unnamed list')).toBeInTheDocument()
-    }, { timeout: 3000 })
-    
-    // Verify new list was created
+    // Verify no new list was created
     const listsAfter = await db.lists.toArray()
-    expect(listsAfter.length).toBe(listsCountBefore + 1)
-    
-    // Find the new unnamed list
-    const newList = listsAfter.find(l => l.name === null || l.name === '')
-    expect(newList).toBeDefined()
-    
-    // Verify task moved to new list
-    const newListSection = await waitForListSection('Unnamed list')
+    expect(listsAfter.length).toBe(listsCountBefore)
+
+    // Verify the task is still in the same list in the UI
     await waitFor(() => {
-      expect(within(newListSection).getByText(lastTask.text)).toBeInTheDocument()
+      expect(within(lastListSection).getByText(lastTask.text)).toBeInTheDocument()
     }, { timeout: 3000 })
-    
-    // Verify task is no longer in old list
-    expect(within(lastListSection).queryByText(lastTask.text)).not.toBeInTheDocument()
   })
 
   it('moves task and updates UI when using keyboard cross-list navigation', async () => {

@@ -2,7 +2,7 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
-  import { getAllLists, createList, createTask, createUnnamedList, updateTaskOrderCrossList, updateListOrder, updateListOrderWithColumn } from './lib/dataAccess.js';
+  import { getAllLists, createList, createTask, updateTaskOrderCrossList, updateListOrder, updateListOrderWithColumn } from './lib/dataAccess.js';
   import db from './lib/db.js';
   import TaskList from './components/TaskList.svelte';
   import ArchivedView from './components/ArchivedView.svelte';
@@ -30,12 +30,9 @@
   let createListInput = $state('');
   let createListInputElement = $state(null);
   
-  // State for creating task in unnamed list (task 3b) - per column
-  let unnamedListColumnIndex = $state(null); // null means not active, 0-4 means active for that column
-  let unnamedListTaskInput = $state('');
-  let unnamedListInputElement = $state(null);
-  
   // State for drop zone on "Create new list" section
+  // Note: creating new unnamed lists from dropped tasks has been removed.
+  // The drop zone remains for visual feedback only and no longer creates lists.
   let createListDropZoneItems = $state([]);
   let createListDropZoneElement = $state(null);
 
@@ -504,6 +501,7 @@
         }
       },
       {
+        ignoreElements: [],
         checkIgnoreClick: (e) => {
           // Check if click is on a Save button
           const saveButton = e.target.closest('button');
@@ -599,134 +597,21 @@
     }
   }
   
-  // Unnamed list task creation handlers (task 3b) - per column
-  function handleUnnamedListAddTaskClick(columnIndex) {
-    unnamedListColumnIndex = columnIndex;
-  }
-  
-  function handleUnnamedListInputEscape(e) {
-    if (e.key === 'Escape') {
-      unnamedListColumnIndex = null;
-      unnamedListTaskInput = '';
-    }
-  }
-  
-  // Handle click outside unnamed list input to close it (only if no content)
-  $effect(() => {
-    if (unnamedListColumnIndex === null) return;
-    
-    return useClickOutside(
-      unnamedListInputElement,
-      () => {
-        // Only close if still active (prevents race conditions with programmatic closes)
-        if (unnamedListColumnIndex !== null) {
-          unnamedListColumnIndex = null;
-          unnamedListTaskInput = '';
-        }
-      },
-      {
-        checkIgnoreClick: (e) => {
-          // Check if click is on a Save button
-          const saveButton = e.target.closest('button');
-          return saveButton && saveButton.textContent?.trim() === 'Save';
-        },
-        shouldClose: () => {
-          // Only close if input hasn't changed (no content)
-          return !unnamedListTaskInput || unnamedListTaskInput.trim() === '';
-        }
-      }
-    );
-  });
-  
-  // Focus input when it becomes active
-  $effect(() => {
-    if (unnamedListColumnIndex !== null && unnamedListInputElement) {
-      setTimeout(() => {
-        unnamedListInputElement?.focus();
-        // Auto-resize textarea to fit content
-        if (unnamedListInputElement instanceof HTMLTextAreaElement) {
-          unnamedListInputElement.style.height = 'auto';
-          unnamedListInputElement.style.height = `${Math.min(unnamedListInputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
-        }
-      }, 0);
-    }
-  });
-  
-  // Auto-resize textarea as content changes
-  $effect(() => {
-    if (unnamedListInputElement && unnamedListInputElement instanceof HTMLTextAreaElement) {
-      const resizeTextarea = () => {
-        unnamedListInputElement.style.height = 'auto';
-        unnamedListInputElement.style.height = `${Math.min(unnamedListInputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
-      };
-      
-      unnamedListInputElement.addEventListener('input', resizeTextarea);
-      return () => {
-        unnamedListInputElement.removeEventListener('input', resizeTextarea);
-      };
-    }
-  });
-  
-  async function handleUnnamedListCreateTask(columnIndex) {
-    const inputValue = unnamedListTaskInput || '';
-    
-    // Check if input is empty string "" - exit task creation
-    if (isEmpty(inputValue)) {
-      unnamedListColumnIndex = null;
-      unnamedListTaskInput = '';
-      return;
-    }
-    
-    // Check if input contains only whitespace (e.g., " ", "      ")
-    const { text: taskText } = normalizeInput(inputValue);
-    
-    try {
-      // Pass null as listId to create task in unnamed list (which will be created in the specified column)
-      const taskId = await createTask(null, taskText, columnIndex);
-      unnamedListTaskInput = '';
-      // Keep input open for creating another task in the same column
-      // The "add a new task" empty state will appear below the newly created list automatically
-      
-      // Refocus the unnamed list input after the task is created
-      await tick();
-      if (unnamedListInputElement) {
-        setTimeout(() => {
-          unnamedListInputElement?.focus();
-        }, 0);
-      }
-    } catch (error) {
-      console.error('Error creating task in unnamed list:', error);
-    }
-  }
-  
   // Handle drag events for "Create new list" drop zone - consider event for visual feedback
   function handleCreateListConsider(event) {
     // Update local state for visual feedback during drag
     createListDropZoneItems = event.detail.items;
   }
   
-  // Handle drag events for "Create new list" drop zone - finalize event to create list and move task
+  // Handle drag events for "Create new list" drop zone - finalize event
+  // Creating new unnamed lists from dropped tasks has been removed; we now
+  // only reset the drop zone items.
   async function handleCreateListFinalize(event) {
     // Update local state for immediate visual feedback
     createListDropZoneItems = event.detail.items;
     
-    // If a task was dropped, create an unnamed list and move the task to it
-    if (event.detail.items && event.detail.items.length > 0) {
-      try {
-        // Create an unnamed list
-        const newListId = await createUnnamedList();
-        
-        // Move the dropped task(s) to the new list
-        await updateTaskOrderCrossList(newListId, event.detail.items);
-        
-        // Reset the drop zone items
-        createListDropZoneItems = [];
-      } catch (error) {
-        console.error('Error creating list from dropped task:', error);
-        // Reset on error
-        createListDropZoneItems = [];
-      }
-    }
+    // Always reset the drop zone; do not create new lists from tasks.
+    createListDropZoneItems = [];
   }
   
   // Helper function to check if an item is a placeholder

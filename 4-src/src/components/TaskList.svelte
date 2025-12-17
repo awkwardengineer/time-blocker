@@ -2,7 +2,7 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
-  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskOrderCrossList, updateTaskText, updateListName, createUnnamedList, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
+  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskOrderCrossList, updateTaskText, updateListName, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
   import TaskEditModal from './TaskEditModal.svelte';
   import ListEditModal from './ListEditModal.svelte';
   import AddTaskInput from './AddTaskInput.svelte';
@@ -42,6 +42,52 @@
   let addTaskTextareaElement = $state(null); // Reference to the add-task textarea
   
   let previousListId = $state(null);
+
+  /**
+   * Return all non-archived lists in visual column order.
+   * Columns are ordered left-to-right by columnIndex, and within
+   * each column lists are ordered top-to-bottom by their order.
+   */
+  function getListsInColumnOrder(lists) {
+    if (!Array.isArray(lists)) return [];
+    return [...lists].sort((a, b) => {
+      const colA = a?.columnIndex ?? 0;
+      const colB = b?.columnIndex ?? 0;
+      if (colA !== colB) return colA - colB;
+
+      const orderA = a?.order ?? 0;
+      const orderB = b?.order ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+
+      const idA = a?.id ?? 0;
+      const idB = b?.id ?? 0;
+      return idA - idB;
+    });
+  }
+
+  /**
+   * Find the next/previous list ID relative to the current list,
+   * using visual column order (left-to-right columns, top-to-bottom rows).
+   */
+  function findNeighborListId(currentListId, lists, direction) {
+    const ordered = getListsInColumnOrder(lists);
+    if (!ordered.length) return null;
+
+    const index = ordered.findIndex((l) => l.id === currentListId);
+    if (index === -1) return null;
+
+    if (direction === 'next') {
+      if (index >= ordered.length - 1) return null;
+      return ordered[index + 1].id;
+    }
+
+    if (direction === 'prev') {
+      if (index <= 0) return null;
+      return ordered[index - 1].id;
+    }
+
+    return null;
+  }
   
   $effect(() => {
     // Validate that listId exists in stableLists before creating query
@@ -207,31 +253,26 @@
         // Check if we're at a boundary and trying to move in that direction
         // Only intercept if we're actually at the boundary
         if (e.key === 'ArrowDown' && isLast) {
-          // Move to next list - prevent default and handle cross-list movement
+          // Move to next list (in visual column order) - prevent default and handle cross-list movement
           e.preventDefault();
           e.stopImmediatePropagation();
           
-          const currentListIndex = allLists.findIndex(l => l.id === listId);
-          if (currentListIndex < allLists.length - 1) {
-            // Move to next list
-            const nextListId = allLists[currentListIndex + 1].id;
+          const nextListId = findNeighborListId(listId, allLists, 'next');
+          if (nextListId != null) {
+            // Move to next list in column order
             await moveTaskToNextList(taskId, nextListId);
-          } else {
-            // Last list - create new unnamed list
-            await moveTaskToNewList(taskId);
           }
         } else if (e.key === 'ArrowUp' && isFirst) {
-          // Move to previous list - prevent default and handle cross-list movement
+          // Move to previous list (in visual column order) - prevent default and handle cross-list movement
           e.preventDefault();
           e.stopImmediatePropagation();
           
-          const currentListIndex = allLists.findIndex(l => l.id === listId);
-          if (currentListIndex > 0) {
-            // Move to previous list
-            const prevListId = allLists[currentListIndex - 1].id;
+          const prevListId = findNeighborListId(listId, allLists, 'prev');
+          if (prevListId != null) {
+            // Move to previous list in column order
             await moveTaskToPreviousList(taskId, prevListId);
           }
-          // If at first list, do nothing (already at top)
+          // If at first list in first column, do nothing (already at top)
         }
       }
     }
@@ -266,17 +307,6 @@
       await updateTaskOrderCrossList(prevListId, newTasks);
     } catch (error) {
       console.error('Error moving task to previous list:', error);
-    }
-  }
-  
-  // Move task to new unnamed list
-  async function moveTaskToNewList(taskId) {
-    try {
-      const newListId = await createUnnamedList();
-      // New list is empty, so just this task
-      await updateTaskOrderCrossList(newListId, [{ id: taskId }]);
-    } catch (error) {
-      console.error('Error moving task to new list:', error);
     }
   }
   
@@ -319,27 +349,23 @@
       
       // Check if we're at a boundary and trying to move in that direction
       if (e.key === 'ArrowDown' && isLast) {
-        // Move to next list
+        // Move to next list (in visual column order)
         e.preventDefault();
         e.stopImmediatePropagation();
         e.stopPropagation();
         
-        const currentListIndex = allLists.findIndex(l => l.id === listId);
-        if (currentListIndex < allLists.length - 1) {
-          const nextListId = allLists[currentListIndex + 1].id;
+        const nextListId = findNeighborListId(listId, allLists, 'next');
+        if (nextListId != null) {
           await moveTaskToNextList(taskId, nextListId);
-        } else {
-          await moveTaskToNewList(taskId);
         }
       } else if (e.key === 'ArrowUp' && isFirst) {
-        // Move to previous list
+        // Move to previous list (in visual column order)
         e.preventDefault();
         e.stopImmediatePropagation();
         e.stopPropagation();
         
-        const currentListIndex = allLists.findIndex(l => l.id === listId);
-        if (currentListIndex > 0) {
-          const prevListId = allLists[currentListIndex - 1].id;
+        const prevListId = findNeighborListId(listId, allLists, 'prev');
+        if (prevListId != null) {
           await moveTaskToPreviousList(taskId, prevListId);
         }
       }

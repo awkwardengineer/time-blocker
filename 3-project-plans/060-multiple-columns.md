@@ -218,9 +218,9 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    
    - [x] **"Create new list" button** - Verify Enter/Space works. Already has `handleCreateListKeydown` in `App.svelte` (lines 178-184), but verify no issues.
    
-   - [ ] **Task keyboard drag-and-drop entry** - Make task list items focusable (add `tabindex="0"` to task `li` elements) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
+   - [x] **Task keyboard drag-and-drop entry** - Make task list items focusable (add `tabindex="0"` to task `li` elements) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
    
-   - [ ] **List keyboard drag-and-drop entry** - Make list containers focusable (add `tabindex="0"` to list section element) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
+   - [x] **List keyboard drag-and-drop entry** - Make list containers focusable (add `tabindex="0"` to list section element) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
    
    - [x] **Fix: column container focus** - Ensure entire column containers are not focusable; only interactive elements within a column should receive focus.
    
@@ -231,7 +231,11 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    - [x] **Tabbing out of list creation input** - When tabbing away from the "create new list" input, close the input if empty; if it contains text, create the list before moving focus.
    
    - [x] **Tabbing out of task creation input** - When tabbing away from the "add task" input, close the input if empty; if it contains text, create the task before moving focus.
-
+   
+   - [ ] **Task blur on Escape** - Ensure task-related interactive elements (e.g., task text, inputs, modals) blur or close appropriately when pressing Escape, without leaving stray focus.
+   
+   - [ ] **Task Tab resume after blur** - After a blur or close action on a task (e.g., Escape), ensure Tab navigation resumes from the expected next task position so keyboard users can continue where they left off.
+ 
 5. **Handle Print Layout**
    - Determine how multiple columns should render in print
    - Ensure print layout is readable and functional
