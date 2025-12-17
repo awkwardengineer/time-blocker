@@ -2,14 +2,13 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
-  import { getAllLists, createList, updateListOrderWithColumn } from '../lib/dataAccess.js';
-  import { useClickOutside } from '../lib/useClickOutside.js';
-  import { isEmpty, normalizeInput } from '../lib/inputValidation.js';
+  import { getAllLists, updateListOrderWithColumn } from '../lib/dataAccess.js';
   import { MAX_RETRY_ATTEMPTS, RETRY_INTERVAL_MS } from '../lib/constants.js';
   import { groupListsIntoColumns, findListPosition, isPlaceholderItem } from '../lib/listDndUtils.js';
   import { applyListMoveInColumns } from '../lib/listKeyboardDrag.js';
   import { processListConsider, shouldSkipFinalizeUpdate } from '../lib/listDragHandlers.js';
   import { focusListCardForKeyboardDrag, setupKeyboardListDragHandler } from '../lib/useKeyboardListDrag.js';
+  import { useListCreation } from '../lib/useListCreation.js';
   import TaskList from './TaskList.svelte';
   import ListColumn from './ListColumn.svelte';
   import CreateListDropZone from './CreateListDropZone.svelte';
@@ -287,143 +286,35 @@
     console.warn(`Could not activate Add Task input for list ${listId} after ${MAX_RETRY_ATTEMPTS} attempts`);
   }
   
-  function handleCreateListClick(columnIndex) {
-    createListColumnIndex = columnIndex;
-  }
-  
-  function handleCreateListKeydown(event, columnIndex) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      event.stopPropagation();
-      handleCreateListClick(columnIndex);
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      // Blur the "Create new list" button
-      const buttonElement = event.currentTarget;
-      if (buttonElement && buttonElement instanceof HTMLElement) {
-        buttonElement.blur();
-      }
-    }
-  }
-  
-  function handleCreateListInputEscape(e) {
-    if (e.key === 'Escape') {
-      createListColumnIndex = null;
-      createListInput = '';
-    }
-  }
-  
+  // Set up list creation composable
+  const listCreation = useListCreation({
+    getColumnIndex: () => createListColumnIndex,
+    setColumnIndex: (value) => { createListColumnIndex = value; },
+    getInput: () => createListInput,
+    setInput: (value) => { createListInput = value; },
+    getInputElement: () => createListInputElement
+  });
+
+  // Extract handlers from composable
+  const {
+    handleCreateListClick,
+    handleCreateListKeydown,
+    handleCreateListInputEscape,
+    handleCreateList,
+    handleCreateListOnTab,
+    setupClickOutsideEffect,
+    setupFocusEffect
+  } = listCreation;
+
   // Handle click outside input to close it (only if no content)
   $effect(() => {
-    if (createListColumnIndex === null) return;
-    
-    return useClickOutside(
-      createListInputElement,
-      () => {
-        // Only close if still active (prevents race conditions with programmatic closes)
-        if (createListColumnIndex !== null) {
-          createListColumnIndex = null;
-          createListInput = '';
-        }
-      },
-      {
-        ignoreElements: [],
-        checkIgnoreClick: (e) => {
-          // Check if click is on a Save button
-          const saveButton = e.target.closest('button');
-          return saveButton && saveButton.textContent?.trim() === 'Save';
-        },
-        shouldClose: () => {
-          // Only close if input hasn't changed (no content)
-          return !createListInput || createListInput.trim() === '';
-        }
-      }
-    );
+    return setupClickOutsideEffect();
   });
   
   // Focus input when it becomes active
   $effect(() => {
-    if (createListColumnIndex !== null && createListInputElement) {
-      setTimeout(() => {
-        createListInputElement?.focus();
-      }, 0);
-    }
+    return setupFocusEffect();
   });
-  
-  async function handleCreateList(columnIndex) {
-    const inputValue = createListInput || '';
-    
-    // Check if input is empty string "" - exit list creation
-    if (isEmpty(inputValue)) {
-      createListColumnIndex = null;
-      createListInput = '';
-      return;
-    }
-    
-    // Check if input contains only whitespace (e.g., " ", "      ")
-    const { text: normalizedText, isBlank } = normalizeInput(inputValue);
-    if (isBlank) {
-      // Whitespace-only, don't create
-      createListColumnIndex = null;
-      createListInput = '';
-      return;
-    }
-    
-    try {
-      await createList(normalizedText, columnIndex);
-      // Clear input but keep it open for creating another list
-      createListInput = '';
-      // Keep createListColumnIndex set to columnIndex so input stays open
-      // Lists will update automatically via liveQuery
-      // The "add a new task" empty state will appear below the newly created list automatically
-      
-      // Refocus the create list input after the list is created
-      await tick();
-      if (createListInputElement) {
-        setTimeout(() => {
-          createListInputElement?.focus();
-        }, 0);
-      }
-    } catch (error) {
-      console.error('Error creating list:', error);
-    }
-  }
-
-  /**
-   * Handle "Tab" key from the create list input.
-   * When tabbing away:
-   * - If input is empty/whitespace-only, close the input (no list created).
-   * - If input has content, create the list once, then close the input so focus can move on.
-   */
-  async function handleCreateListOnTab(columnIndex) {
-    const inputValue = createListInput || '';
-    
-    // Empty string - just close the input
-    if (isEmpty(inputValue)) {
-      createListColumnIndex = null;
-      createListInput = '';
-      return;
-    }
-    
-    // Whitespace-only - treat as invalid and close input without creating
-    const { text: normalizedText, isBlank } = normalizeInput(inputValue);
-    if (isBlank) {
-      createListColumnIndex = null;
-      createListInput = '';
-      return;
-    }
-    
-    try {
-      await createList(normalizedText, columnIndex);
-      // Clear and close input after creating the list so focus can move forward
-      createListInput = '';
-      createListColumnIndex = null;
-    } catch (error) {
-      console.error('Error creating list on Tab:', error);
-    }
-  }
   
   // Handle drag events for "Create new list" drop zone - consider event for visual feedback
   function handleCreateListConsider(event) {
