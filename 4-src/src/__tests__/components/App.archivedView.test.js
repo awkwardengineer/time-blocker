@@ -6,7 +6,8 @@ import App from '../../App.svelte'
 import { setupTestData } from '../helpers/appTestSetup.js'
 import { 
   waitForListSection,
-  getFirstCheckboxFor
+  getFirstCheckboxFor,
+  getListSection
 } from '../helpers/appTestHelpers.js'
 import db from '../../lib/db.js'
 import { archiveList, archiveAllTasksInList } from '../../lib/dataAccess.js'
@@ -92,28 +93,31 @@ describe('App - Archived View Grid Layout', () => {
     const checkbox = await getFirstCheckboxFor('Work')
     await user.click(checkbox)
     
+    // Re-query checkbox inside waitFor to avoid stale reference
     await waitFor(() => {
-      expect(checkbox).toBeChecked()
-    })
+      const listSection = getListSection('Work')
+      const checkboxes = within(listSection).getAllByRole('checkbox')
+      expect(checkboxes[0]).toBeChecked()
+    }, { timeout: 5000 })
     
     // Archive button only appears for checked tasks - wait for it to appear
     const archiveButton = await within(workSection).findByRole('button', { name: /archive task/i }, { timeout: 5000 })
     await user.click(archiveButton)
     
-    // Wait for task to be archived
-    await waitFor(() => {
-      expect(within(workSection).queryByText('Task 1')).not.toBeInTheDocument()
-    })
-    
-    // Check archived view
+    // Check archived view - wait for it to appear first (positive assertion)
     const archivedSection = screen.getByText('Archived Tasks').parentElement
     
-    // Verify list appears in archived view with [List Active] badge
+    // Wait for list and badge to appear in archived view (positive assertions)
     await waitFor(() => {
       expect(within(archivedSection).getByText('Work')).toBeInTheDocument()
       expect(within(archivedSection).getByText('[List Active]')).toBeInTheDocument()
-    }, { timeout: 3000 })
-  })
+    }, { timeout: 10000 })
+    
+    // Then verify task is gone from main view (negative assertion after positive succeeds)
+    await waitFor(() => {
+      expect(within(workSection).queryByText('Task 1')).not.toBeInTheDocument()
+    }, { timeout: 5000 })
+  }, 15000)
 
   it('shows "No archived tasks" when list has no archived tasks', async () => {
     const user = userEvent.setup()

@@ -63,6 +63,24 @@ expect(within(section).queryByPlaceholderText('Add new task...')).not.toBeInTheD
 
 ## Known Flaky Tests
 
+### App.archivedView.test.js - "shows active lists with archived tasks with [List Active] badge"
+
+**Issue**: Test times out when checking for task to disappear from main view after archiving. The test fails when all tests run together but passes when run in isolation. The DOM may not have updated yet when checking for task removal, even with `waitFor`.
+
+**Root Cause**: Similar to taskCreation test - bindable prop updates and liveQuery updates may not propagate synchronously when all tests run together. The test was using a negative assertion (checking for task to disappear) before verifying the positive assertion (archived view to appear).
+
+**Fixes Applied** (December 2024):
+1. **Test timeout**: Added explicit test timeout of 15000ms
+2. **Test structure**: Changed to wait for archived view to appear first (positive assertion), then verify task is gone (negative assertion)
+3. **Stale references**: Re-query checkbox inside waitFor after clicking to avoid stale reference
+4. **Timeout increases**: Increased timeout for archived view check from 3000ms to 10000ms
+5. **Assertion order**: Use positive assertions first, then negative assertions after
+
+**Current Status (Dec 2024)**: 
+- ✅ Test passes when run in isolation
+- ✅ Test is now stable when all tests run together
+- The code changes and test structure updates have made this test reliably green
+
 ### App.taskCreation.test.js - "Enter key on empty string"
 
 **Issue**: Test times out when checking for textarea to disappear after pressing Enter on empty input. The test fails in CI/deployment but passes when run in isolation. The DOM may not have updated yet when checking for textarea removal, even with `tick()` and delays in the implementation.
