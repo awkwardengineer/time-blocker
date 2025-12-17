@@ -27,29 +27,19 @@ export function shouldSkipFinalizeUpdate(items, columnIndex, sourceLists) {
 **Benefits**:
 - Testable in isolation
 - Easier to read component code
-- Can conditionally enable logging
+- Cleaner code without debug noise
 
-### 2. Conditional Debug Logging
+### 2. Remove Debug Logging
 **Location**: Throughout `Board.svelte`
 
-**Problem**: 30+ console.log statements, especially in drag handlers
+**Problem**: 30+ console.log statements, especially in drag handlers - leftover debug code that's not needed
 
-**Solution**: 
-```javascript
-// src/lib/debug.js
-export const DEBUG_DRAG = import.meta.env.DEV && false; // Toggle easily
-
-export function debugLog(category, ...args) {
-  if (DEBUG_DRAG && category === 'drag') {
-    console.log(...args);
-  }
-}
-```
+**Solution**: Remove all console.log statements from drag handlers and other areas. Keep only console.error for actual error handling.
 
 **Benefits**:
-- Easy to enable/disable
-- No performance impact in production
-- Cleaner code
+- Cleaner, more readable code
+- No performance overhead
+- Easier to maintain
 
 ### 3. Extract Keyboard Drag Composable
 **Location**: `Board.svelte` lines 119-330
@@ -165,7 +155,6 @@ export function setupTabResume(element, onTab) {
 **Solution**: 
 ```javascript
 // src/lib/constants.js (extend existing)
-export const DRAG_DEBUG = false;
 export const FOCUS_RETRY_ATTEMPTS = 20;
 export const FOCUS_RETRY_INTERVAL = 10;
 ```
@@ -204,7 +193,7 @@ function validateAndNormalizeListInput(input) {
 
 ## Implementation Order
 
-1. **Start with logging** (easiest, immediate benefit)
+1. **Remove debug logging** (easiest, immediate benefit - cleanup leftover code)
 2. **Extract drag handlers** (high impact, testable)
 3. **Extract keyboard drag** (reusable, high value)
 4. **Group state** (low risk, better organization)
