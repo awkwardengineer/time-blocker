@@ -38,6 +38,14 @@
   // State for drop zone on "Create new list" section
   let createListDropZoneItems = $state([]);
   let createListDropZoneElement = $state(null);
+
+  // State for keyboard-based list dragging
+  let keyboardListDrag = $state({
+    active: false,
+    listId: null
+  });
+  let lastKeyboardDraggedListId = $state(null);
+  let shouldRefocusListOnNextTab = $state(false);
   
   // Initialize inputs when lists first load (only once)
   $effect(() => {
@@ -124,6 +132,298 @@
     }
     
     return columns;
+  });
+
+  /**
+   * Find the current column index and position index for a list ID
+   * using the derived listsByColumn structure.
+   */
+  function findListPosition(listId) {
+    const columns = listsByColumn();
+    if (!columns || columns.length === 0) {
+      return null;
+    }
+    for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
+      const columnLists = columns[columnIndex];
+      if (!Array.isArray(columnLists)) continue;
+      const index = columnLists.findIndex(list => list.id === listId);
+      if (index !== -1) {
+        return { columnIndex, index };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Apply a keyboard-driven move for a list (up/down/left/right).
+   * This updates local draggableLists for immediate feedback and
+   * persists the change via updateListOrderWithColumn.
+   */
+  async function moveListWithKeyboard(listId, direction) {
+    const columns = listsByColumn();
+    if (!columns || columns.length === 0) {
+      return;
+    }
+
+    const position = findListPosition(listId);
+    if (!position) {
+      return;
+    }
+
+    const { columnIndex: currentColumnIndex, index: currentIndex } = position;
+    let targetColumnIndex = currentColumnIndex;
+    let targetIndex = currentIndex;
+
+    if (direction === 'up') {
+      if (currentIndex === 0) return; // Already at top
+      targetIndex = currentIndex - 1;
+    } else if (direction === 'down') {
+      const currentColumnLists = columns[currentColumnIndex] || [];
+      if (currentIndex === currentColumnLists.length - 1) return; // Already at bottom
+      targetIndex = currentIndex + 1;
+    } else if (direction === 'left') {
+      if (currentColumnIndex === 0) return; // Already at first column
+      targetColumnIndex = currentColumnIndex - 1;
+      const targetColumnLists = columns[targetColumnIndex] || [];
+      targetIndex = targetColumnLists.length; // Move to end of target column
+    } else if (direction === 'right') {
+      if (currentColumnIndex === COLUMN_COUNT - 1) return; // Already at last column
+      targetColumnIndex = currentColumnIndex + 1;
+      const targetColumnLists = columns[targetColumnIndex] || [];
+      targetIndex = targetColumnLists.length; // Move to end of target column
+    } else {
+      return;
+    }
+
+    // Clone columns to avoid mutating derived data directly
+    const newColumns = columns.map(col => Array.isArray(col) ? [...col] : []);
+
+    const sourceColumnLists = newColumns[currentColumnIndex];
+    if (!sourceColumnLists || sourceColumnLists.length === 0) {
+      return;
+    }
+
+    const [movingItem] = sourceColumnLists.splice(currentIndex, 1);
+    if (!movingItem) {
+      return;
+    }
+
+    const targetColumnLists = newColumns[targetColumnIndex];
+    if (!targetColumnLists) {
+      return;
+    }
+
+    // Clamp target index to valid range
+    const safeTargetIndex = Math.min(Math.max(targetIndex, 0), targetColumnLists.length);
+
+    if (direction === 'left' || direction === 'right') {
+      // When moving across columns, update columnIndex for the moved item
+      targetColumnLists.splice(safeTargetIndex, 0, { ...movingItem, columnIndex: targetColumnIndex });
+    } else {
+      // Same-column reordering
+      targetColumnLists.splice(safeTargetIndex, 0, movingItem);
+    }
+
+    // Update local draggableLists for immediate UI feedback
+    const updatedDraggableLists = [];
+    for (let colIndex = 0; colIndex < newColumns.length; colIndex++) {
+      const columnLists = newColumns[colIndex] || [];
+      for (let i = 0; i < columnLists.length; i++) {
+        const listItem = columnLists[i];
+        updatedDraggableLists.push({
+          ...listItem,
+          columnIndex: colIndex,
+          order: i
+        });
+      }
+    }
+
+    draggableLists = updatedDraggableLists;
+
+    // Persist changes for the affected column using existing helper
+    const targetColumnItems = (newColumns[targetColumnIndex] || []).map(item => ({ id: item.id }));
+
+    try {
+      await updateListOrderWithColumn(targetColumnIndex, targetColumnItems);
+    } catch (error) {
+      console.error('[KEYBOARD DRAG] Error moving list via keyboard:', error);
+    }
+
+    // After updating state and DB, ensure the list card regains focus for visible keyboard feedback
+    if (keyboardListDrag.active && keyboardListDrag.listId === listId) {
+      await focusListCardForKeyboardDrag(listId);
+    }
+  }
+
+  function isListInKeyboardDrag(listId) {
+    return keyboardListDrag.active === true && keyboardListDrag.listId === listId;
+  }
+
+  async function focusListCardForKeyboardDrag(listId) {
+    if (typeof document === 'undefined') return;
+
+    await tick();
+
+    // Find all elements with this data-id and pick the list card wrapper.
+    const candidates = Array.from(document.querySelectorAll(`[data-id="${listId}"]`));
+    let card = candidates.find(
+      (el) => el instanceof HTMLElement && el.getAttribute('role') === 'group'
+    );
+    if (!card) {
+      // Fallback: first DIV with this data-id (lists use div[data-id], tasks use li[data-id])
+      card = candidates.find(
+        (el) => el instanceof HTMLElement && el.tagName === 'DIV'
+      );
+    }
+    if (card instanceof HTMLElement) {
+      card.focus();
+    }
+  }
+
+  function startKeyboardListDrag(listId) {
+    // Starting a new drag clears any pending "refocus on next Tab" behavior
+    shouldRefocusListOnNextTab = false;
+    keyboardListDrag = {
+      active: true,
+      listId
+    };
+  }
+
+  function stopKeyboardListDrag() {
+    // Remember which list was just dragged so we can optionally refocus it
+    if (keyboardListDrag.listId != null) {
+      lastKeyboardDraggedListId = keyboardListDrag.listId;
+      // Arm the "next Tab should refocus this list" behavior after any drop
+      shouldRefocusListOnNextTab = true;
+    }
+    keyboardListDrag = {
+      active: false,
+      listId: null
+    };
+  }
+
+  function blurActiveElement() {
+    if (typeof document === 'undefined') return;
+    const active = document.activeElement;
+    if (active && active instanceof HTMLElement) {
+      active.blur();
+    }
+  }
+
+  function handleListKeyboardKeydown(event, listId) {
+    const currentTarget = event.currentTarget;
+    const target = event.target;
+    const key = event.key;
+    const isActive = isListInKeyboardDrag(listId);
+
+    // Start keyboard drag mode with Enter/Space when the list card itself is focused.
+    if (!isActive) {
+      if (
+        key === 'Enter' ||
+        key === ' '
+      ) {
+        // Only start when focus is on the list wrapper itself, not inner controls.
+        if (currentTarget instanceof HTMLElement && currentTarget === target) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          if (listId != null) {
+            startKeyboardListDrag(listId);
+          }
+        }
+      }
+      return;
+    }
+  }
+
+  // Document-level handler for all keydown events during list keyboard drag
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+
+    function handleDocumentKeydownForListDrag(e) {
+      const key = e.key;
+      const isActive = keyboardListDrag.active === true;
+      const activeListId = keyboardListDrag.listId;
+
+      // After a blur-on-drop via Tab, treat the very next Tab as
+      // "refocus the last dragged list card", then let Tab behave normally.
+      if (
+        !isActive &&
+        key === 'Tab' &&
+        shouldRefocusListOnNextTab &&
+        lastKeyboardDraggedListId != null
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        shouldRefocusListOnNextTab = false;
+        focusListCardForKeyboardDrag(lastKeyboardDraggedListId);
+        return;
+      }
+
+      if (!isActive || activeListId == null) {
+        return;
+      }
+
+      // Movement keys while in keyboard list drag mode
+      if (key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        moveListWithKeyboard(activeListId, 'up');
+        return;
+      }
+
+      if (key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        moveListWithKeyboard(activeListId, 'down');
+        return;
+      }
+
+      if (key === 'ArrowLeft') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        moveListWithKeyboard(activeListId, 'left');
+        return;
+      }
+
+      if (key === 'ArrowRight') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        moveListWithKeyboard(activeListId, 'right');
+        return;
+      }
+
+      // End drag mode and commit at current position
+      if (key === 'Escape' || key === 'Enter' || key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        stopKeyboardListDrag();
+        blurActiveElement();
+        return;
+      }
+
+      if (key === 'Tab') {
+        // Tab should drop the list and then blur (no focused element).
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        stopKeyboardListDrag();
+        blurActiveElement();
+        return;
+      }
+    }
+
+    document.addEventListener('keydown', handleDocumentKeydownForListDrag, true);
+
+    return () => {
+      document.removeEventListener('keydown', handleDocumentKeydownForListDrag, true);
+    };
   });
   
   function handleInputChange(listId, value) {
@@ -671,8 +971,17 @@
                     {@const realList = stableLists.find(list => list.id === dragItem.id)}
                     {@const fallbackList = !realList && !isPlaceholder ? dragItem : null}
                     {@const listToRender = realList || fallbackList}
-                    <div data-id={dragItem.id} class="flex flex-col mb-6">
-                      {#if listToRender}
+                    {#if listToRender}
+                      <div
+                        data-id={dragItem.id}
+                        class="flex flex-col mb-6"
+                        tabindex="0"
+                        role="group"
+                        aria-label={`List: ${listToRender.name ?? 'Unnamed list'}`}
+                        aria-roledescription="Draggable list"
+                        aria-pressed={keyboardListDrag.active && keyboardListDrag.listId === listToRender.id ? 'true' : 'false'}
+                        onkeydowncapture={(e) => handleListKeyboardKeydown(e, listToRender.id)}
+                      >
                         <TaskList
                           listId={listToRender.id}
                           listName={listToRender.name ?? 'Unnamed list'}
@@ -681,8 +990,12 @@
                           allLists={$lists}
                           stableLists={stableLists}
                         />
-                      {/if}
-                    </div>
+                      </div>
+                    {:else}
+                      <div data-id={dragItem.id} class="flex flex-col mb-6">
+                        <!-- Placeholder item for drag feedback - not focusable for keyboard drag -->
+                      </div>
+                    {/if}
                   {/each}
                   
                   <!-- Empty drop zone for empty columns -->
