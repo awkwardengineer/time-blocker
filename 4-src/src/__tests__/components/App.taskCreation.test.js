@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/svelte'
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/svelte'
 import userEvent from '@testing-library/user-event'
 import App from '../../App.svelte'
 import { setupTestData } from '../helpers/appTestSetup.js'
@@ -41,8 +41,8 @@ describe('App - Task Creation UX Behaviors', () => {
     // Verify input is empty (should be empty by default)
     expect(input).toHaveValue('')
     
-    // Press Enter on empty input
-    await user.keyboard('{Enter}')
+    // Press Enter on empty input - dispatch directly on the textarea to avoid relying on focus
+    await fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
     
     // First wait for button to reappear (positive assertion - more reliable per TEST_TIMING_NOTES)
     await waitFor(() => {
