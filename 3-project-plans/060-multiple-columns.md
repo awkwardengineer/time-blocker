@@ -221,6 +221,16 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    - [ ] **Task keyboard drag-and-drop entry** - Make task list items focusable (add `tabindex="0"` to task `li` elements) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
    
    - [ ] **List keyboard drag-and-drop entry** - Make list containers focusable (add `tabindex="0"` to list section element) and add keyboard handler to enter drag mode (Space key to start, Arrow keys to move, Enter/Escape to finish).
+   
+   - [x] **Fix: column container focus** - Ensure entire column containers are not focusable; only interactive elements within a column should receive focus.
+   
+   - [x] **Fix: task list `<ul>` focus** - Prevent whole task list `<ul>` elements from being focusable; focus should land on individual tasks or interactive controls instead.
+   
+   - [x] **Prevent tabbing out of modals** - Trap focus within the list title modal and task modal so Tab/Shift+Tab cycles inside the modal until it is closed.
+   
+   - [x] **Tabbing out of list creation input** - When tabbing away from the "create new list" input, close the input if empty; if it contains text, create the list before moving focus.
+   
+   - [x] **Tabbing out of task creation input** - When tabbing away from the "add task" input, close the input if empty; if it contains text, create the task before moving focus.
 
 5. **Handle Print Layout**
    - Determine how multiple columns should render in print

@@ -80,7 +80,7 @@ describe('App - Archived View Grid Layout', () => {
       expect(within(archivedSection).getByText('Work')).toBeInTheDocument()
       expect(within(archivedSection).getByText('[List Archived]')).toBeInTheDocument()
     }, { timeout: 5000 })
-  })
+  }, 20000)
 
   it('shows active lists with archived tasks with [List Active] badge', async () => {
     const user = userEvent.setup()

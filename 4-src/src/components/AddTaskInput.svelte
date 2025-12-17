@@ -61,6 +61,12 @@
       onSave?.();
     } else if (e.key === 'Escape') {
       onEscape?.(e);
+    } else if (e.key === 'Tab') {
+      // When tabbing away from the input:
+      // - If empty, task creation handler will close the input.
+      // - If it has content, task creation handler will create the task, then close the input.
+      // Let the browser move focus naturally; we just trigger the appropriate save/close behavior.
+      onSave?.({ closeAfterSave: true });
     }
   }
   

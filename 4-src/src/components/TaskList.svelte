@@ -439,7 +439,8 @@
     );
   });
   
-  async function handleCreateTask() {
+  async function handleCreateTask(options = {}) {
+    const closeAfterSave = options && typeof options === 'object' && options.closeAfterSave === true;
     // Read value directly from DOM element (more reliable than prop)
     // Similar to how useClickOutside checks the value
     let inputValue = newTaskInput || '';
@@ -475,8 +476,11 @@
     try {
       await createTask(listId, taskText);
       onInputChange('');
-      // Keep input active and focused for sequential creation
-      // Input will remain active, focus will be handled by $effect
+      // For normal Enter/Save flows, keep input active and focused for sequential creation.
+      // When invoked from a Tab-out flow, close the input after creating the task.
+      if (closeAfterSave) {
+        isInputActive = false;
+      }
     } catch (error) {
       console.error('Error creating task:', error);
     }
@@ -816,7 +820,8 @@
         bind:this={ulElement}
         use:dndzone={{ 
           items: draggableTasks,
-          type: 'task' // Shared type for all lists - enables cross-list dragging
+          type: 'task', // Shared type for all lists - enables cross-list dragging
+          zoneTabIndex: -1 // Prevent entire task list <ul> from being focusable
         }}
         onconsider={handleConsider}
         onfinalize={handleFinalize}

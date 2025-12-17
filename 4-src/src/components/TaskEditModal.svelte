@@ -119,7 +119,57 @@
   }
   
   function handleKeydown(e) {
-    if (e.key === 'Escape') {
+    if (e.key === 'Tab') {
+      // Trap focus within the modal when Tab/Shift+Tab is pressed
+      if (!modalElement) return;
+      
+      const focusableSelectors = [
+        'button',
+        '[href]',
+        'input',
+        'select',
+        'textarea',
+        '[tabindex]:not([tabindex="-1"])'
+      ].join(',');
+      
+      const focusableElements = Array.from(
+        modalElement.querySelectorAll(focusableSelectors)
+      ).filter((el) => {
+        if (!(el instanceof HTMLElement)) return false;
+        if (el.hasAttribute('disabled')) return false;
+        if (el.getAttribute('aria-hidden') === 'true') return false;
+        return true;
+      });
+      
+      if (focusableElements.length === 0) return;
+      
+      const currentElement = document.activeElement;
+      const currentIndex = focusableElements.indexOf(currentElement);
+      
+      let nextIndex;
+      if (e.shiftKey) {
+        // Shift+Tab: move backwards, wrap to last when before first
+        if (currentIndex <= 0) {
+          nextIndex = focusableElements.length - 1;
+        } else {
+          nextIndex = currentIndex - 1;
+        }
+      } else {
+        // Tab: move forwards, wrap to first when after last
+        if (currentIndex === -1 || currentIndex === focusableElements.length - 1) {
+          nextIndex = 0;
+        } else {
+          nextIndex = currentIndex + 1;
+        }
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+      const nextElement = focusableElements[nextIndex];
+      if (nextElement && nextElement instanceof HTMLElement) {
+        nextElement.focus();
+      }
+    } else if (e.key === 'Escape') {
       handleCancel();
     } else if (e.key === 'Enter' && !e.shiftKey) {
       // Only handle Enter if focus is on the textarea
@@ -168,7 +218,6 @@
           class="task-input flex-none break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           style="width: {TASK_WIDTH}px;"
           placeholder="Task text..."
-          onkeydown={handleKeydown}
           aria-label="Edit task text"
           aria-describedby={showValidation ? "validation-message" : undefined}
           rows="1"
