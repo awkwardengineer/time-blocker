@@ -99,20 +99,16 @@ let keyboardDrag = $state({
 
 **Status**: ✅ Completed - Grouped 3 state variables into 1 object, updated all references, all tests passing
 
-### 5. Extract List Creation Logic
+### 5. Extract List Creation Logic ✅
 **Location**: `Board.svelte` lines 373-509
 
 **Problem**: 130+ lines of list creation logic mixed with other concerns
 
 **Solution**: Create `src/lib/useListCreation.js`
 ```javascript
-export function useListCreation() {
-  let columnIndex = $state(null);
-  let input = $state('');
-  let inputElement = $state(null);
-  
-  // All handlers and effects
-  // Return public API
+export function useListCreation(state) {
+  // Handlers and effect setup functions
+  // Returns handlers and setup functions
 }
 ```
 
@@ -120,6 +116,8 @@ export function useListCreation() {
 - Separation of concerns
 - Reusable if needed
 - Easier to test
+
+**Status**: ✅ Completed - Extracted to useListCreation.js, reduced Board.svelte by ~130 lines, all tests passing
 
 ### 6. Extract Focus Management Utilities
 **Location**: Scattered throughout `Board.svelte` and `TaskList.svelte`
