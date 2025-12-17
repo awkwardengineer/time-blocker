@@ -40,6 +40,41 @@
   let listSectionElement = $state(null); // Reference to the main list section div
   let addTaskContainerElement = $state(null); // Reference to the add-task-container
   let addTaskTextareaElement = $state(null); // Reference to the add-task textarea
+
+  const KEYBOARD_COLUMN_COUNT = 5;
+
+  /**
+   * Returns all active lists in the visual keyboard navigation order:
+   * - First by column index (left to right)
+   * - Then by list order within each column (top to bottom)
+   * This ensures keyboard cross-list movement matches the multi-column layout,
+   * instead of the underlying creation/order sequence.
+   */
+  function getKeyboardOrderedLists() {
+    if (!Array.isArray(allLists)) {
+      return [];
+    }
+
+    const lastColumnIndex = KEYBOARD_COLUMN_COUNT - 1;
+
+    return [...allLists].sort((a, b) => {
+      const aRawCol = a.columnIndex ?? 0;
+      const bRawCol = b.columnIndex ?? 0;
+
+      // Mirror App.svelte overflow behavior: any columnIndex >= count is treated
+      // as the last column so navigation matches the rendered layout.
+      const aCol = aRawCol >= KEYBOARD_COLUMN_COUNT ? lastColumnIndex : aRawCol;
+      const bCol = bRawCol >= KEYBOARD_COLUMN_COUNT ? lastColumnIndex : bRawCol;
+
+      if (aCol !== bCol) {
+        return aCol - bCol;
+      }
+
+      const aOrder = a.order ?? 0;
+      const bOrder = b.order ?? 0;
+      return aOrder - bOrder;
+    });
+  }
   
   let previousListId = $state(null);
   
@@ -211,24 +246,29 @@
           e.preventDefault();
           e.stopImmediatePropagation();
           
-          const currentListIndex = allLists.findIndex(l => l.id === listId);
-          if (currentListIndex < allLists.length - 1) {
+          const orderedLists = getKeyboardOrderedLists();
+          const currentListIndex = orderedLists.findIndex(l => l.id === listId);
+          if (currentListIndex === -1) {
+            return;
+          }
+          if (currentListIndex < orderedLists.length - 1) {
             // Move to next list
-            const nextListId = allLists[currentListIndex + 1].id;
+            const nextListId = orderedLists[currentListIndex + 1].id;
             await moveTaskToNextList(taskId, nextListId);
-          } else {
-            // Last list - create new unnamed list
-            await moveTaskToNewList(taskId);
           }
         } else if (e.key === 'ArrowUp' && isFirst) {
           // Move to previous list - prevent default and handle cross-list movement
           e.preventDefault();
           e.stopImmediatePropagation();
           
-          const currentListIndex = allLists.findIndex(l => l.id === listId);
+          const orderedLists = getKeyboardOrderedLists();
+          const currentListIndex = orderedLists.findIndex(l => l.id === listId);
+          if (currentListIndex === -1) {
+            return;
+          }
           if (currentListIndex > 0) {
             // Move to previous list
-            const prevListId = allLists[currentListIndex - 1].id;
+            const prevListId = orderedLists[currentListIndex - 1].id;
             await moveTaskToPreviousList(taskId, prevListId);
           }
           // If at first list, do nothing (already at top)
@@ -266,17 +306,6 @@
       await updateTaskOrderCrossList(prevListId, newTasks);
     } catch (error) {
       console.error('Error moving task to previous list:', error);
-    }
-  }
-  
-  // Move task to new unnamed list
-  async function moveTaskToNewList(taskId) {
-    try {
-      const newListId = await createUnnamedList();
-      // New list is empty, so just this task
-      await updateTaskOrderCrossList(newListId, [{ id: taskId }]);
-    } catch (error) {
-      console.error('Error moving task to new list:', error);
     }
   }
   
@@ -324,12 +353,14 @@
         e.stopImmediatePropagation();
         e.stopPropagation();
         
-        const currentListIndex = allLists.findIndex(l => l.id === listId);
-        if (currentListIndex < allLists.length - 1) {
-          const nextListId = allLists[currentListIndex + 1].id;
+        const orderedLists = getKeyboardOrderedLists();
+        const currentListIndex = orderedLists.findIndex(l => l.id === listId);
+        if (currentListIndex === -1) {
+          return;
+        }
+        if (currentListIndex < orderedLists.length - 1) {
+          const nextListId = orderedLists[currentListIndex + 1].id;
           await moveTaskToNextList(taskId, nextListId);
-        } else {
-          await moveTaskToNewList(taskId);
         }
       } else if (e.key === 'ArrowUp' && isFirst) {
         // Move to previous list
@@ -337,9 +368,13 @@
         e.stopImmediatePropagation();
         e.stopPropagation();
         
-        const currentListIndex = allLists.findIndex(l => l.id === listId);
+        const orderedLists = getKeyboardOrderedLists();
+        const currentListIndex = orderedLists.findIndex(l => l.id === listId);
+        if (currentListIndex === -1) {
+          return;
+        }
         if (currentListIndex > 0) {
-          const prevListId = allLists[currentListIndex - 1].id;
+          const prevListId = orderedLists[currentListIndex - 1].id;
           await moveTaskToPreviousList(taskId, prevListId);
         }
       }
