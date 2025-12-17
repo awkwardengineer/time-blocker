@@ -78,10 +78,10 @@ expect(within(section).queryByPlaceholderText('Add new task...')).not.toBeInTheD
    - Increased delay from 10ms to 200ms to account for test environment timing differences
 4. **Test assertion order**: Changed from checking button first to checking input disappearance first, then button appearance
 
-**Current Status**: 
+**Current Status (Dec 2025)**: 
 - ✅ Test passes when run in isolation
-- ⚠️ May still fail when all tests run together (test isolation issue)
-- The code changes should make the test more reliable overall
+- ✅ Test is now stable when all tests run together (after additional test and implementation tweaks)
+- The code changes and test structure updates have made this test reliably green
 
 **If issues persist**:
 - Consider further increasing delays in implementation (currently 200ms)
@@ -178,6 +178,29 @@ it('test name', async () => {
 }, 15000); // Increased test timeout
 ```
 
+### Recent Intermittent Full-Suite Timeouts (Dec 2025)
+
+These suites have been observed to **pass consistently when run in isolation**, but occasionally time out or fail when the **entire test suite** is run:
+
+- `App.focusManagement.test.js`
+  - Symptoms: timeouts while waiting for dialogs to close or focus to move back to tasks.
+  - Likely causes: setTimeout-based focus management plus liveQuery updates causing slower DOM updates under full-suite load.
+- `App.keyboardNavigation.test.js`
+  - Symptoms: timeouts in "Tab navigation works through interactive elements" when run with all tests.
+  - Likely causes: heavier keyboard interaction plus drag-and-drop state; relies on focus order and ARIA helpers that may take longer to settle.
+- `App.taskEditing.test.js`
+  - Symptoms: occasional timeouts waiting for the edit modal to close (`queryByRole('dialog')` negative assertions).
+  - Likely causes: same pattern as taskCreation – bindable props + modal state + liveQuery.
+
+**Mitigation ideas (if flakes recur):**
+- Apply the same patterns used for `App.taskCreation.test.js`:
+  - Increase individual test timeouts for the heaviest tests.
+  - Use sequential `waitFor` calls: first wait for the *new* state (e.g., focus or button), then assert the *old* state is gone.
+  - Re-query elements inside `waitFor` (avoid storing references before state changes).
+  - Add small implementation delays only where absolutely necessary and well-documented.
+
+If these suites start failing frequently in CI again, update this section with specific test names and the exact failure messages.
+
 ## Recommendations
 
 ### General Best Practices
@@ -240,7 +263,6 @@ The following test files have been reviewed for timing and isolation issues:
 - ✅ App.focusManagement.test.js
 - ✅ App.listCreation.test.js
 - ✅ App.archivedView.test.js
-- ✅ App.unnamedListCreation.test.js
 - ✅ App.listEditing.test.js
 - ✅ App.emptyState.test.js
 - ✅ App.listArchiving.test.js

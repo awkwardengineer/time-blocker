@@ -146,8 +146,10 @@ describe('App - Archived View Grid Layout', () => {
     
     // Now create a new list and archive it (without tasks)
     // This will show "No archived tasks" for that list
-    const createButton = screen.getByRole('button', { name: /create new list/i })
-    await user.click(createButton)
+    const createButtons = screen.getAllByRole('button', { name: /create new list/i })
+    expect(createButtons.length).toBeGreaterThan(0)
+    // Use the first Create new list button (first column)
+    await user.click(createButtons[0])
     
     const input = await screen.findByRole('textbox', { name: /enter list name/i })
     await user.type(input, 'Empty List')

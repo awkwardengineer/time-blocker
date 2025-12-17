@@ -616,50 +616,6 @@
       <div class="w-full h-full p-4 overflow-auto">
         {#if $lists === undefined || $lists === null}
           <p>Loading...</p>
-        {:else if Array.isArray($lists) && $lists.length === 0}
-          <!-- Empty State: Create Your First List -->
-          <div class="print:hidden">
-            {#if createListColumnIndex === 0}
-              <h2>
-                <div class="flex items-center gap-2">
-                  <input
-                    bind:this={createListInputElement}
-                    bind:value={createListInput}
-                    type="text"
-                    class="create-list-input cursor-pointer hover:underline"
-                    placeholder="List name..."
-                    onkeydown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleCreateList(0);
-                      } else if (e.key === 'Escape') {
-                        handleCreateListInputEscape(e);
-                      }
-                    }}
-                    aria-label="Enter list name"
-                  />
-                  <button
-                    onclick={() => handleCreateList(0)}
-                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                    aria-label="Create list"
-                  >
-                    Save
-                  </button>
-                </div>
-              </h2>
-            {:else}
-              <h2 
-                onclick={() => handleCreateListClick(0)}
-                onkeydown={(e) => handleCreateListKeydown(e, 0)}
-                role="button"
-                tabindex="0"
-                class="cursor-pointer hover:underline"
-                aria-label="Create your first list"
-              >
-                Create Your First List
-              </h2>
-            {/if}
-          </div>
         {:else if Array.isArray($lists)}
           <!-- 5-column grid layout with column containers -->
           <div class="grid grid-cols-5 gap-4 w-full">

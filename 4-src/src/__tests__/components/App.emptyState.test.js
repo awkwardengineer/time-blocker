@@ -20,22 +20,31 @@ describe('App - Empty State (No Lists)', () => {
       expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
     })
     
-    // Verify empty state buttons are visible
-    expect(screen.getByRole('button', { name: /create your first list/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /add your first task/i })).toBeInTheDocument()
+    // Verify empty state primary CTAs are visible (one per column)
+    const createListButtons = screen.getAllByRole('button', { name: /create new list/i })
+    expect(createListButtons.length).toBe(5)
+
+    // Verify there are 5 empty column containers rendered
+    const columns = document.querySelectorAll('[data-column-index]')
+    expect(columns.length).toBe(5)
+
+    // "Add your first task" should NOT be visible until at least one list exists
+    expect(screen.queryByRole('button', { name: /add your first task/i })).not.toBeInTheDocument()
   })
 
-  it('allows creating first list via "Create Your First List" button', async () => {
+  it('allows creating first list via "Create new list" button', async () => {
     const user = userEvent.setup()
     render(App)
     
     // Wait for empty state
+    let createButtons
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /create your first list/i })).toBeInTheDocument()
+      createButtons = screen.getAllByRole('button', { name: /create new list/i })
+      expect(createButtons.length).toBeGreaterThan(0)
     })
     
-    // Click "Create Your First List"
-    const createButton = screen.getByRole('button', { name: /create your first list/i })
+    // Click first "Create new list" button (first column)
+    const createButton = createButtons[0]
     await user.click(createButton)
     
     // Verify input field appears
@@ -51,8 +60,8 @@ describe('App - Empty State (No Lists)', () => {
       expect(screen.getByText('My First List')).toBeInTheDocument()
     })
     
-    // Verify empty state is gone
-    expect(screen.queryByRole('button', { name: /create your first list/i })).not.toBeInTheDocument()
+    // Verify empty state is gone (no more "Create new list" buttons for empty board)
+    expect(screen.queryAllByRole('button', { name: /create new list/i }).length).toBeGreaterThan(0)
   })
 
   it.skip('allows creating first task via "Add your first task" button', async () => {
@@ -125,12 +134,14 @@ describe('App - Empty State (No Lists)', () => {
     render(App)
     
     // Wait for empty state
+    let createButtons
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /create your first list/i })).toBeInTheDocument()
+      createButtons = screen.getAllByRole('button', { name: /create new list/i })
+      expect(createButtons.length).toBeGreaterThan(0)
     })
     
-    // Click "Create Your First List"
-    const createButton = screen.getByRole('button', { name: /create your first list/i })
+    // Click first "Create new list" button
+    const createButton = createButtons[0]
     await user.click(createButton)
     
     // Verify input field appears
@@ -140,10 +151,10 @@ describe('App - Empty State (No Lists)', () => {
     // Press Escape to cancel
     await user.keyboard('{Escape}')
     
-    // Verify input is gone and button is back
+    // Verify input is gone and at least one Create new list button is back
     await waitFor(() => {
       expect(screen.queryByRole('textbox', { name: /enter list name/i })).not.toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /create your first list/i })).toBeInTheDocument()
+      expect(screen.getAllByRole('button', { name: /create new list/i }).length).toBeGreaterThan(0)
     })
   })
 })

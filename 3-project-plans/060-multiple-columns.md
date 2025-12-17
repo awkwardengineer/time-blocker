@@ -38,6 +38,7 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    - ✅ Ensure proper spacing and layout
    - ✅ **Visual separator**: Add thin vertical lines between columns for visual separation
    - **Create new list per column**: "Create new list" should appear in each column - at the bottom of columns that have lists, or in empty columns. When a list is created, it should be created within that specific column (using the column's index).
+   - ✅ **Empty board still shows 5 columns**: When no lists exist at all, render the full 5-column grid with per-column "Create new list" controls.
    - ✅ **Update create new list behavior**:
      - ✅ After creating a new list, the "add a new task" empty state should appear below the newly created list
      - ✅ Focus should move to the input for creating another new list (in the same column)
