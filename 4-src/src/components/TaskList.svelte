@@ -816,7 +816,8 @@
         bind:this={ulElement}
         use:dndzone={{ 
           items: draggableTasks,
-          type: 'task' // Shared type for all lists - enables cross-list dragging
+          type: 'task', // Shared type for all lists - enables cross-list dragging
+          zoneTabIndex: -1 // Prevent entire task list <ul> from being focusable
         }}
         onconsider={handleConsider}
         onfinalize={handleFinalize}

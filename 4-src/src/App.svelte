@@ -624,7 +624,8 @@
                 <div
                   use:dndzone={{
                     items: columnLists,
-                    type: 'list' // Shared type enables cross-column dragging
+                    type: 'list', // Shared type enables cross-column dragging
+                    zoneTabIndex: -1 // Prevent entire column container from being focusable
                   }}
                   onconsider={(e) => handleListConsider(e, columnIndex)}
                   onfinalize={(e) => handleListFinalize(e, columnIndex)}
