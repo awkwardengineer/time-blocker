@@ -2,7 +2,7 @@
 
 ## Priority 1: High Impact, Low Risk
 
-### 1. Extract Drag Handlers to Utility Module
+### 1. Extract Drag Handlers to Utility Module ✅
 **Location**: `Board.svelte` lines 531-726
 
 **Problem**: 
@@ -29,7 +29,9 @@ export function shouldSkipFinalizeUpdate(items, columnIndex, sourceLists) {
 - Easier to read component code
 - Cleaner code without debug noise
 
-### 2. Remove Debug Logging
+**Status**: ✅ Completed - Extracted to listDragHandlers.js, reduced handlers from 35+58 lines to 5+20 lines, all tests passing
+
+### 2. Remove Debug Logging ✅
 **Location**: Throughout `Board.svelte`
 
 **Problem**: 30+ console.log statements, especially in drag handlers - leftover debug code that's not needed
@@ -40,6 +42,8 @@ export function shouldSkipFinalizeUpdate(items, columnIndex, sourceLists) {
 - Cleaner, more readable code
 - No performance overhead
 - Easier to maintain
+
+**Status**: ✅ Completed - Removed 30+ console.log statements from Board.svelte, all tests passing
 
 ### 3. Extract Keyboard Drag Composable
 **Location**: `Board.svelte` lines 119-330
