@@ -3,29 +3,54 @@
   import TaskList from './TaskList.svelte';
   import { isPlaceholderItem } from '../lib/listDndUtils.js';
 
-  export let columnIndex;
-  export let columnLists;
-  export let stableLists;
-  export let newTaskInputs;
-  export let createListColumnIndex;
-  export let createListInput;
-  export let createListInputElement;
-  export let keyboardListDrag;
-  export let allLists;
-  
-  export let onInputChange;
-  export let onListKeyboardKeydown;
-  export let onListConsider;
-  export let onListFinalize;
-  export let onCreateListClick;
-  export let onCreateListKeydown;
-  export let onCreateListInputEscape;
-  export let onCreateList;
-  export let onCreateListOnTab;
+  let {
+    columnIndex,
+    columnLists,
+    stableLists,
+    newTaskInputs,
+    createListColumnIndex,
+    createListInput = $bindable(''),
+    createListInputElement = $bindable(null),
+    keyboardListDrag,
+    allLists,
+    onInputChange,
+    onListKeyboardKeydown,
+    onListConsider,
+    onListFinalize,
+    onCreateListClick,
+    onCreateListKeydown,
+    onCreateListInputEscape,
+    onCreateList,
+    onCreateListOnTab
+  } = $props();
+
+  let dndzoneElement = $state(null);
+  let emptyDropZoneElement = $state(null);
+  let createListButtonElement = $state(null);
+
+  // Force empty drop zone to have tabindex="-1" after dndzone initializes
+  // The dndzone library sets tabindex="0" on empty drop zones, so we override it
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+    if (columnLists.length !== 0) return;
+    if (!emptyDropZoneElement) return;
+    
+    // Use a small delay to ensure dndzone has finished initializing
+    const timeoutId = setTimeout(() => {
+      if (emptyDropZoneElement && emptyDropZoneElement.getAttribute('tabindex') !== '-1') {
+        emptyDropZoneElement.setAttribute('tabindex', '-1');
+      }
+    }, 10);
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  });
 </script>
 
 <div class="flex flex-col min-w-0 border-r border-gray-300 last:border-r-0 pt-0" data-column-index={columnIndex}>
   <div
+    bind:this={dndzoneElement}
     use:dndzone={{
       items: columnLists,
       type: 'list', // Shared type enables cross-column dragging
@@ -70,7 +95,11 @@
     
     <!-- Empty drop zone for empty columns -->
     {#if columnLists.length === 0}
-      <div class="empty-drop-zone min-h-[48px]"></div>
+      <div 
+        bind:this={emptyDropZoneElement}
+        class="empty-drop-zone min-h-[48px]"
+        tabindex="-1"
+      ></div>
     {/if}
   </div>
   
@@ -109,6 +138,7 @@
     </h2>
   {:else}
     <h2 
+      bind:this={createListButtonElement}
       onclick={() => onCreateListClick(columnIndex)}
       onkeydown={(e) => onCreateListKeydown(e, columnIndex)}
       role="button"
