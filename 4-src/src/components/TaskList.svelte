@@ -41,6 +41,16 @@
   let addTaskContainerElement = $state(null); // Reference to the add-task-container
   let addTaskTextareaElement = $state(null); // Reference to the add-task textarea
   
+  // Track last blurred task-related element and whether the next Tab
+  // should refocus it (mirrors list behavior in App.svelte).
+  let lastBlurredTaskElement = $state(null);
+  let shouldRefocusTaskOnNextTab = $state(false);
+  
+  // Track keyboard-based drag state for tasks so we can restore focus
+  // on the next Tab after a keyboard drop (mirrors list behavior in App.svelte).
+  let isKeyboardTaskDragging = $state(false);
+  let lastKeyboardDraggedTaskId = $state(null);
+  
   let previousListId = $state(null);
 
   /**
@@ -320,14 +330,115 @@
     );
   }
   
+  /**
+   * Capture-phase keydown handler for each task list item.
+   *
+   * We don't change the drag behavior provided by svelte-dnd-action;
+   * instead we *observe* when keyboard drag starts/ends so that after
+   * a keyboard drop (Space/Enter/Escape) we can resume focus on the
+   * dragged task when the user presses Tab, instead of jumping to the
+   * next tabbable child (e.g., the checkbox).
+   */
+  function handleTaskItemKeydownCapture(event, taskId) {
+    const key = event.key;
+    const currentTarget = event.currentTarget;
+    const target = event.target;
+
+    // Only track key events that originate on the <li> itself.
+    // Inner controls (checkbox, text span, buttons) have their own
+    // semantics and should not toggle keyboard drag tracking.
+    if (!(currentTarget instanceof HTMLElement) || currentTarget !== target) {
+      return;
+    }
+
+    if (key === 'Enter' || key === ' ') {
+      if (!isKeyboardTaskDragging) {
+        // First Enter/Space while focused on the task item - keyboard drag starts.
+        isKeyboardTaskDragging = true;
+        lastKeyboardDraggedTaskId = taskId;
+      } else {
+        // Second Enter/Space while dragging - keyboard drop.
+        isKeyboardTaskDragging = false;
+        lastKeyboardDraggedTaskId = taskId;
+        // Remember this task item so the *next* Tab can refocus it.
+        lastBlurredTaskElement = currentTarget;
+        shouldRefocusTaskOnNextTab = true;
+      }
+    } else if (key === 'Escape') {
+      if (isKeyboardTaskDragging) {
+        // Escape also ends keyboard drag; treat it like a drop for
+        // the purposes of Tab-resume focus behavior.
+        isKeyboardTaskDragging = false;
+        lastKeyboardDraggedTaskId = taskId;
+        lastBlurredTaskElement = currentTarget;
+        shouldRefocusTaskOnNextTab = true;
+      }
+    }
+  }
+
+  /**
+   * When a keyboard-dragged task item blurs (svelte-dnd-action calls
+   * `element.blur()` as part of its keyboard drop handling), remember
+   * that element so the *next* Tab can refocus it instead of moving
+   * directly into the checkbox.
+   */
+  function handleTaskItemBlur(event, taskId) {
+    const currentTarget = event.currentTarget;
+
+    if (isKeyboardTaskDragging && lastKeyboardDraggedTaskId === taskId) {
+      isKeyboardTaskDragging = false;
+      lastBlurredTaskElement = currentTarget;
+      shouldRefocusTaskOnNextTab = true;
+    }
+  }
+  
   // Add document-level keyboard listener for cross-list boundary movement
   // This runs before svelte-dnd-action handlers
   $effect(() => {
     if (!ulElement) return;
     
     async function handleDocumentKeydown(e) {
-      // Only handle arrow keys
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      const key = e.key;
+
+      // Handle Tab resume after blur for tasks (mirrors list behavior in App.svelte)
+      if (
+        key === 'Tab' &&
+        shouldRefocusTaskOnNextTab &&
+        lastBlurredTaskElement
+      ) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+
+        shouldRefocusTaskOnNextTab = false;
+
+        // Try to refocus the previously blurred task-related element
+        if (typeof document !== 'undefined') {
+          let target = lastBlurredTaskElement;
+          // If stored element is no longer in the DOM, fall back to the Add Task button
+          if (
+            !(target instanceof HTMLElement) ||
+            !document.contains(target)
+          ) {
+            if (addTaskContainerElement) {
+              const addTaskButton = addTaskContainerElement.querySelector(
+                'span[role="button"]'
+              );
+              if (addTaskButton && addTaskButton instanceof HTMLElement) {
+                target = addTaskButton;
+              }
+            }
+          }
+
+          if (target && target instanceof HTMLElement) {
+            target.focus();
+          }
+        }
+        return;
+      }
+
+      // Only handle ArrowUp/ArrowDown for cross-list movement below
+      if (key !== 'ArrowDown' && key !== 'ArrowUp') return;
       
       // Check if focus is within this list
       const activeElement = document.activeElement;
@@ -348,7 +459,7 @@
       const isLast = taskIndex === draggableTasks.length - 1;
       
       // Check if we're at a boundary and trying to move in that direction
-      if (e.key === 'ArrowDown' && isLast) {
+      if (key === 'ArrowDown' && isLast) {
         // Move to next list (in visual column order)
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -358,7 +469,7 @@
         if (nextListId != null) {
           await moveTaskToNextList(taskId, nextListId);
         }
-      } else if (e.key === 'ArrowUp' && isFirst) {
+      } else if (key === 'ArrowUp' && isFirst) {
         // Move to previous list (in visual column order)
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -408,6 +519,22 @@
   
   async function handleInputEscape(e) {
     if (e.key === 'Escape') {
+      // Remember this task-related control as the point to resume from on the next Tab.
+      // We mirror list behavior by letting Escape blur/close the input,
+      // then treating the *next* Tab as "refocus the thing I was just working on".
+      shouldRefocusTaskOnNextTab = true;
+      // Prefer to resume at the Add Task button when it reappears.
+      if (addTaskContainerElement) {
+        const addTaskButton = addTaskContainerElement.querySelector('span[role="button"]');
+        if (addTaskButton && addTaskButton instanceof HTMLElement) {
+          lastBlurredTaskElement = addTaskButton;
+        } else {
+          lastBlurredTaskElement = null;
+        }
+      } else {
+        lastBlurredTaskElement = null;
+      }
+
       isInputActive = false;
       onInputChange('');
       // Wait for Svelte's reactive updates to complete
@@ -652,7 +779,9 @@
   }
   
   function handleTaskTextKeydown(taskId, taskText, event) {
-    if (event.key === 'Enter' || event.key === ' ') {
+    const key = event.key;
+
+    if (key === 'Enter' || key === ' ') {
       // Stop the event immediately to prevent drag library from intercepting
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -674,6 +803,18 @@
         editingTaskId = taskId;
         editingTaskText = taskText;
         editModalOpen = true;
+      }
+    } else if (key === 'Escape') {
+      // Treat Escape on the task text as a "blur/close" action for this task.
+      // The *next* Tab press should resume on this task element (mirrors list behavior).
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      const spanElement = event.currentTarget;
+      if (spanElement && spanElement instanceof HTMLElement) {
+        lastBlurredTaskElement = spanElement;
+        shouldRefocusTaskOnNextTab = true;
+        spanElement.blur();
       }
     }
   }
@@ -854,7 +995,12 @@
         class="space-y-2 m-0 p-0 list-none {draggableTasks.length === 0 ? 'empty-drop-zone min-h-[24px]' : ''}"
       >
         {#each draggableTasks as task (task.id)}
-          <li data-id={task.id} class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-full m-0 list-none">
+          <li
+            data-id={task.id}
+            class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-full m-0 list-none"
+            onkeydowncapture={(e) => handleTaskItemKeydownCapture(e, task.id)}
+            onblur={(e) => handleTaskItemBlur(e, task.id)}
+          >
             <span 
               class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
               title="Drag to reorder"
