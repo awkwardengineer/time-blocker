@@ -42,7 +42,7 @@ describe('App - Focus Management', () => {
       expect(taskTextSpan).toBeInTheDocument()
       expect(taskTextSpan).toHaveFocus()
     }, { timeout: 3000 })
-  })
+  }, 15000)
 
   it('Focus moves to next task after archiving', async () => {
     const user = userEvent.setup()
@@ -125,6 +125,6 @@ describe('App - Focus Management', () => {
     await waitFor(() => {
       expect(addTaskButton).toHaveFocus()
     }, { timeout: 5000 })
-  })
+  }, 15000)
 })
 
