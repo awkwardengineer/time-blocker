@@ -74,7 +74,7 @@
           role="group"
           aria-label={`List: ${listToRender.name ?? 'Unnamed list'}`}
           aria-roledescription="Draggable list"
-          aria-pressed={keyboardListDrag.active && keyboardListDrag.listId === listToRender.id ? 'true' : 'false'}
+          aria-pressed={keyboardListDrag?.active && keyboardListDrag?.listId === listToRender.id ? 'true' : 'false'}
           onkeydowncapture={(e) => onListKeyboardKeydown(e, listToRender.id)}
         >
           <TaskList

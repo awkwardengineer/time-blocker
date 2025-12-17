@@ -40,12 +40,12 @@
   let createListDropZoneElement = $state(null);
 
   // State for keyboard-based list dragging
-  let keyboardListDrag = $state({
+  let keyboardDrag = $state({
     active: false,
-    listId: null
+    listId: null,
+    lastDraggedId: null,
+    shouldRefocusOnNextTab: false
   });
-  let lastKeyboardDraggedListId = $state(null);
-  let shouldRefocusListOnNextTab = $state(false);
   
   // Initialize inputs when lists first load (only once)
   $effect(() => {
@@ -135,36 +135,43 @@
     }
 
     // After updating state and DB, ensure the list card regains focus for visible keyboard feedback
-    if (keyboardListDrag.active && keyboardListDrag.listId === listId) {
+    if (keyboardDrag.active && keyboardDrag.listId === listId) {
       await focusListCardForKeyboardDrag(listId);
     }
   }
 
   function isListInKeyboardDrag(listId) {
-    return keyboardListDrag.active === true && keyboardListDrag.listId === listId;
+    return keyboardDrag.active === true && keyboardDrag.listId === listId;
   }
 
 
   function startKeyboardListDrag(listId) {
     // Starting a new drag clears any pending "refocus on next Tab" behavior
-    shouldRefocusListOnNextTab = false;
-    keyboardListDrag = {
+    keyboardDrag = {
+      ...keyboardDrag,
       active: true,
-      listId
+      listId,
+      shouldRefocusOnNextTab: false
     };
   }
 
   function stopKeyboardListDrag() {
     // Remember which list was just dragged so we can optionally refocus it
-    if (keyboardListDrag.listId != null) {
-      lastKeyboardDraggedListId = keyboardListDrag.listId;
-      // Arm the "next Tab should refocus this list" behavior after any drop
-      shouldRefocusListOnNextTab = true;
+    if (keyboardDrag.listId != null) {
+      keyboardDrag = {
+        ...keyboardDrag,
+        active: false,
+        listId: null,
+        lastDraggedId: keyboardDrag.listId,
+        shouldRefocusOnNextTab: true
+      };
+    } else {
+      keyboardDrag = {
+        ...keyboardDrag,
+        active: false,
+        listId: null
+      };
     }
-    keyboardListDrag = {
-      active: false,
-      listId: null
-    };
   }
 
   function blurActiveElement() {
@@ -205,8 +212,11 @@
           event.stopImmediatePropagation();
           // Set up Tab-resume behavior (mirrors task behavior)
           if (listId != null) {
-            lastKeyboardDraggedListId = listId;
-            shouldRefocusListOnNextTab = true;
+            keyboardDrag = {
+              ...keyboardDrag,
+              lastDraggedId: listId,
+              shouldRefocusOnNextTab: true
+            };
           }
           currentTarget.blur();
         }
@@ -220,10 +230,12 @@
     if (typeof document === 'undefined') return;
 
     const state = {
-      getKeyboardListDrag: () => keyboardListDrag,
-      getLastKeyboardDraggedListId: () => lastKeyboardDraggedListId,
-      getShouldRefocusListOnNextTab: () => shouldRefocusListOnNextTab,
-      setShouldRefocusListOnNextTab: (value) => { shouldRefocusListOnNextTab = value; }
+      getKeyboardListDrag: () => ({ active: keyboardDrag.active, listId: keyboardDrag.listId }),
+      getLastKeyboardDraggedListId: () => keyboardDrag.lastDraggedId,
+      getShouldRefocusListOnNextTab: () => keyboardDrag.shouldRefocusOnNextTab,
+      setShouldRefocusListOnNextTab: (value) => { 
+        keyboardDrag = { ...keyboardDrag, shouldRefocusOnNextTab: value }; 
+      }
     };
 
     return setupKeyboardListDragHandler(
@@ -484,7 +496,7 @@
           {stableLists}
           {newTaskInputs}
           {createListColumnIndex}
-          keyboardListDrag={keyboardListDrag}
+          keyboardListDrag={{ active: keyboardDrag.active, listId: keyboardDrag.listId }}
           onInputChange={handleInputChange}
           onListKeyboardKeydown={handleListKeyboardKeydown}
           onListConsider={(e) => handleListConsider(e, columnIndex)}
