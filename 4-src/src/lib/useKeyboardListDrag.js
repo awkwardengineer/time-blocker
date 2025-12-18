@@ -6,32 +6,10 @@
  * setup. State management remains in the component.
  */
 
-import { tick } from 'svelte';
+import { focusListCardForKeyboardDrag } from './focusUtils.js';
 
-/**
- * Focus the list card element for keyboard drag feedback
- * @param {number|string} listId - ID of the list to focus
- */
-export async function focusListCardForKeyboardDrag(listId) {
-  if (typeof document === 'undefined') return;
-
-  await tick();
-
-  // Find all elements with this data-id and pick the list card wrapper.
-  const candidates = Array.from(document.querySelectorAll(`[data-id="${listId}"]`));
-  let card = candidates.find(
-    (el) => el instanceof HTMLElement && el.getAttribute('role') === 'group'
-  );
-  if (!card) {
-    // Fallback: first DIV with this data-id (lists use div[data-id], tasks use li[data-id])
-    card = candidates.find(
-      (el) => el instanceof HTMLElement && el.tagName === 'DIV'
-    );
-  }
-  if (card instanceof HTMLElement) {
-    card.focus();
-  }
-}
+// Re-export for convenience
+export { focusListCardForKeyboardDrag };
 
 /**
  * Set up document-level keyboard handler for list dragging

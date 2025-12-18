@@ -9,6 +9,7 @@
   import { useClickOutside } from '../lib/useClickOutside.js';
   import { isEmpty, normalizeInput } from '../lib/inputValidation.js';
   import { TASK_WIDTH } from '../lib/constants.js';
+  import { findNextFocusTarget as findNextFocusTargetUtil, focusElementWithRetry } from '../lib/focusUtils.js';
   
   let { listId, listName, newTaskInput, onInputChange, allLists = [], stableLists = [] } = $props();
   
@@ -680,16 +681,7 @@
       return null;
     }
     
-    // Find the first remaining task in the list
-    const firstTaskCard = ulElement.querySelector('li[data-id]');
-    if (firstTaskCard) {
-      const firstTaskText = firstTaskCard.querySelector('span[role="button"]');
-      if (firstTaskText && firstTaskText instanceof HTMLElement) {
-        return firstTaskText;
-      }
-    }
-    
-    return null;
+    return findNextFocusTargetUtil(ulElement, 'li[data-id]', 'span[role="button"]');
   }
   
   /**
@@ -700,27 +692,23 @@
    * @param {number} retryInterval - Milliseconds between retry attempts (default: 10)
    * @returns {Promise<void>}
    */
-  function focusAddTaskButton(maxAttempts = 20, retryInterval = 10) {
+  async function focusAddTaskButton(maxAttempts = 20, retryInterval = 10) {
     if (!listSectionElement) {
       return;
     }
     
-    const tryFocus = (attempts = 0) => {
-      if (addTaskContainerElement) {
-        const addTaskSpan = addTaskContainerElement.querySelector('span[role="button"]');
-        if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
-          addTaskSpan.focus();
-          return;
+    await focusElementWithRetry(
+      () => {
+        if (addTaskContainerElement) {
+          const addTaskSpan = addTaskContainerElement.querySelector('span[role="button"]');
+          if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
+            return addTaskSpan;
+          }
         }
-      }
-      
-      // Retry if we haven't exceeded max attempts
-      if (attempts < maxAttempts) {
-        setTimeout(() => tryFocus(attempts + 1), retryInterval);
-      }
-    };
-    
-    tryFocus();
+        return null;
+      },
+      { maxAttempts, retryInterval, waitForTick: false }
+    );
   }
   
   async function handleArchiveTask(taskId) {

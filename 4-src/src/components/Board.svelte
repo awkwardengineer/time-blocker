@@ -3,11 +3,11 @@
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
   import { getAllLists, updateListOrderWithColumn } from '../lib/dataAccess.js';
-  import { MAX_RETRY_ATTEMPTS, RETRY_INTERVAL_MS } from '../lib/constants.js';
   import { groupListsIntoColumns, findListPosition, isPlaceholderItem } from '../lib/listDndUtils.js';
   import { applyListMoveInColumns } from '../lib/listKeyboardDrag.js';
   import { processListConsider, shouldSkipFinalizeUpdate } from '../lib/listDragHandlers.js';
-  import { focusListCardForKeyboardDrag, setupKeyboardListDragHandler } from '../lib/useKeyboardListDrag.js';
+  import { setupKeyboardListDragHandler } from '../lib/useKeyboardListDrag.js';
+  import { focusListCardForKeyboardDrag, focusElementWithRetry } from '../lib/focusUtils.js';
   import { useListCreation } from '../lib/useListCreation.js';
   import TaskList from './TaskList.svelte';
   import ListColumn from './ListColumn.svelte';
@@ -254,36 +254,24 @@
    * Uses retry mechanism to wait for component initialization instead of fixed delays.
    */
   async function activateAddTaskInput(listId) {
-    // Wait for Svelte to process reactive updates (component added to DOM)
-    await tick();
-    
-    // Retry mechanism to find the element (waits for component to fully initialize)
-    for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
-      const listSection = document.querySelector(`[data-list-id="${listId}"]`);
-      if (!listSection) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL_MS));
-        continue;
-      }
-      
-      const addTaskContainer = listSection.querySelector('.add-task-container');
-      if (!addTaskContainer) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL_MS));
-        continue;
-      }
-      
-      const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
-      if (!addTaskSpan || !(addTaskSpan instanceof HTMLElement)) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL_MS));
-        continue;
-      }
-      
-      // Element found and ready - click it immediately
-      addTaskSpan.click();
-      return; // Success!
-    }
-    
-    // If we get here, we couldn't find the element
-    console.warn(`Could not activate Add Task input for list ${listId} after ${MAX_RETRY_ATTEMPTS} attempts`);
+    // Use focusElementWithRetry with a custom getter that finds and clicks the button
+    await focusElementWithRetry(
+      () => {
+        const listSection = document.querySelector(`[data-list-id="${listId}"]`);
+        if (!listSection) return null;
+        
+        const addTaskContainer = listSection.querySelector('.add-task-container');
+        if (!addTaskContainer) return null;
+        
+        const addTaskSpan = addTaskContainer.querySelector('span[role="button"]');
+        if (addTaskSpan && addTaskSpan instanceof HTMLElement) {
+          addTaskSpan.click();
+          return addTaskSpan; // Return element to indicate success
+        }
+        return null;
+      },
+      { waitForTick: true }
+    );
   }
   
   // Set up list creation composable
