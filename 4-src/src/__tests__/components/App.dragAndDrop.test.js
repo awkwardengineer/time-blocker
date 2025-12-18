@@ -367,5 +367,64 @@ describe('App - Drag and Drop Interactions', () => {
     expect(updatedTasks.length).toBeGreaterThan(0)
     expect(updatedTasks.every(t => typeof t.id === 'number')).toBe(true)
   })
+
+  it('allows dragging tasks between lists in different columns', async () => {
+    render(App)
+
+    // Create a list in column 0 and another in column 1
+    const column0ListId = await db.lists.add({ name: 'Column 0 List', order: 10, columnIndex: 0 })
+    const column1ListId = await db.lists.add({ name: 'Column 1 List', order: 11, columnIndex: 1 })
+    
+    // Add a task to column 0 list
+    await db.tasks.add({ 
+      text: 'Task in Column 0', 
+      listId: column0ListId, 
+      order: 0, 
+      status: 'unchecked' 
+    })
+    
+    // Wait for lists to load
+    const column0Section = await waitForListSection('Column 0 List')
+    const column1Section = await waitForListSection('Column 1 List')
+    
+    // Wait for task to load
+    await waitFor(() => {
+      expect(within(column0Section).getByText('Task in Column 0')).toBeInTheDocument()
+    })
+    
+    // Get tasks and drop zones
+    const column0Tasks = await db.tasks.where('listId').equals(column0ListId)
+      .filter(t => t.status !== 'archived').sortBy('order')
+    
+    const column0DropZone = getDropZone(column0Section)
+    const column1DropZone = getDropZone(column1Section)
+    
+    expect(column0DropZone).toBeTruthy()
+    expect(column1DropZone).toBeTruthy()
+    
+    // Move task from column 0 list to column 1 list
+    const task = column0Tasks.find(t => t.text === 'Task in Column 0')
+    const newColumn1Tasks = [task]
+    
+    await simulateDragDrop(column1DropZone, newColumn1Tasks)
+    
+    // Wait for task to move
+    await waitFor(() => {
+      expect(within(column1Section).getByText('Task in Column 0')).toBeInTheDocument()
+      expect(within(column0Section).queryByText('Task in Column 0')).not.toBeInTheDocument()
+    }, { timeout: 3000 })
+    
+    // Verify task moved in database
+    const column1Tasks = await db.tasks.where('listId').equals(column1ListId)
+      .filter(t => t.status !== 'archived').sortBy('order')
+    expect(column1Tasks.some(t => t.text === 'Task in Column 0')).toBe(true)
+    
+    // Verify columnIndex of lists is preserved (not changed by task drag)
+    const lists = await db.lists.toArray()
+    const col0List = lists.find(l => l.id === column0ListId)
+    const col1List = lists.find(l => l.id === column1ListId)
+    expect(col0List.columnIndex).toBe(0)
+    expect(col1List.columnIndex).toBe(1)
+  }, 15000)
 })
 

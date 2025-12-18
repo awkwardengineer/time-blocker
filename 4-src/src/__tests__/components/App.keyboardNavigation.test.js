@@ -225,5 +225,96 @@ describe('App - Keyboard Navigation', () => {
     // Note: Focus management after cross-list move may need separate implementation
     // This test verifies the move works correctly via keyboard
   })
+
+  it('moves task across column boundaries when pressing ArrowDown on last task in column', async () => {
+    const user = userEvent.setup()
+    render(App)
+    
+    // Create lists in different columns
+    const column0ListId = await db.lists.add({ name: 'Column 0 List', order: 10, columnIndex: 0 })
+    const column1ListId = await db.lists.add({ name: 'Column 1 List', order: 11, columnIndex: 1 })
+    
+    // Add tasks to column 0 list
+    await db.tasks.add({ text: 'Last Task in Column 0', listId: column0ListId, order: 0, status: 'unchecked' })
+    
+    const column0Section = await waitForListSection('Column 0 List')
+    const column1Section = await waitForListSection('Column 1 List')
+    
+    await waitForTasksToLoad(column0Section, 'Last Task in Column 0')
+    
+    // Find the last task in column 0 list
+    const taskText = within(column0Section).getByText('Last Task in Column 0')
+    const taskListItem = taskText.closest('li')
+    const taskTextSpan = taskListItem.querySelector('span[role="button"]')
+    
+    // Focus on task text
+    taskTextSpan.focus()
+    expect(taskTextSpan).toHaveFocus()
+    
+    // Press ArrowDown (should move to next list, which is in column 1)
+    await user.keyboard('{ArrowDown}')
+    
+    // Wait for task to move to column 1 list
+    await waitFor(() => {
+      expect(within(column1Section).getByText('Last Task in Column 0')).toBeInTheDocument()
+      expect(within(column0Section).queryByText('Last Task in Column 0')).not.toBeInTheDocument()
+    }, { timeout: 3000 })
+    
+    // Verify task moved in database
+    const lists = await db.lists.toArray()
+    const col1List = lists.find(l => l.id === column1ListId)
+    const col1Tasks = await db.tasks.where('listId').equals(col1List.id)
+      .filter(t => t.status !== 'archived')
+      .sortBy('order')
+    
+    expect(col1Tasks.some(t => t.text === 'Last Task in Column 0')).toBe(true)
+    expect(col1Tasks[0].text).toBe('Last Task in Column 0') // Should be first in column 1 list
+  }, 15000)
+
+  it('moves task across column boundaries when pressing ArrowUp on first task in column', async () => {
+    const user = userEvent.setup()
+    render(App)
+    
+    // Create lists in different columns
+    const column0ListId = await db.lists.add({ name: 'Column 0 List', order: 10, columnIndex: 0 })
+    const column1ListId = await db.lists.add({ name: 'Column 1 List', order: 11, columnIndex: 1 })
+    
+    // Add task to column 1 list
+    await db.tasks.add({ text: 'First Task in Column 1', listId: column1ListId, order: 0, status: 'unchecked' })
+    
+    const column0Section = await waitForListSection('Column 0 List')
+    const column1Section = await waitForListSection('Column 1 List')
+    
+    await waitForTasksToLoad(column1Section, 'First Task in Column 1')
+    
+    // Find the first task in column 1 list
+    const taskText = within(column1Section).getByText('First Task in Column 1')
+    const taskListItem = taskText.closest('li')
+    const taskTextSpan = taskListItem.querySelector('span[role="button"]')
+    
+    // Focus on task text
+    taskTextSpan.focus()
+    expect(taskTextSpan).toHaveFocus()
+    
+    // Press ArrowUp (should move to previous list, which is in column 0)
+    await user.keyboard('{ArrowUp}')
+    
+    // Wait for task to move to column 0 list
+    await waitFor(() => {
+      expect(within(column0Section).getByText('First Task in Column 1')).toBeInTheDocument()
+      expect(within(column1Section).queryByText('First Task in Column 1')).not.toBeInTheDocument()
+    }, { timeout: 3000 })
+    
+    // Verify task moved in database
+    const lists = await db.lists.toArray()
+    const col0List = lists.find(l => l.id === column0ListId)
+    const col0Tasks = await db.tasks.where('listId').equals(col0List.id)
+      .filter(t => t.status !== 'archived')
+      .sortBy('order')
+    
+    expect(col0Tasks.some(t => t.text === 'First Task in Column 1')).toBe(true)
+    // Should be last in column 0 list
+    expect(col0Tasks[col0Tasks.length - 1].text).toBe('First Task in Column 1')
+  }, 15000)
 })
 

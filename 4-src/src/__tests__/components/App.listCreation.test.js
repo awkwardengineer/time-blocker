@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/svelte'
 import userEvent from '@testing-library/user-event'
 import App from '../../App.svelte'
+import db from '../../lib/db.js'
 import { setupTestData } from '../helpers/appTestSetup.js'
 import { 
   waitForListSection
@@ -327,5 +328,67 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
       expect(addTaskButton || taskInput).toBeTruthy()
     }, { timeout: 5000 })
   })
+
+  it('creates list in the correct column based on which Create button was clicked', async () => {
+    const user = userEvent.setup()
+    render(App)
+    
+    // Wait for lists to load
+    await waitFor(() => {
+      const listSections = document.querySelectorAll('[data-list-id]')
+      expect(listSections.length).toBeGreaterThan(0)
+    })
+    
+    // Get all "Create new list" buttons (one per column)
+    const createButtons = await waitFor(() => {
+      const buttons = screen.getAllByRole('button', { name: /create new list/i })
+      expect(buttons.length).toBe(5) // Should be 5 buttons (one per column)
+      return buttons
+    }, { timeout: 10000 })
+    
+    // Click the button in column 2 (index 2)
+    const column2Button = createButtons[2]
+    await user.click(column2Button)
+    
+    // Wait for input to appear
+    const input = await waitFor(() => {
+      return screen.getByRole('textbox', { name: /enter list name/i })
+    })
+    
+    // Type list name and save
+    await user.type(input, 'Column 2 List')
+    await user.keyboard('{Enter}')
+    
+    // Wait for list to be created
+    await waitFor(() => {
+      expect(screen.getByText('Column 2 List')).toBeInTheDocument()
+    }, { timeout: 10000 })
+    
+    // Verify list is in column 2
+    const column2 = document.querySelector('[data-column-index="2"]')
+    expect(column2).toBeInTheDocument()
+    const column2Lists = Array.from(column2.querySelectorAll('[data-list-id]')).map(section => {
+      const heading = section.querySelector('h2')
+      return heading ? heading.textContent : ''
+    }).filter(Boolean)
+    expect(column2Lists).toContain('Column 2 List')
+    
+    // Verify list is NOT in other columns
+    for (let i = 0; i < 5; i++) {
+      if (i === 2) continue // Skip column 2
+      const column = document.querySelector(`[data-column-index="${i}"]`)
+      const columnLists = Array.from(column.querySelectorAll('[data-list-id]')).map(section => {
+        const heading = section.querySelector('h2')
+        return heading ? heading.textContent : ''
+      }).filter(Boolean)
+      expect(columnLists).not.toContain('Column 2 List')
+    }
+    
+    // Verify columnIndex is set correctly in database
+    const lists = await db.lists.toArray()
+    const createdList = lists.find(l => l.name === 'Column 2 List')
+    expect(createdList).toBeDefined()
+    expect(createdList.columnIndex).toBe(2)
+  }, 20000)
 })
 
