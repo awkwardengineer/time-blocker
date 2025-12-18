@@ -119,21 +119,24 @@ export function useListCreation(state) {
 
 **Status**: ✅ Completed - Extracted to useListCreation.js, reduced Board.svelte by ~130 lines, all tests passing
 
-### 6. Extract Focus Management Utilities
+### 6. Extract Focus Management Utilities ✅
 **Location**: Scattered throughout `Board.svelte` and `TaskList.svelte`
 
 **Problem**: Focus logic duplicated and hard to maintain
 
 **Solution**: Create `src/lib/focusUtils.js`
 ```javascript
-export async function focusElementWithRetry(selector, options = {}) {
-  // Retry logic
+export async function focusElementWithRetry(getElement, options = {}) {
+  // Retry logic with configurable attempts and intervals
   // Returns element or null
 }
 
-export function setupTabResume(element, onTab) {
-  // Tab-resume behavior
-  // Returns cleanup
+export function focusListCardForKeyboardDrag(listId) {
+  // Focus list card for keyboard drag feedback
+}
+
+export function findNextFocusTarget(container, itemSelector, focusableSelector) {
+  // Find next logical focus target
 }
 ```
 
@@ -141,6 +144,8 @@ export function setupTabResume(element, onTab) {
 - DRY principle
 - Consistent behavior
 - Easier to maintain
+
+**Status**: ✅ Completed - Extracted to focusUtils.js, updated Board.svelte and TaskList.svelte, all tests passing
 
 ## Priority 3: Low Impact, Low Risk (Nice to Have)
 
