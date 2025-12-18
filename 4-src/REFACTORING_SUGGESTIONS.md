@@ -174,8 +174,8 @@ export const DOM_UPDATE_DELAY_MEDIUM_MS = 20;
 
 **Solution**: Combine into one effect with better logic
 
-### 9. Extract Validation Helpers
-**Location**: `Board.svelte` lines 438-455, 483-499
+### 9. Extract Validation Helpers ✅
+**Location**: `Board.svelte` lines 438-455, 483-499 (now in useListCreation.js)
 
 **Problem**: Similar validation logic repeated
 
@@ -187,6 +187,8 @@ function validateAndNormalizeListInput(input) {
   return { valid: !isBlank, normalized: text };
 }
 ```
+
+**Status**: ✅ Completed - Extracted to inputValidation.js, updated useListCreation.js to use helper, reduced duplicate validation logic from ~30 lines to ~10 lines, all tests passing
 
 ## Component-Specific Suggestions
 
