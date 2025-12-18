@@ -245,22 +245,124 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    - ✅ Test print output with multiple columns
 
 6. **User Settings Foundation (Future-proofing)**
+   - ✅ **Note**: No work needed for this milestone - this is future-proofing planning only
    - Design data structure to store column/row configuration preferences
    - Plan for future user settings UI (not implemented in this milestone)
    - Ensure column placement data persists independently of column count setting
    - Consider how settings will affect both columns and rows in the future
 
-7. **Test**
-   - **Manual Testing**:
-     - Verify lists display correctly in multiple columns
-     - Test drag-and-drop between lists in different columns
-     - Test keyboard navigation across column boundaries
-     - Verify print layout with multiple columns
-     - Test responsive behavior (resize window, verify column layout)
-   - **Automated Tests**:
-     - Unit tests: Column distribution logic
-     - Integration tests: Drag-and-drop across columns
-     - Integration tests: Keyboard navigation across columns
+7. **Test Coverage Analysis**
+
+   ## Existing Test Coverage
+
+   ### ✅ Covered Areas:
+   - **List keyboard drag within and across columns** (`App.listKeyboardDrag.test.js`):
+     - ✅ Reordering lists within a column using keyboard drag
+     - ✅ Moving lists to another column with ArrowRight and persisting columnIndex
+     - ✅ Keyboard drag mode exit (Tab, Escape, Enter, Space)
+   
+   - **Task keyboard drag focus management** (`App.taskKeyboardDrag.test.js`):
+     - ✅ Tab resume behavior after keyboard drop
+   
+   - **Keyboard navigation across lists** (`App.keyboardNavigation.test.js`):
+     - ✅ Tab navigation through interactive elements
+     - ✅ ArrowDown/ArrowUp moves tasks between lists
+     - ✅ Boundary handling (doesn't create new list at end)
+     - ⚠️ **Note**: Tests verify cross-list movement but don't explicitly verify column boundary crossing
+   
+   - **Drag and drop between lists** (`App.dragAndDrop.test.js`):
+     - ✅ Dragging tasks to empty lists
+     - ✅ Reordering tasks within lists
+     - ✅ Handling single-task lists
+     - ✅ Moving last task from a list (empty state handling)
+     - ⚠️ **Note**: Tests use `columnIndex: 0`, so all lists are in the same column - doesn't test cross-column drag
+   
+   - **Empty state with columns** (`App.emptyState.test.js`):
+     - ✅ Verifies 5 columns are rendered when no lists exist
+     - ✅ "Create new list" appears in each column
+   
+   - **Print functionality** (`App.test.js`, `App.taskCreation.test.js`):
+     - ✅ Print button calls window.print()
+     - ✅ Add Task button hidden in print
+     - ⚠️ **Note**: No tests for multi-column print layout or Archive button print visibility
+
+   ## Missing or Incomplete Test Coverage
+
+   ### 🔴 High Priority - Core Functionality:
+   1. **Column layout verification**:
+      - Lists are displayed in 5 columns (verify DOM structure)
+      - Lists are distributed across columns correctly based on columnIndex
+      - Column overflow handling (lists with columnIndex > 4 render in last column)
+   
+   2. **Cross-column drag and drop**:
+      - Drag tasks between lists in different columns (not just same column)
+      - Drag lists between columns (mouse drag, not just keyboard)
+      - Verify columnIndex updates correctly in database after cross-column drag
+   
+   3. **Cross-column keyboard navigation**:
+      - ArrowDown on last task in a column moves to first task of next column
+      - ArrowUp on first task in a column moves to last task of previous column
+      - Navigation respects column boundaries (not just list boundaries)
+   
+   4. **List creation in specific columns**:
+      - Creating a list in column 0 assigns columnIndex: 0
+      - Creating a list in column 4 assigns columnIndex: 4
+      - Lists created in different columns appear in correct columns
+
+   ### 🟡 Medium Priority - Edge Cases & Polish:
+   5. **Column placement preservation**:
+      - Lists with columnIndex 4 still render when only 3 columns available (overflow to last column)
+      - When column count increases, lists return to original column positions
+   
+   6. **Print layout**:
+      - Archive button is hidden in print (recently added, should verify)
+      - Multi-column layout renders correctly in print preview
+      - Print CSS applies correctly (column separators, spacing, etc.)
+   
+   7. **Responsive behavior**:
+      - Single-column layout on mobile viewport
+      - Column layout adapts to screen size
+      - Breakpoint behavior (desktop vs mobile)
+
+   ### 🟢 Low Priority - Future Considerations:
+   8. **User settings foundation** (future-proofing):
+      - No tests needed for this milestone (planning only)
+
+   ## Test Implementation Plan
+
+   ### ✅ Priority 1 - Essential Functionality (Current Focus):
+   - **Test file**: `App.columnLayout.test.js`
+     - Verify 5 columns are rendered
+     - Verify lists appear in correct columns based on columnIndex
+     - Verify column overflow handling
+   
+   - **Extend**: `App.dragAndDrop.test.js`
+     - Add tests for dragging tasks between lists in different columns
+     - Verify columnIndex is preserved/updated correctly
+   
+   - **Extend**: `App.keyboardNavigation.test.js`
+     - Add tests specifically for column boundary crossing
+     - Verify ArrowDown/ArrowUp works across column boundaries
+   
+   - **Extend**: `App.listCreation.test.js`
+     - Verify lists are created in the correct column
+     - Verify columnIndex is set correctly in database
+
+   ### 📋 Priority 2 - Print & Responsive (Consider Later):
+   - **Note**: Medium priority items will be considered after Priority 1 tests are complete
+   - **Test file**: `App.printLayout.test.js`
+     - Verify Archive button is hidden in print
+     - Verify multi-column layout in print
+     - Verify print CSS classes apply correctly
+   
+   - **Test file**: `App.responsiveLayout.test.js` (or manual testing)
+     - Verify single-column layout on mobile
+     - Verify breakpoint behavior
+
+   ### 📋 Priority 3 - Edge Cases (Consider Later):
+   - **Extend**: `App.columnLayout.test.js`
+     - Test column overflow (columnIndex > available columns)
+     - Test column placement preservation
 
 ## Quick Notes
 - **Important**: This milestone extends [[050-drag-between-lists]] functionality
