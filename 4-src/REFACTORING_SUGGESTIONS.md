@@ -149,7 +149,7 @@ export function findNextFocusTarget(container, itemSelector, focusableSelector) 
 
 ## Priority 3: Low Impact, Low Risk (Nice to Have)
 
-### 7. Extract Constants
+### 7. Extract Constants ✅
 **Location**: Throughout components
 
 **Problem**: Magic numbers and repeated values
@@ -159,7 +159,13 @@ export function findNextFocusTarget(container, itemSelector, focusableSelector) 
 // src/lib/constants.js (extend existing)
 export const FOCUS_RETRY_ATTEMPTS = 20;
 export const FOCUS_RETRY_INTERVAL = 10;
+export const FOCUS_RETRY_ATTEMPTS_EXTENDED = 40;
+export const DOM_UPDATE_DELAY_MS = 200;
+export const DOM_UPDATE_DELAY_SHORT_MS = 10;
+export const DOM_UPDATE_DELAY_MEDIUM_MS = 20;
 ```
+
+**Status**: ✅ Completed - Extracted magic numbers to constants.js, updated TaskList.svelte and ListColumn.svelte, all tests passing
 
 ### 8. Simplify State Initialization
 **Location**: `Board.svelte` lines 48-77
