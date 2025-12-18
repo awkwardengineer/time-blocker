@@ -36,3 +36,20 @@ export function normalizeInput(input) {
   };
 }
 
+/**
+ * Validates and normalizes list input.
+ * Checks if input is empty or whitespace-only, and normalizes valid input.
+ * @param {string} input - The input string to validate
+ * @returns {{ valid: boolean, normalized: string }} Object indicating if input is valid and the normalized text
+ */
+export function validateAndNormalizeListInput(input) {
+  // Check if input is empty string "" - invalid
+  if (isEmpty(input)) {
+    return { valid: false, normalized: '' };
+  }
+  
+  // Check if input contains only whitespace (e.g., " ", "      ") - invalid
+  const { text, isBlank } = normalizeInput(input);
+  return { valid: !isBlank, normalized: text };
+}
+

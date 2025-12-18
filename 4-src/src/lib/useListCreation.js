@@ -8,7 +8,7 @@
 
 import { tick } from 'svelte';
 import { createList } from './dataAccess.js';
-import { isEmpty, normalizeInput } from './inputValidation.js';
+import { validateAndNormalizeListInput } from './inputValidation.js';
 import { useClickOutside } from './useClickOutside.js';
 
 /**
@@ -73,17 +73,10 @@ export function useListCreation(state) {
   async function handleCreateList(columnIndex) {
     const inputValue = getInput() || '';
     
-    // Check if input is empty string "" - exit list creation
-    if (isEmpty(inputValue)) {
-      setColumnIndex(null);
-      setInput('');
-      return;
-    }
-    
-    // Check if input contains only whitespace (e.g., " ", "      ")
-    const { text: normalizedText, isBlank } = normalizeInput(inputValue);
-    if (isBlank) {
-      // Whitespace-only, don't create
+    // Validate and normalize input
+    const { valid, normalized: normalizedText } = validateAndNormalizeListInput(inputValue);
+    if (!valid) {
+      // Invalid input (empty or whitespace-only) - close input
       setColumnIndex(null);
       setInput('');
       return;
@@ -119,16 +112,10 @@ export function useListCreation(state) {
   async function handleCreateListOnTab(columnIndex) {
     const inputValue = getInput() || '';
     
-    // Empty string - just close the input
-    if (isEmpty(inputValue)) {
-      setColumnIndex(null);
-      setInput('');
-      return;
-    }
-    
-    // Whitespace-only - treat as invalid and close input without creating
-    const { text: normalizedText, isBlank } = normalizeInput(inputValue);
-    if (isBlank) {
+    // Validate and normalize input
+    const { valid, normalized: normalizedText } = validateAndNormalizeListInput(inputValue);
+    if (!valid) {
+      // Invalid input (empty or whitespace-only) - close input without creating
       setColumnIndex(null);
       setInput('');
       return;
