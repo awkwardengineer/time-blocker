@@ -10,6 +10,7 @@
   import { isEmpty, normalizeInput } from '../lib/inputValidation.js';
   import { TASK_WIDTH, FOCUS_RETRY_ATTEMPTS, FOCUS_RETRY_INTERVAL, FOCUS_RETRY_ATTEMPTS_EXTENDED, DOM_UPDATE_DELAY_MS, DOM_UPDATE_DELAY_SHORT_MS, DOM_UPDATE_DELAY_MEDIUM_MS } from '../lib/constants.js';
   import { findNextFocusTarget as findNextFocusTargetUtil, focusElementWithRetry } from '../lib/focusUtils.js';
+  import { useModal } from '../lib/useModal.svelte.js';
   
   let { listId, listName, newTaskInput, onInputChange, allLists = [], stableLists = [] } = $props();
   
@@ -24,18 +25,15 @@
   // State for Add Task button/input toggle
   let isInputActive = $state(false);
   
-  // State for task edit modal
-  let editModalOpen = $state(false);
+  // Modal management using composable
+  const taskModal = useModal();
+  const listModal = useModal();
+  
+  // Task modal-specific state (not handled by composable)
   let editingTaskId = $state(null);
   let editingTaskText = $state('');
-  let editingTaskPosition = $state(null); // { top, left, width, height }
-  let editingTaskElement = $state(null); // Reference to the task element for focus return
-  let ulElement = $state(null); // Reference to the ul element for capture-phase handler
   
-  // State for list edit modal
-  let listEditModalOpen = $state(false);
-  let editingListPosition = $state(null); // { top, left, width, height }
-  let listNameElement = $state(null); // Reference to the h2 element for focus return
+  let ulElement = $state(null); // Reference to the ul element for capture-phase handler
   
   // Reactive references to DOM elements (replaces document.querySelector calls)
   let listSectionElement = $state(null); // Reference to the main list section div
@@ -145,15 +143,7 @@
           e.stopImmediatePropagation(); // Stop ALL handlers including drag library
           
           // Open the list edit modal
-          const rect = target.getBoundingClientRect();
-          editingListPosition = {
-            top: rect.top,
-            left: rect.left,
-            width: rect.width,
-            height: rect.height
-          };
-          listNameElement = target;
-          listEditModalOpen = true;
+          listModal.openModal(target);
         }
       }
     }
@@ -218,20 +208,10 @@
           const taskId = parseInt(liElement.getAttribute('data-id'));
           const task = draggableTasks.find(t => t.id === taskId);
           if (task) {
-            // Get the element's position for modal positioning
-            const rect = target.getBoundingClientRect();
-            editingTaskPosition = {
-              top: rect.top,
-              left: rect.left,
-              width: rect.width,
-              height: rect.height
-            };
-            editingTaskElement = target;
-            
             // Open the modal directly
             editingTaskId = taskId;
             editingTaskText = task.text;
-            editModalOpen = true;
+            taskModal.openModal(target);
           }
         }
         return;
@@ -718,12 +698,9 @@
       
       // Close modal if this task was being edited
       if (editingTaskId === taskId) {
-        const taskElement = editingTaskElement; // Store reference before clearing
-        editModalOpen = false;
         editingTaskId = null;
         editingTaskText = '';
-        editingTaskPosition = null;
-        editingTaskElement = null;
+        taskModal.closeModalWithoutFocus(); // Focus handled below
         
         // Focus management: after archiving, focus should go to next logical element
         // Wait for Svelte's reactive updates to complete (especially important when list becomes empty)
@@ -756,53 +733,18 @@
   }
   
   function handleTaskTextClick(taskId, taskText, event) {
-    // Get the clicked text span's position - we want to align the input field with the text
     const clickedElement = event?.currentTarget || event?.target;
-    if (clickedElement) {
-      // Use the clicked element directly (the text span) for precise positioning
-      const rect = clickedElement.getBoundingClientRect();
-      // Store viewport coordinates (getBoundingClientRect returns viewport coordinates)
-      editingTaskPosition = {
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height
-      };
-      // Store reference to the clicked element for focus return
-      editingTaskElement = clickedElement;
-    }
     editingTaskId = taskId;
     editingTaskText = taskText;
-    editModalOpen = true;
+    taskModal.openModal(clickedElement);
   }
   
   function handleTaskTextKeydown(taskId, taskText, event) {
-    const key = event.key;
-
-    if (key === 'Enter' || key === ' ') {
-      // Stop the event immediately to prevent drag library from intercepting
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      
-      // Get the span element
-      const spanElement = event.currentTarget;
-      if (spanElement) {
-        // Get the element's position for modal positioning
-        const rect = spanElement.getBoundingClientRect();
-        editingTaskPosition = {
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height
-        };
-        editingTaskElement = spanElement;
-        
-        // Open the modal directly
-        editingTaskId = taskId;
-        editingTaskText = taskText;
-        editModalOpen = true;
-      }
-    } else if (key === 'Escape') {
+    if (event.key === 'Enter' || event.key === ' ') {
+      editingTaskId = taskId;
+      editingTaskText = taskText;
+      taskModal.handleKeydown(event);
+    } else if (event.key === 'Escape') {
       // Treat Escape on the task text as a "blur/close" action for this task.
       // The *next* Tab press should resume on this task element (mirrors list behavior).
       event.preventDefault();
@@ -820,19 +762,9 @@
   async function handleTaskSave(taskId, newText) {
     try {
       await updateTaskText(taskId, newText);
-      editModalOpen = false;
-      const taskElement = editingTaskElement; // Store reference before clearing
       editingTaskId = null;
       editingTaskText = '';
-      editingTaskPosition = null;
-      editingTaskElement = null;
-      
-      // Return focus to the task element after modal closes
-      if (taskElement && taskElement instanceof HTMLElement) {
-        setTimeout(() => {
-          taskElement.focus();
-        }, 0);
-      }
+      taskModal.closeModal();
       // No need to reload - liveQuery will update automatically!
     } catch (error) {
       console.error('Error updating task text:', error);
@@ -840,24 +772,13 @@
   }
   
   function handleTaskEditCancel() {
-    const taskElement = editingTaskElement; // Store reference before clearing
-    editModalOpen = false;
     editingTaskId = null;
     editingTaskText = '';
-    editingTaskPosition = null;
-    editingTaskElement = null;
-    
-    // Return focus to the task element after modal closes
-    if (taskElement && taskElement instanceof HTMLElement) {
-      setTimeout(() => {
-        taskElement.focus();
-      }, 0);
-    }
+    taskModal.closeModal();
   }
   
   async function handleTaskEditArchive(taskId) {
-    // Store task element reference before archiving (in case modal closes)
-    const taskElement = editingTaskElement;
+    // handleArchiveTask will close the modal and handle focus
     await handleArchiveTask(taskId);
     
     // If focus wasn't handled by handleArchiveTask (e.g., modal already closed),
@@ -875,64 +796,17 @@
   }
   
   function handleListNameClick(event) {
-    // Get the clicked h2 element's position for modal positioning
-    const clickedElement = event?.currentTarget || event?.target;
-    if (clickedElement) {
-      const rect = clickedElement.getBoundingClientRect();
-      editingListPosition = {
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height
-      };
-      listNameElement = clickedElement;
-    }
-    listEditModalOpen = true;
+    listModal.handleClick(event);
   }
   
   function handleListNameKeydown(event) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation(); // Prevent dndzone from intercepting
-      
-      const h2Element = event.currentTarget;
-      if (h2Element) {
-        const rect = h2Element.getBoundingClientRect();
-        editingListPosition = {
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height
-        };
-        listNameElement = h2Element;
-        listEditModalOpen = true;
-      }
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      const h2Element = event.currentTarget;
-      if (h2Element && h2Element instanceof HTMLElement) {
-        h2Element.blur();
-      }
-    }
+    listModal.handleKeydown(event);
   }
   
   async function handleListSave(listId, newName) {
     try {
       await updateListName(listId, newName);
-      listEditModalOpen = false;
-      const nameElement = listNameElement; // Store reference before clearing
-      editingListPosition = null;
-      listNameElement = null;
-      
-      // Return focus to the list name element after modal closes
-      if (nameElement && nameElement instanceof HTMLElement) {
-        setTimeout(() => {
-          nameElement.focus();
-        }, 0);
-      }
+      listModal.closeModal();
       // No need to reload - liveQuery in App.svelte will update automatically!
     } catch (error) {
       console.error('Error updating list name:', error);
@@ -940,17 +814,7 @@
   }
   
   function handleListEditCancel() {
-    const nameElement = listNameElement; // Store reference before clearing
-    listEditModalOpen = false;
-    editingListPosition = null;
-    listNameElement = null;
-    
-    // Return focus to the list name element after modal closes
-    if (nameElement && nameElement instanceof HTMLElement) {
-      setTimeout(() => {
-        nameElement.focus();
-      }, 0);
-    }
+    listModal.closeModal();
   }
   
   async function handleListArchive(listId) {
@@ -1156,20 +1020,20 @@
 </style>
 
 <TaskEditModal
-  isOpen={editModalOpen}
+  isOpen={taskModal.isOpen}
   taskId={editingTaskId}
   taskText={editingTaskText}
-  taskPosition={editingTaskPosition}
+  taskPosition={taskModal.position}
   onSave={handleTaskSave}
   onCancel={handleTaskEditCancel}
   onArchive={handleTaskEditArchive}
 />
 
 <ListEditModal
-  isOpen={listEditModalOpen}
+  isOpen={listModal.isOpen}
   listId={listId}
   listName={listName}
-  listPosition={editingListPosition}
+  listPosition={listModal.position}
   onSave={handleListSave}
   onCancel={handleListEditCancel}
   onArchive={handleListArchive}

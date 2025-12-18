@@ -193,9 +193,9 @@ function validateAndNormalizeListInput(input) {
 ## Component-Specific Suggestions
 
 ### TaskList.svelte
-- Similar keyboard drag extraction (Priority 1)
-- Extract modal management to composable (Priority 2)
-- Extract cross-list movement logic (Priority 2)
+- Similar keyboard drag extraction (Priority 1) - **Not worth it**: Tasks use svelte-dnd-action's built-in keyboard drag, different pattern from lists
+- Extract modal management to composable (Priority 2) ✅ **Completed** - Created `useModal.svelte.js` composable, reduced ~150 lines of duplicate code
+- Extract cross-list movement logic (Priority 2) - **Not worth it**: Functions are already simple and isolated
 
 ### ListColumn.svelte
 - Already well-structured, minimal changes needed
