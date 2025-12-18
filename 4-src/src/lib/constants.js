@@ -19,3 +19,13 @@ export const SPACING_4 = 16; // 1rem = 16px (matches Tailwind spacing-4, mb-4, e
 export const MAX_RETRY_ATTEMPTS = 25; // Maximum attempts to find element
 export const RETRY_INTERVAL_MS = 10; // Milliseconds between retry attempts
 
+// Focus management constants
+export const FOCUS_RETRY_ATTEMPTS = 20; // Default retry attempts for focus operations
+export const FOCUS_RETRY_INTERVAL = 10; // Default retry interval for focus operations (ms)
+export const FOCUS_RETRY_ATTEMPTS_EXTENDED = 40; // Extended retries for complex DOM updates (e.g., when list becomes empty)
+
+// DOM update timing constants
+export const DOM_UPDATE_DELAY_MS = 200; // Delay after DOM updates (for test environments)
+export const DOM_UPDATE_DELAY_SHORT_MS = 10; // Short delay for DOM updates
+export const DOM_UPDATE_DELAY_MEDIUM_MS = 20; // Medium delay for DOM updates
+

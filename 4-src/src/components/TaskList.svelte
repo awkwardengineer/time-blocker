@@ -8,7 +8,7 @@
   import AddTaskInput from './AddTaskInput.svelte';
   import { useClickOutside } from '../lib/useClickOutside.js';
   import { isEmpty, normalizeInput } from '../lib/inputValidation.js';
-  import { TASK_WIDTH } from '../lib/constants.js';
+  import { TASK_WIDTH, FOCUS_RETRY_ATTEMPTS, FOCUS_RETRY_INTERVAL, FOCUS_RETRY_ATTEMPTS_EXTENDED, DOM_UPDATE_DELAY_MS, DOM_UPDATE_DELAY_SHORT_MS, DOM_UPDATE_DELAY_MEDIUM_MS } from '../lib/constants.js';
   import { findNextFocusTarget as findNextFocusTargetUtil, focusElementWithRetry } from '../lib/focusUtils.js';
   
   let { listId, listName, newTaskInput, onInputChange, allLists = [], stableLists = [] } = $props();
@@ -557,7 +557,7 @@
       // Use requestAnimationFrame to ensure DOM has updated, then add a delay
       // This is especially important in test environments where timing can be different
       await new Promise(resolve => requestAnimationFrame(resolve));
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, DOM_UPDATE_DELAY_MS));
     }
   }
   
@@ -630,7 +630,7 @@
       // This is especially important in test environments where timing can be different
       // Increased delay to account for test environment timing differences
       await new Promise(resolve => requestAnimationFrame(resolve));
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, DOM_UPDATE_DELAY_MS));
       return;
     }
     
@@ -688,11 +688,11 @@
    * Focuses the "Add Task" button with retry logic.
    * Useful when list becomes empty and button needs time to appear in DOM.
    * Uses reactive reference instead of querying DOM.
-   * @param {number} maxAttempts - Maximum number of retry attempts (default: 20)
-   * @param {number} retryInterval - Milliseconds between retry attempts (default: 10)
+   * @param {number} maxAttempts - Maximum number of retry attempts (default: FOCUS_RETRY_ATTEMPTS)
+   * @param {number} retryInterval - Milliseconds between retry attempts (default: FOCUS_RETRY_INTERVAL)
    * @returns {Promise<void>}
    */
-  async function focusAddTaskButton(maxAttempts = 20, retryInterval = 10) {
+  async function focusAddTaskButton(maxAttempts = FOCUS_RETRY_ATTEMPTS, retryInterval = FOCUS_RETRY_INTERVAL) {
     if (!listSectionElement) {
       return;
     }
@@ -729,7 +729,7 @@
         // Wait for Svelte's reactive updates to complete (especially important when list becomes empty)
         await tick();
         // Additional small delay to ensure DOM has updated (especially when list becomes empty)
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, DOM_UPDATE_DELAY_SHORT_MS));
         
         setTimeout(() => {
           // Try to find next task to focus (first remaining task in list)
@@ -738,17 +738,17 @@
             const nextTarget = findNextFocusTarget();
             if (nextTarget) {
               nextTarget.focus();
-            } else if (attempts < 20) {
-              // Retry up to 20 times (200ms total) to wait for DOM updates
-              setTimeout(() => tryFocusNextTask(attempts + 1), 10);
+            } else if (attempts < FOCUS_RETRY_ATTEMPTS) {
+              // Retry up to FOCUS_RETRY_ATTEMPTS times to wait for DOM updates
+              setTimeout(() => tryFocusNextTask(attempts + 1), FOCUS_RETRY_INTERVAL);
             } else {
               // Fallback: focus the "Add Task" button
               // Use more retries when list becomes empty (DOM structure changes)
-              focusAddTaskButton(40, 10);
+              focusAddTaskButton(FOCUS_RETRY_ATTEMPTS_EXTENDED, FOCUS_RETRY_INTERVAL);
             }
           };
           tryFocusNextTask();
-        }, 20);
+        }, DOM_UPDATE_DELAY_MEDIUM_MS);
       }
     } catch (error) {
       console.error('Error archiving task:', error);
@@ -868,10 +868,10 @@
       const activeElement = document.activeElement;
       if (listSectionElement && (!activeElement || !listSectionElement.contains(activeElement))) {
         // Focus wasn't set, so focus the Add Task button
-        // Use more retries (20) to account for DOM updates when list becomes empty
-        focusAddTaskButton(20, 10);
+        // Use more retries to account for DOM updates when list becomes empty
+        focusAddTaskButton(FOCUS_RETRY_ATTEMPTS, FOCUS_RETRY_INTERVAL);
       }
-    }, 10);
+    }, DOM_UPDATE_DELAY_SHORT_MS);
   }
   
   function handleListNameClick(event) {

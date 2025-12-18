@@ -2,6 +2,7 @@
   import { dndzone } from 'svelte-dnd-action';
   import TaskList from './TaskList.svelte';
   import { isPlaceholderItem } from '../lib/listDndUtils.js';
+  import { DOM_UPDATE_DELAY_SHORT_MS } from '../lib/constants.js';
 
   let {
     columnIndex,
@@ -40,7 +41,7 @@
       if (emptyDropZoneElement && emptyDropZoneElement.getAttribute('tabindex') !== '-1') {
         emptyDropZoneElement.setAttribute('tabindex', '-1');
       }
-    }, 10);
+    }, DOM_UPDATE_DELAY_SHORT_MS);
     
     return () => {
       clearTimeout(timeoutId);
