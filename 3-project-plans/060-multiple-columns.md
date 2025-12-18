@@ -37,7 +37,7 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    - ✅ Handle list ordering within columns
    - ✅ Ensure proper spacing and layout
    - ✅ **Visual separator**: Add thin vertical lines between columns for visual separation
-   - **Create new list per column**: "Create new list" should appear in each column - at the bottom of columns that have lists, or in empty columns. When a list is created, it should be created within that specific column (using the column's index).
+   - ✅ **Create new list per column**: "Create new list" should appear in each column - at the bottom of columns that have lists, or in empty columns. When a list is created, it should be created within that specific column (using the column's index).
    - ✅ **Empty board still shows 5 columns**: When no lists exist at all, render the full 5-column grid with per-column "Create new list" controls.
    - ✅ **Update create new list behavior**:
      - ✅ After creating a new list, the "add a new task" empty state should appear below the newly created list
@@ -236,13 +236,13 @@ Enable multiple columns layout for displaying lists. Lists are arranged in 5 col
    
    - [x] **Task Tab resume after blur** - After a blur or close action on a task (e.g., Escape), ensure the next Tab re-focuses the task element that was just blurred (mirroring list behavior) so keyboard users can resume interaction with that item before moving on. Implemented via keyboard drag state tracking and Tab-resume logic in `TaskList.svelte`, with coverage in `App.taskKeyboardDrag.test.js`.
    
-   - [ ] **Fix: Escape blur for all focus states** - Currently, pressing Escape only causes blur when focused on task text. When focused on task lists, tasks, task checkboxes, "add task" button, or "add your first task" button, pressing Escape does nothing (unless in a drag state, where it does blur). Add Escape key handlers to blur these elements appropriately, ensuring consistent behavior across all interactive elements.
+   - [x] **Fix: Escape blur for all focus states** - Currently, pressing Escape only causes blur when focused on task text. When focused on task lists, tasks, task checkboxes, "add task" button, or "add your first task" button, pressing Escape does nothing (unless in a drag state, where it does blur). Add Escape key handlers to blur these elements appropriately, ensuring consistent behavior across all interactive elements.
  
-5. **Handle Print Layout**
-   - Determine how multiple columns should render in print
-   - Ensure print layout is readable and functional
-   - Consider single-column print layout vs multi-column
-   - Test print output with multiple columns
+5. **Handle Print Layout** ✅
+   - ✅ Determine how multiple columns should render in print
+   - ✅ Ensure print layout is readable and functional
+   - ✅ Consider single-column print layout vs multi-column
+   - ✅ Test print output with multiple columns
 
 6. **User Settings Foundation (Future-proofing)**
    - Design data structure to store column/row configuration preferences

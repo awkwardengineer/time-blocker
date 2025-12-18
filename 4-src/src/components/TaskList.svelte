@@ -923,7 +923,7 @@
             {#if task.status === 'checked'}
               <button 
                 onclick={() => handleArchiveTask(task.id)}
-                class="px-2 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+                class="px-2 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded print:hidden"
                 aria-label={`Archive task: ${task.text || 'blank task'}`}
               >
                 Archive
