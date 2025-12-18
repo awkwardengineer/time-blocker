@@ -34,6 +34,30 @@ export default {
         'gilda-main': '5%',
         'gilda-sub': '3%',
       },
+      colors: {
+        grey: {
+          10: '#FCFCFC',  // White
+          20: '#F0F0EE',  // Light Gray
+          30: '#EBEBE5',  // Pastel
+          40: '#D9D9D2',  // Quill Gray
+          50: '#DBDBD5',  // Light Beige
+          60: '#BCBCBC',  // Gray
+          70: '#BFBEBB',  // Silver
+          80: '#B6B6B0',  // Cotton Seed
+          90: '#AAA4A4',  // Shady Lady
+          100: '#757373', // Dark Gray
+          110: '#323232', // Black
+        },
+        orange: {
+          500: '#F6921E', // Carrot Orange
+        },
+        red: {
+          500: '#FF6B6B', // Carnation
+        },
+        blue: {
+          500: '#6B8FD9', // Soft muted blue for focus rings
+        },
+      },
     },
   },
   plugins: [],

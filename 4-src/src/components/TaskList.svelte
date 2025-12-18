@@ -833,7 +833,7 @@
 <div bind:this={listSectionElement} data-list-id={listId} class="flex flex-col gap-1 m-0 p-0">
   <div class="flex items-center gap-2 m-0 p-0">
     <span 
-      class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
+      class="drag-handle text-grey-60 cursor-grab active:cursor-grabbing select-none" 
       title="Drag to reorder list"
       tabindex="-1"
       aria-hidden="true"
@@ -845,7 +845,7 @@
       onkeydown={handleListNameKeydown}
       role="button"
       tabindex="0"
-      class="cursor-pointer hover:underline m-0 p-0 leading-none"
+      class="list-title cursor-pointer m-0 p-0 leading-none rounded px-2 py-1 -mx-2 -my-1 transition-colors font-gilda text-grey-110 hover:bg-grey-20 focus:bg-grey-20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
       aria-label={`Rename list: ${listName}`}
     >
       {listName}
