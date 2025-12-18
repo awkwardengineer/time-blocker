@@ -1,0 +1,156 @@
+    <!-- Full Page Layout Example -->
+    <section class="bg-grey-10 p-20 rounded-3xl space-y-12">
+      <h2 class="text-5xl font-normal font-urbanist text-grey-110">Full Page Layout</h2>
+      <p class="text-grey-100">11" x 8.5" page (1056px x 816px at 96 DPI) with borders and 5-column layout</p>
+      
+      <!-- Page Container -->
+      <div class="flex justify-center">
+        <div class="bg-grey-10 border-2 border-grey-50 shadow-lg relative w-[1056px] h-[816px]">
+          <!-- Inset border (16px inset) -->
+          <div class="absolute inset-[16px] border border-grey-80 pointer-events-none z-0"></div>
+          <!-- 5-column grid inside inset border -->
+          <div class="absolute inset-[16px] grid grid-cols-5 w-[calc(100%-32px)] h-[calc(100%-32px)] py-4 px-1 z-10">
+              <!-- Column 0 - Multiple Lists -->
+                    <div class="flex flex-col pt-0 min-w-0 px-2 border-r border-grey-50">
+                <!-- First List -->
+                <div class="flex flex-col gap-1 mb-6 w-full">
+                    <div class="flex items-center gap-2">
+                      <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
+                      <h2 class="cursor-pointer m-0 p-0 leading-none text-grey-110 font-gilda text-[24px]">Personal</h2>
+                    </div>
+                    <ul class="space-y-0 m-0 p-0 list-none w-full border-t border-grey-50">
+                      <li class="flex items-center gap-2 py-2 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
+                        <span class="text-grey-60 cursor-grab active:cursor-grabbing select-none">⋮⋮</span>
+                        <input type="checkbox" class="cursor-pointer" />
+                        <span class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100">Morning workout</span>
+                      </li>
+                      <li class="flex items-center gap-2 py-2 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
+                        <span class="text-grey-60 cursor-grab active:cursor-grabbing select-none">⋮⋮</span>
+                        <input type="checkbox" class="cursor-pointer" />
+                        <span class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100">Read for 30 min</span>
+                      </li>
+                    </ul>
+                    <div class="flex items-center gap-2 py-2 border-b border-grey-50 hover:bg-grey-20 w-full print:hidden">
+                      <span class="text-grey-60 select-none invisible">⋮⋮</span>
+                      <input type="checkbox" disabled class="cursor-pointer opacity-0" tabindex="-1" aria-hidden="true" />
+                      <span class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-60">Add Task</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Second List -->
+                  <div class="flex flex-col gap-1 mb-6 w-full">
+                    <div class="flex items-center gap-2">
+                      <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
+                      <h2 class="cursor-pointer m-0 p-0 leading-none text-grey-110 font-gilda text-[24px]">Health</h2>
+                    </div>
+                    <ul class="space-y-0 m-0 p-0 list-none w-full border-t border-grey-50">
+                      <li class="flex items-center gap-2 py-2 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
+                        <span class="text-grey-60 cursor-grab active:cursor-grabbing select-none">⋮⋮</span>
+                        <input type="checkbox" class="cursor-pointer" />
+                        <span class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100">Drink water</span>
+                      </li>
+                      <li class="flex items-center gap-2 py-2 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
+                        <span class="text-grey-60 cursor-grab active:cursor-grabbing select-none">⋮⋮</span>
+                        <input type="checkbox" checked class="cursor-pointer" />
+                        <span class="line-through cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100">Take vitamins</span>
+                      </li>
+                    </ul>
+                    <div class="flex items-center gap-2 py-2 border-b border-grey-50 hover:bg-grey-20 w-full print:hidden">
+                      <span class="text-grey-60 select-none invisible">⋮⋮</span>
+                      <input type="checkbox" disabled class="cursor-pointer opacity-0" tabindex="-1" aria-hidden="true" />
+                      <span class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-60">Add Task</span>
+                  </div>
+                </div>
+                
+                <!-- Create new list button -->
+                <div class="flex items-center mt-6">
+                  <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+                </div>
+              </div>
+              
+              <!-- Column 1 - Sample List -->
+                    <div class="flex flex-col pt-0 min-w-0 px-2 border-r border-grey-50">
+                <div class="flex flex-col gap-1 mb-6 w-full">
+                  <div class="flex items-center gap-2">
+                    <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
+                    <h2 class="cursor-pointer m-0 p-0 leading-none text-grey-110 font-gilda text-[24px]">Work</h2>
+                  </div>
+                  <ul class="space-y-0 m-0 p-0 list-none w-full border-t border-grey-50">
+                    <li class="flex items-center gap-2 py-2 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
+                      <span class="text-grey-60 cursor-grab active:cursor-grabbing select-none">⋮⋮</span>
+                      <input type="checkbox" class="cursor-pointer" />
+                      <span class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100">Review PRs</span>
+                    </li>
+                    <li class="flex items-center gap-2 py-2 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
+                      <span class="text-grey-60 cursor-grab active:cursor-grabbing select-none">⋮⋮</span>
+                      <input type="checkbox" checked class="cursor-pointer" />
+                      <span class="line-through cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100">Team standup</span>
+                      <button class="px-2 py-1 text-sm bg-grey-30 hover:bg-grey-40 rounded print:hidden">Archive</button>
+                    </li>
+                    <li class="flex items-center gap-2 py-2 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
+                      <span class="text-grey-60 cursor-grab active:cursor-grabbing select-none">⋮⋮</span>
+                      <input type="checkbox" class="cursor-pointer" />
+                      <span class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100">Update documentation</span>
+                    </li>
+                  </ul>
+                  <div class="flex items-center gap-2 py-2 border-b border-grey-50 hover:bg-grey-20 w-full print:hidden">
+                    <span class="text-grey-60 select-none invisible">⋮⋮</span>
+                    <input type="checkbox" disabled class="cursor-pointer opacity-0" tabindex="-1" aria-hidden="true" />
+                    <span class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-60">Add Task</span>
+                  </div>
+                </div>
+                
+                <!-- Create new list button -->
+                <div class="flex items-center mt-6">
+                  <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+                </div>
+              </div>
+              
+              <!-- Column 2 - Empty List -->
+                    <div class="flex flex-col pt-0 min-w-0 px-2 border-r border-grey-50">
+                <div class="flex flex-col gap-1 mb-6 w-full">
+                  <div class="flex items-center gap-2">
+                    <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
+                    <h2 class="cursor-pointer m-0 p-0 leading-none text-grey-110 font-gilda text-[24px]">Shopping</h2>
+                  </div>
+                  <ul class="space-y-0 m-0 p-0 list-none w-full border-t border-grey-50">
+                  </ul>
+                  <div class="flex items-center gap-2 py-2 border-b border-grey-50 hover:bg-grey-20 w-full print:hidden">
+                    <span class="text-grey-60 select-none invisible">⋮⋮</span>
+                    <input type="checkbox" disabled class="cursor-pointer opacity-0" tabindex="-1" aria-hidden="true" />
+                    <span class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-60">Add your first task</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Column 3 - Empty State -->
+                    <div class="flex flex-col pt-0 min-w-0 px-2 border-r border-grey-50">
+                <div class="flex flex-col gap-1 mb-6 w-full">
+                  <div class="flex items-center">
+                    <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Column 4 - Empty State (last column, no border) -->
+              <div class="flex flex-col pt-0 min-w-0 px-2">
+                <div class="flex flex-col gap-1 mb-6 w-full">
+                  <div class="flex items-center">
+                    <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+      
+      <div class="space-y-2 text-sm text-grey-100">
+        <p><strong>Outer container:</strong> 1056px × 816px (11" × 8.5" at 96 DPI) with grey border</p>
+        <p><strong>Inset border:</strong> 16px inset from outer container (grey-80)</p>
+        <p><strong>5 columns:</strong> Each column is 198.4px wide with 16px gaps between</p>
+        <p><strong>Columns 0-1:</strong> Sample lists with tasks showing spacing, gutters, and component layout</p>
+        <p><strong>Column 2:</strong> Empty list showing list title and "Add Task" button</p>
+        <p><strong>Columns 3-4:</strong> Empty state showing "Create new list" button</p>
+      </div>
+    </section>
+

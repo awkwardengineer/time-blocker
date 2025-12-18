@@ -1,0 +1,159 @@
+    <!-- Shared Components -->
+    <section class="bg-grey-10 p-20 rounded-3xl space-y-12">
+      <h2 class="text-5xl font-normal font-urbanist text-grey-110">Shared Components</h2>
+
+      <!-- Buttons -->
+      <div class="space-y-6 border-b pb-8">
+        <h3 class="text-3xl font-normal font-urbanist text-grey-110">Buttons</h3>
+        
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Primary (Save)</h4>
+          <div class="flex gap-4 items-center flex-wrap">
+                <button class="px-4 py-2 bg-blue-500 text-white rounded">Save</button>
+                <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save (Hover)</button>
+                <button class="px-4 py-2 bg-blue-500 text-white rounded opacity-50 cursor-not-allowed" disabled>Save (Disabled)</button>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Secondary (Cancel)</h4>
+          <div class="flex gap-4 items-center flex-wrap">
+                <button class="px-4 py-2 border border-grey-50 rounded">Cancel</button>
+                <button class="px-4 py-2 border border-grey-50 rounded hover:bg-grey-20">Cancel (Hover)</button>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Archive Buttons</h4>
+          <div class="space-y-2">
+            <div class="flex gap-4 items-center flex-wrap">
+              <button class="px-2 py-1 text-sm bg-grey-30 rounded">Archive (Task)</button>
+              <button class="px-2 py-1 text-sm bg-grey-30 rounded hover:bg-grey-40">Archive (Task Hover)</button>
+            </div>
+            <div class="flex gap-4 items-center flex-wrap">
+              <button class="px-4 py-2 text-red-600 border border-red-300 rounded">Archive (List Edit)</button>
+              <button class="px-4 py-2 text-red-600 border border-red-300 rounded hover:bg-red-50">Archive (List Edit Hover)</button>
+            </div>
+            <div class="flex gap-4 items-center flex-wrap">
+              <button class="px-4 py-2 bg-red-600 text-white rounded">Archive (Confirm)</button>
+              <button class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Archive (Confirm Hover)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Restore Button</h4>
+          <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Restore</button>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Link-style Button</h4>
+          <button class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 underline">Archive instead</button>
+        </div>
+      </div>
+
+      <!-- Empty States -->
+      <div class="space-y-6 border-b pb-8">
+        <h3 class="text-3xl font-normal font-urbanist text-gray-700">Empty States</h3>
+        
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Empty Task List</h4>
+          <div class="column-width border rounded p-4">
+            <ul class="space-y-2 min-h-[24px] border-dashed border-gray-300 p-4 m-0 p-0 list-none">
+              <li class="list-none">
+                  <div class="flex items-center gap-2 p-2 border rounded hover:bg-grey-20 w-full">
+                    <span class="text-grey-60 select-none" style="visibility: hidden;">⋮⋮</span>
+                  <input type="checkbox" disabled class="cursor-pointer opacity-0" tabindex="-1" aria-hidden="true" />
+                  <span class="cursor-pointer hover:underline break-words flex-1">Add your first task</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Empty Column</h4>
+          <div class="column-width border rounded p-4">
+            <div class="min-h-[48px] border-dashed border-gray-300 p-4 mb-4">
+              <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">No Archived Items</h4>
+          <p class="text-gray-600">No archived lists or tasks</p>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Loading States</h4>
+          <div class="space-y-2">
+            <p>Loading...</p>
+            <p>Loading tasks...</p>
+            <p>Loading data...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Archived View -->
+      <div class="space-y-6 border-b pb-8">
+        <h3 class="text-3xl font-normal font-urbanist text-gray-700">Archived View</h3>
+        
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Archived Task</h4>
+          <div class="flex items-center gap-3">
+            <span class="line-through">Archived task text</span>
+            <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Restore</button>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">List Badges</h4>
+          <div class="flex gap-4 items-center">
+            <div class="flex items-center gap-2">
+              <h3 class="text-lg font-semibold">List Name</h3>
+              <span class="text-xs bg-gray-200 px-2 py-1 rounded">[List Archived]</span>
+              <span class="text-sm text-gray-500">- Mon Jan 15 2024</span>
+            </div>
+          </div>
+          <div class="flex gap-4 items-center mt-2">
+            <div class="flex items-center gap-2">
+              <h3 class="text-lg font-semibold">List Name</h3>
+              <span class="text-xs bg-green-100 px-2 py-1 rounded">[List Active]</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">No Tasks in List</h4>
+          <p class="text-sm text-gray-500 italic">No archived tasks</p>
+        </div>
+      </div>
+
+      <!-- Print States -->
+      <div class="space-y-6">
+        <h3 class="text-3xl font-normal font-urbanist text-gray-700">Print States</h3>
+        
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Hidden in Print</h4>
+          <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
+            <li>Print button</li>
+            <li>Archive buttons (print:hidden class)</li>
+            <li>Drag handles (via @media print CSS)</li>
+            <li>Create list components (print:hidden)</li>
+            <li>Archived view (print:hidden)</li>
+            <li>Add task components (print:hidden)</li>
+          </ul>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Print Layout</h4>
+          <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
+            <li>Fixed width/height container (1056px x 816px)</li>
+            <li>Landscape orientation, no margins</li>
+            <li>Inset border (grey-80) at 16px inset</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+

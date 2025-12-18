@@ -1,0 +1,133 @@
+    <!-- List Lifecycle -->
+    <section class="bg-grey-10 p-20 rounded-3xl space-y-12">
+      <h2 class="text-5xl font-normal font-urbanist text-grey-110">List Lifecycle</h2>
+
+      <!-- Create List Input -->
+      <div class="space-y-6 border-b pb-8">
+        <h3 class="text-3xl font-normal font-urbanist text-grey-110">Create List Input</h3>
+        
+        <div class="space-y-4">
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+            <p class="text-sm font-medium text-grey-100">Button State</p>
+            <div class="column-width">
+              <h2 class="cursor-pointer m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+            <p class="text-sm font-medium text-grey-100">Button Hover</p>
+            <div class="column-width">
+              <h2 class="cursor-pointer static-hover-text m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+            <p class="text-sm font-medium text-grey-100">Input State</p>
+            <div class="column-width">
+              <div class="flex items-center gap-2">
+                <input 
+                  type="text"
+                  placeholder="List name..."
+                  class="cursor-pointer border-0 border-b-2 border-grey-60 bg-transparent outline-none focus:border-blue-500 px-0 py-0 font-gilda text-grey-110"
+                />
+                <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">Save</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+            <p class="text-sm font-medium text-grey-100">Working Example</p>
+            <div class="column-width">
+              <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]" tabindex="0" role="button">Create new list</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- List Title -->
+      <div class="space-y-6 border-b pb-8">
+        <h3 class="text-3xl font-normal font-urbanist text-grey-110">List Title</h3>
+        
+        <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+          <p class="text-sm font-medium text-grey-100">Default</p>
+          <div class="column-width">
+            <div class="flex items-center gap-2">
+              <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
+              <h2 class="cursor-pointer m-0 p-0 leading-none text-grey-110 font-gilda text-[24px]">List Name</h2>
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+          <p class="text-sm font-medium text-grey-100">Hover</p>
+          <div class="column-width">
+            <div class="flex items-center gap-2">
+              <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
+              <h2 class="cursor-pointer m-0 p-0 leading-none text-grey-110 font-gilda rounded px-2 py-1 -my-1 bg-grey-20 flex-1 min-w-0">List Name</h2>
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+          <p class="text-sm font-medium text-grey-100">Focused</p>
+          <div class="column-width">
+            <div class="flex items-center gap-2">
+              <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
+              <h2 class="cursor-pointer m-0 p-0 leading-none text-grey-110 font-gilda rounded px-2 py-1 -my-1 bg-grey-20 outline-none ring-2 ring-blue-500 ring-offset-1 flex-1 min-w-0" tabindex="0" role="button">List Name</h2>
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+          <p class="text-sm font-medium text-grey-100">Working Example</p>
+          <div class="column-width">
+            <div class="flex items-center gap-2">
+              <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
+              <h2 class="cursor-pointer m-0 p-0 leading-none text-grey-110 font-gilda rounded px-2 py-1 -my-1 transition-colors hover:bg-grey-20 focus:bg-grey-20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 flex-1 min-w-0" tabindex="0" role="button">List Name</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- List Edit Modal -->
+      <div class="space-y-6">
+        <h3 class="text-3xl font-normal font-urbanist text-grey-110">List Edit Modal</h3>
+        
+        <div class="space-y-4">
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-start">
+            <p class="text-sm font-medium text-gray-500">Edit State</p>
+              <div class="relative bg-grey-10 p-6 rounded-xl shadow-2xl border-2 border-grey-50 max-w-md">
+              <h3 class="text-lg font-semibold mb-4">Rename List</h3>
+              <div class="mb-4">
+                <input 
+                  type="text"
+                  value="Sample List Name"
+                  class="w-full px-3 py-2 border border-grey-50 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="List name..."
+                />
+              </div>
+              <div class="flex justify-between items-center">
+                <button class="px-4 py-2 text-red-500 border border-red-400 rounded hover:bg-red-50">Archive</button>
+                <div class="flex gap-3">
+                <button class="px-4 py-2 border border-grey-50 rounded hover:bg-grey-20">Cancel</button>
+                <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-start">
+            <p class="text-sm font-medium text-grey-100">Confirm Archive State</p>
+              <div class="relative bg-grey-10 p-6 rounded-xl shadow-2xl border-2 border-grey-50 max-w-md">
+              <h3 class="text-lg font-semibold mb-4">Archive List</h3>
+                <p class="mb-6 text-sm text-grey-100">Archive this list? This will archive all tasks in the list.</p>
+              <div class="flex justify-end gap-3">
+                <button class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+                <button class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Archive</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+

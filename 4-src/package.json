@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "build:ui-kit": "node ui-kit/build.js",
+    "dev": "npm run build:ui-kit && vite",
     "prebuild": "npm test",
     "build": "vite build",
     "preview": "vite preview",

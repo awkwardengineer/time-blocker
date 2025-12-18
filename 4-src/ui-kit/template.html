@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Kit - Design System Reference</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600&family=Gilda+Display&family=Allura&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'urbanist': ['Urbanist', 'sans-serif'],
+            'gilda': ['Gilda Display', 'serif'],
+            'allura': ['Allura', 'cursive'],
+          },
+          fontSize: {
+            'lead': ['20px', { lineHeight: '30px', letterSpacing: '0%' }],
+            'highlighted': ['16px', { lineHeight: '24px', letterSpacing: '0%' }],
+            'subheading': ['16px', { lineHeight: '24px', letterSpacing: '0%' }],
+            'body': ['16px', { lineHeight: '24px', letterSpacing: '0%' }],
+            'body-medium': ['14px', { lineHeight: '20px', letterSpacing: '0%' }],
+            'body-small': ['14px', { lineHeight: '20px', letterSpacing: '0%' }],
+            'card': ['12px', { lineHeight: '14px', letterSpacing: '0%' }],
+            'label': ['12px', { lineHeight: '14px', letterSpacing: '0%' }],
+            'caption': ['12px', { lineHeight: '14px', letterSpacing: '0%' }],
+            'micro': ['10px', { lineHeight: '12px', letterSpacing: '0%' }],
+            'hero': ['32px', { lineHeight: '43px', letterSpacing: '0%' }],
+            'main-heading': ['24px', { lineHeight: '20px', letterSpacing: '5%' }],
+            'gilda-subheading': ['18px', { lineHeight: '20px', letterSpacing: '3%' }],
+            'section-title': ['16px', { lineHeight: '24px', letterSpacing: '0%' }],
+            'minor-heading': ['14px', { lineHeight: '20px', letterSpacing: '0%' }],
+            'decorative-large': ['100px', { lineHeight: '135px', letterSpacing: '0%' }],
+            'decorative-medium': ['20px', { lineHeight: '26px', letterSpacing: '3%' }],
+            'decorative-small': ['16px', { lineHeight: '20.8px', letterSpacing: '3%' }],
+          },
+          letterSpacing: {
+            'gilda-main': '0.05em',
+            'gilda-sub': '0.03em',
+            'allura': '0.03em',
+          },
+          colors: {
+            grey: {
+              10: '#FCFCFC',  // White
+              20: '#F0F0EE',  // Light Gray
+              30: '#EBEBE5',  // Pastel
+              40: '#D9D9D2',  // Quill Gray
+              50: '#DBDBD5',  // Light Beige
+              60: '#BCBCBC',  // Gray
+              70: '#BFBEBB',  // Silver
+              80: '#B6B6B0',  // Cotton Seed
+              90: '#AAA4A4',  // Shady Lady
+              100: '#757373', // Dark Gray
+              110: '#323232', // Black
+            },
+            orange: {
+              500: '#F6921E', // Carrot Orange
+            },
+            red: {
+              500: '#FF6B6B', // Carnation
+            },
+            blue: {
+              500: '#6B8FD9', // Soft muted blue for focus rings
+            },
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Urbanist', sans-serif;
+      background-color: #FCFCFC; /* grey-10 */
+    }
+    .tracking-gilda-main {
+      letter-spacing: 0.05em;
+    }
+    .tracking-gilda-sub {
+      letter-spacing: 0.03em;
+    }
+    
+    /* Column width calculation: (1056px - 64px gaps) / 5 = 198.4px */
+    :root {
+      --page-width: 1056px;
+      --column-gap: 16px;
+      --column-count: 5;
+      --column-width: calc((var(--page-width) - (var(--column-gap) * (var(--column-count) - 1))) / var(--column-count));
+    }
+    
+    .column-width {
+      width: var(--column-width);
+      position: relative;
+      padding-left: 8px;
+      padding-right: 8px;
+      box-sizing: border-box;
+    }
+    
+    /* Visual column boundaries - two vertical lines */
+    .column-width::before,
+    .column-width::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background-color: rgb(229, 231, 235); /* gray-200 */
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    .column-width::before {
+      left: 0;
+    }
+    
+    .column-width::after {
+      right: 0;
+    }
+    
+    /* Ensure content is above the lines */
+    .column-width > * {
+      position: relative;
+      z-index: 2;
+    }
+    
+    /* Responsive: on mobile, columns are full width */
+    @media (max-width: 768px) {
+      .column-width {
+        width: 100%;
+      }
+      
+      .column-width::before,
+      .column-width::after {
+        display: none;
+      }
+    }
+    
+    /* Static state displays - show hover/focus states without interaction */
+    .static-hover {
+      background-color: rgb(249, 250, 251); /* bg-gray-50 */
+    }
+    .static-hover-text {
+      text-decoration: underline;
+    }
+    .static-focus {
+      outline: 2px solid rgb(59, 130, 246); /* outline-blue-500 */
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-7xl mx-auto p-8 space-y-16">
+    
+{{CONTENT}}
+
+  </div>
+
+</body>
+</html>
+
