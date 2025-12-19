@@ -49,7 +49,7 @@
   });
 </script>
 
-<div class="flex flex-col min-w-0 border-r border-gray-300 last:border-r-0 pt-0" data-column-index={columnIndex}>
+<div class="flex flex-col min-w-0 border-r border-grey-50 last:border-r-0 pt-0 px-2" data-column-index={columnIndex}>
   <div
     bind:this={dndzoneElement}
     use:dndzone={{

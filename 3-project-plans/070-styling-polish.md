@@ -54,17 +54,11 @@ Update the application to use the same styling system developed in the ui-kit fo
    - ⏸️ Add column width CSS variables and utilities (if needed for print layout) - deferred to step 8 (print styling)
    - ✅ Ensure base body styling matches ui-kit (bg-grey-10, font-urbanist classes)
 
-4. **Update Task Components**
-   - **TaskList.svelte**: Apply task item styling (border-b border-grey-50, hover:bg-grey-20, etc.)
-   - **TaskList.svelte**: Update task text styling (text-grey-100, hover:underline)
-   - **TaskList.svelte**: Update checked task styling (line-through)
-   - **TaskList.svelte**: Update archive button styling (bg-grey-30, hover:bg-grey-40)
-   - **AddTaskInput.svelte**: Apply add task input styling (border-b border-grey-50, hover:bg-grey-20)
-   - **AddTaskInput.svelte**: Update placeholder text styling (text-grey-60)
-   - **AddTaskInput.svelte**: Update input state styling (textarea with focus ring)
-   - **TaskEditModal.svelte**: Apply modal styling (bg-grey-10, border-2 border-grey-50, shadow-2xl)
-   - **TaskEditModal.svelte**: Update button styling to match ui-kit
-   - **TaskEditModal.svelte**: Update validation error styling
+4. **Update Board and Layout Components** ✅
+   - ✅ **Board.svelte**: Ensure column layout matches ui-kit (5-column grid, proper spacing)
+   - ✅ **Board.svelte**: Apply column borders (border-r border-grey-50)
+   - ✅ **App.svelte**: Update print layout styling (1056px × 816px container, inset border)
+   - ✅ **App.svelte**: Ensure print CSS matches ui-kit specifications
 
 5. **Update List Components**
    - **ListColumn.svelte**: Apply list title styling (font-gilda, text-[24px], text-grey-110)
@@ -76,11 +70,17 @@ Update the application to use the same styling system developed in the ui-kit fo
    - **ListEditModal.svelte**: Update archive button variants (border border-grey-50, bg-grey-20)
    - **ListEditModal.svelte**: Update confirmation modal styling
 
-6. **Update Board and Layout Components**
-   - **Board.svelte**: Ensure column layout matches ui-kit (5-column grid, proper spacing)
-   - **Board.svelte**: Apply column borders (border-r border-grey-50)
-   - **App.svelte**: Update print layout styling (1056px × 816px container, inset border)
-   - **App.svelte**: Ensure print CSS matches ui-kit specifications
+6. **Update Task Components**
+   - **TaskList.svelte**: Apply task item styling (border-b border-grey-50, hover:bg-grey-20, etc.)
+   - **TaskList.svelte**: Update task text styling (text-grey-100, hover:underline)
+   - **TaskList.svelte**: Update checked task styling (line-through)
+   - **TaskList.svelte**: Update archive button styling (bg-grey-30, hover:bg-grey-40)
+   - **AddTaskInput.svelte**: Apply add task input styling (border-b border-grey-50, hover:bg-grey-20)
+   - **AddTaskInput.svelte**: Update placeholder text styling (text-grey-60)
+   - **AddTaskInput.svelte**: Update input state styling (textarea with focus ring)
+   - **TaskEditModal.svelte**: Apply modal styling (bg-grey-10, border-2 border-grey-50, shadow-2xl)
+   - **TaskEditModal.svelte**: Update button styling to match ui-kit
+   - **TaskEditModal.svelte**: Update validation error styling
 
 7. **Update Shared Components**
    - **ConfirmationModal.svelte**: Apply modal styling to match ui-kit

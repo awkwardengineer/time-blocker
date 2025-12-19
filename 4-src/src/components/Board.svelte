@@ -362,12 +362,12 @@
   }
 </script>
 
-<div class="w-full h-full p-4 overflow-auto">
+<div class="w-full h-full overflow-auto">
   {#if $lists === undefined || $lists === null}
     <p>Loading...</p>
   {:else if Array.isArray($lists)}
     <!-- 5-column grid layout with column containers -->
-    <div class="grid grid-cols-5 gap-4 w-full">
+    <div class="grid grid-cols-5 w-full py-4 px-1">
       {#each listsByColumn as columnLists, columnIndex}
         <ListColumn
           {columnIndex}
