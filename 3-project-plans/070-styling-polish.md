@@ -22,6 +22,11 @@ Update the application to use the same styling system developed in the ui-kit fo
 
 ## Implementation Steps
 
+**Note: Tailwind CSS v3 Decision**
+- The UI Kit uses Tailwind CSS v3 (via CDN), and the app has been downgraded from v4 to v3.4.1 to ensure compatibility
+- This ensures hover states and other utilities work identically between the UI Kit and the app
+- Future upgrade path: Upgrade both UI Kit and app to v4 together when ready
+
 1. **Sync tailwind.config.js to Match UI Kit** ✅
    - **Current State**: The ui-kit uses CDN Tailwind with inline config in `template.html`, while the app uses `tailwind.config.js`. They are NOT currently synced.
    - **Goal**: Update `tailwind.config.js` to match the ui-kit configuration exactly

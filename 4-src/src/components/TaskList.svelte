@@ -51,7 +51,7 @@
   let lastKeyboardDraggedTaskId = $state(null);
   
   let previousListId = $state(null);
-
+  
   /**
    * Return all non-archived lists in visual column order.
    * Columns are ordered left-to-right by columnIndex, and within
@@ -830,8 +830,10 @@
   }
 </script>
 
-<div bind:this={listSectionElement} data-list-id={listId} class="flex flex-col gap-1 m-0 p-0">
-  <div class="flex items-center gap-2 px-1 py-1 rounded transition-colors hover:bg-grey-20">
+<div bind:this={listSectionElement} data-list-id={listId} class="flex flex-col mb-6 w-full">
+  <div 
+    class="flex items-center gap-2 rounded transition-colors hover:bg-grey-20"
+  >
     <span 
       class="drag-handle text-grey-60 cursor-grab active:cursor-grabbing select-none" 
       title="Drag to reorder list"
@@ -862,17 +864,17 @@
         }}
         onconsider={handleConsider}
         onfinalize={handleFinalize}
-        class="space-y-2 m-0 p-0 list-none {draggableTasks.length === 0 ? 'empty-drop-zone min-h-[24px]' : ''}"
+        class="space-y-0 m-0 p-0 list-none w-full {draggableTasks.length === 0 ? 'empty-drop-zone min-h-[24px]' : ''}"
       >
         {#each draggableTasks as task (task.id)}
           <li
             data-id={task.id}
-            class="flex items-center gap-2 p-2 border rounded cursor-move hover:bg-gray-50 w-full m-0 list-none"
+            class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full"
             onkeydowncapture={(e) => handleTaskItemKeydownCapture(e, task.id)}
             onblur={(e) => handleTaskItemBlur(e, task.id)}
           >
             <span 
-              class="drag-handle text-gray-400 cursor-grab active:cursor-grabbing select-none" 
+              class="text-grey-60 cursor-grab active:cursor-grabbing select-none" 
               title="Drag to reorder"
               tabindex="-1"
               aria-hidden="true"
@@ -909,7 +911,7 @@
               aria-label={`Mark task "${task.text || 'blank task'}" as ${task.status === 'checked' ? 'unchecked' : 'checked'}`}
             />
             <span 
-              class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words flex-1' : 'cursor-pointer hover:underline break-words flex-1'}
+              class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100' : 'cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100'}
               onclick={(e) => handleTaskTextClick(task.id, task.text, e)}
               role="button"
               tabindex="0"
@@ -923,7 +925,7 @@
             {#if task.status === 'checked'}
               <button 
                 onclick={() => handleArchiveTask(task.id)}
-                class="px-2 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded print:hidden"
+                class="px-2 py-1 text-sm bg-grey-30 hover:bg-grey-40 rounded print:hidden"
                 aria-label={`Archive task: ${task.text || 'blank task'}`}
               >
                 Archive

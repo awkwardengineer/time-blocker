@@ -89,11 +89,11 @@
 
 <div 
   bind:this={containerRef}
-  class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 w-full print:hidden add-task-container add-task-button mt-2"
+  class="flex items-center gap-2 py-1 border-b border-grey-50 hover:bg-grey-20 w-full print:hidden add-task-container"
   style={marginLeft ? "margin-left: 1.5rem;" : ""}
 >
   {#if isInputActive}
-    <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
+    <span class="text-grey-60 select-none invisible" aria-hidden="true">
       ⋮⋮
     </span>
     <input
@@ -103,25 +103,26 @@
       aria-hidden="true"
       tabindex="-1"
     />
-    <div class="flex gap-2">
+    <div class="flex gap-2 flex-1">
       <textarea
         bind:this={inputElement}
         {placeholder}
         value={inputValue}
         oninput={(e) => onInputChange?.(e.currentTarget.value)}
         onkeydown={handleKeydown}
-        class="flex-1 break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto"
+        class="flex-1 break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto text-body font-urbanist text-grey-100"
         rows="1"
       ></textarea>
       <button
         onclick={onSave}
         aria-label="Save new task"
+        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
       >
         Save
       </button>
     </div>
   {:else}
-    <span class="drag-handle text-gray-400 select-none" aria-hidden="true" style="visibility: hidden;">
+    <span class="text-grey-60 select-none invisible" aria-hidden="true">
       ⋮⋮
     </span>
     <input
@@ -132,7 +133,7 @@
       tabindex="-1"
     />
     <span 
-      class="cursor-pointer hover:underline break-words flex-1"
+      class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-60"
       onclick={onActivate}
       onkeydown={handleButtonKeydown}
       role="button"

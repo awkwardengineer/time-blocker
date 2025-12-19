@@ -23,7 +23,7 @@ graph TB
 - **SvelteKit**: For routing and build tooling (if needed) or vanilla Svelte with Vite
 
 ### Styling
-- **Tailwind CSS**: Utility-first CSS framework for styling
+- **Tailwind CSS v3**: Utility-first CSS framework for styling (using v3.4.1 to match UI Kit compatibility)
 - **Custom fonts/colors**: To be provided by design team
 
 ### UI/Interaction Libraries

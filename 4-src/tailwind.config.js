@@ -5,6 +5,12 @@ export default {
     './src/**/*.{js,ts,svelte}',
     './ui-kit.html'
   ],
+  safelist: [
+    'hover:bg-grey-20',
+    'hover:bg-grey-30',
+    'hover:bg-grey-40',
+    'hover:underline',
+  ],
   theme: {
     extend: {
       fontFamily: {
