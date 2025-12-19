@@ -153,7 +153,7 @@
   {:else if !$archivedTasksQuery || !$listsQuery}
     <p>Loading data...</p>
   {:else if listsToShow.length === 0}
-    <p>No archived lists or tasks</p>
+    <p class="text-grey-60">No archived lists or tasks</p>
   {:else}
     <div class="grid grid-cols-2 gap-4">
       {#each listsToShow as item}
@@ -163,13 +163,13 @@
         {@const listArchiveDate = item.listArchiveDate}
         
         <!-- Row: List Name (Column 1) -->
-        <div class="border-b border-gray-200 pb-4">
+        <div class="border-b border-grey-50 pb-4">
           <div class="flex items-center gap-2 flex-wrap">
-            <h3 class="text-lg font-semibold">{listName}</h3>
+            <h3 class="text-lg font-semibold text-grey-110">{listName}</h3>
             {#if isArchived}
-              <span class="text-xs bg-gray-200 px-2 py-1 rounded">[List Archived]</span>
+              <span class="text-xs bg-grey-30 px-2 py-1 rounded">[List Archived]</span>
               {#if listArchiveDate}
-                <span class="text-sm text-gray-500">- {formatDate(listArchiveDate)}</span>
+                <span class="text-sm text-grey-60">- {formatDate(listArchiveDate)}</span>
               {/if}
             {:else}
               <span class="text-xs bg-green-100 px-2 py-1 rounded">[List Active]</span>
@@ -178,20 +178,20 @@
         </div>
         
         <!-- Row: Tasks (Column 2) -->
-        <div class="border-b border-gray-200 pb-4">
+        <div class="border-b border-grey-50 pb-4">
           {#if !item.hasTasks}
-            <p class="text-sm text-gray-500 italic">No archived tasks</p>
+            <p class="text-sm text-grey-60 italic">No archived tasks</p>
           {:else}
             {#each sortDateKeys(Object.keys(item.tasksByDate)) as dateKey}
               {@const tasks = item.tasksByDate[dateKey]}
               <div class="mb-4">
-                <h4 class="text-sm font-medium text-gray-600 mb-2">
+                <h4 class="text-sm font-medium text-grey-60 mb-2">
                   {dateKey === 'Unknown' ? 'Unknown Date' : formatDate(dateKey)}
                 </h4>
                 <ul class="space-y-2">
                   {#each tasks as task}
                     <li class="flex items-center gap-3 flex-wrap">
-                      <span class="line-through">{task.text}</span>
+                      <span class="line-through text-grey-100">{task.text}</span>
                       <button
                         onclick={() => handleRestore(task.id)}
                         class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
