@@ -89,11 +89,11 @@
 
 <div 
   bind:this={containerRef}
-  class="flex items-center gap-2 py-1 border-b border-grey-50 hover:bg-grey-20 w-full print:hidden add-task-container"
+  class="flex items-center gap-2 py-1 border-b border-grey-50 hover:bg-grey-20 w-full print:hidden add-task-container add-task-button"
   style={marginLeft ? "margin-left: 1.5rem;" : ""}
 >
   {#if isInputActive}
-    <span class="text-grey-60 select-none invisible" aria-hidden="true">
+    <span class="drag-handle text-grey-60 select-none invisible" aria-hidden="true">
       ⋮⋮
     </span>
     <input
@@ -122,7 +122,7 @@
       </button>
     </div>
   {:else}
-    <span class="text-grey-60 select-none invisible" aria-hidden="true">
+    <span class="drag-handle text-grey-60 select-none invisible" aria-hidden="true">
       ⋮⋮
     </span>
     <input

@@ -835,7 +835,7 @@
     class="flex items-center gap-2 rounded transition-colors hover:bg-grey-20"
   >
     <span 
-      class="drag-handle text-grey-60 cursor-grab active:cursor-grabbing select-none" 
+      class="drag-handle text-grey-60 cursor-grab active:cursor-grabbing select-none print:hidden" 
       title="Drag to reorder list"
       tabindex="-1"
       aria-hidden="true"
@@ -869,7 +869,7 @@
         {#each draggableTasks as task (task.id)}
           <li
             data-id={task.id}
-            class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full"
+            class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full m-0 list-none"
             onkeydowncapture={(e) => handleTaskItemKeydownCapture(e, task.id)}
             onblur={(e) => handleTaskItemBlur(e, task.id)}
           >
@@ -937,7 +937,7 @@
       
       <!-- Add Task button - styled like a task item, positioned to align with list items -->
       {#if draggableTasks.length === 0}
-        <div class="empty-list-add-task-wrapper">
+        <div class="-mt-6">
           <AddTaskInput
             bind:isInputActive={isInputActive}
             bind:containerElement={addTaskContainerElement}
@@ -990,36 +990,6 @@
   {/if}
 </div>
 
-<style>
-  .task-list-wrapper ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  
-  .task-list-wrapper li {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    box-sizing: border-box; /* Include borders in width calculation */
-  }
-  
-  /* Position "Add your first task" to cover empty drop zone space */
-  .empty-list-add-task-wrapper {
-    margin-top: -24px; /* Shift up to cover min-h-[24px] from empty ul */
-  }
-  
-  /* Explicitly reset h2 margins to ensure no browser defaults */
-  [data-list-id] h2 {
-    margin: 0;
-  }
-  
-  @media print {
-    .drag-handle {
-      visibility: hidden;
-    }
-  }
-</style>
 
 <TaskEditModal
   isOpen={taskModal.isOpen}

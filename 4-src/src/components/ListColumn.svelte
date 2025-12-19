@@ -49,7 +49,7 @@
   });
 </script>
 
-<div class="flex flex-col min-w-0 border-r border-grey-50 last:border-r-0 pt-0 px-2" data-column-index={columnIndex}>
+<div class="flex flex-col pt-0 min-w-0 px-2 {columnIndex < 4 ? 'border-r border-grey-50' : ''}" data-column-index={columnIndex}>
   <div
     bind:this={dndzoneElement}
     use:dndzone={{
@@ -105,8 +105,8 @@
   </div>
   
   <!-- Create List button/input - per column, appears in all columns (outside dndzone) -->
-  {#if createListColumnIndex === columnIndex}
-    <h2 class="print:hidden m-0 p-0 create-list-wrapper {columnLists.length === 0 ? 'create-list-empty-column' : ''}">
+  <div class="flex flex-col mb-6 w-full print:hidden {columnLists.length === 0 ? 'create-list-empty-column' : ''}">
+    {#if createListColumnIndex === columnIndex}
       <div class="flex items-center gap-2">
         <input
           bind:this={createListInputElement}
@@ -136,20 +136,22 @@
           Save
         </button>
       </div>
-    </h2>
-  {:else}
-    <h2 
-      bind:this={createListButtonElement}
-      onclick={() => onCreateListClick(columnIndex)}
-      onkeydown={(e) => onCreateListKeydown(e, columnIndex)}
-      role="button"
-      tabindex="0"
-      class="cursor-pointer hover:underline print:hidden m-0 p-0 leading-none text-grey-60 font-gilda text-[24px] create-list-wrapper {columnLists.length === 0 ? 'create-list-empty-column' : ''}"
-      aria-label="Create new list"
-    >
-      Create new list
-    </h2>
-  {/if}
+    {:else}
+      <div class="flex items-center">
+        <h2 
+          bind:this={createListButtonElement}
+          onclick={() => onCreateListClick(columnIndex)}
+          onkeydown={(e) => onCreateListKeydown(e, columnIndex)}
+          role="button"
+          tabindex="0"
+          class="cursor-pointer hover:underline m-0 px-2 py-2 leading-none text-grey-60 font-gilda text-[24px] rounded -my-1"
+          aria-label="Create new list"
+        >
+          Create new list
+        </h2>
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>

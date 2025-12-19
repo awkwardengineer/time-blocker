@@ -169,7 +169,7 @@ Instead of applying styling piecemeal, refactor components to match the UI kit H
 ### Approach: Bottom-Up (Leaf to Root)
 Start with the smallest components and work up to the container:
 
-1. **TaskList.svelte** (Leaf component)
+1. **TaskList.svelte** (Leaf component) ✅
    - Copy exact HTML structure from `ui-kit/sections/full-page-layout.html`
    - Match list wrapper: `flex flex-col mb-6 w-full`
    - Match list title container: `flex items-center gap-2 rounded transition-colors hover:bg-grey-20`
@@ -178,7 +178,7 @@ Start with the smallest components and work up to the container:
    - Match task items: `flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full`
    - Preserve all functionality (drag-and-drop, keyboard navigation, modals)
 
-2. **ListColumn.svelte** (Parent component)
+2. **ListColumn.svelte** (Parent component) ✅
    - Match column structure: `flex flex-col pt-0 min-w-0 px-2 border-r border-grey-50`
    - Match "Create new list" button structure
    - Preserve all functionality
