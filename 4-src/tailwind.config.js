@@ -10,6 +10,7 @@ export default {
       fontFamily: {
         'urbanist': ['Urbanist', 'sans-serif'],
         'gilda': ['Gilda Display', 'serif'],
+        'allura': ['Allura', 'cursive'],
       },
       fontSize: {
         // Urbanist sizes
@@ -29,10 +30,15 @@ export default {
         'gilda-subheading': ['18px', { lineHeight: '20px', letterSpacing: '3%' }],
         'section-title': ['16px', { lineHeight: '24px', letterSpacing: '0%' }],
         'minor-heading': ['14px', { lineHeight: '20px', letterSpacing: '0%' }],
+        // Allura decorative sizes
+        'decorative-large': ['100px', { lineHeight: '135px', letterSpacing: '0%' }],
+        'decorative-medium': ['20px', { lineHeight: '26px', letterSpacing: '3%' }],
+        'decorative-small': ['16px', { lineHeight: '20.8px', letterSpacing: '3%' }],
       },
       letterSpacing: {
-        'gilda-main': '5%',
-        'gilda-sub': '3%',
+        'gilda-main': '0.05em',
+        'gilda-sub': '0.03em',
+        'allura': '0.03em',
       },
       colors: {
         grey: {
