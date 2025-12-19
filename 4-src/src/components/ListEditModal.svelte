@@ -187,7 +187,7 @@
     <!-- Modal positioned over the list name -->
     <div 
       bind:this={modalElement}
-      class="bg-white text-gray-900 p-6 rounded-xl shadow-2xl border-2 border-gray-300 fixed box-border"
+      class="bg-grey-10 text-grey-110 p-6 rounded-xl shadow-2xl border-2 border-grey-50 fixed box-border"
       style={modalStyle()}
       onclick={(e) => e.stopPropagation()}
       role="document"
@@ -200,7 +200,7 @@
             bind:this={inputElement}
             bind:value={editedName}
             type="text"
-            class="list-input w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 box-border"
+            class="list-input w-full px-3 py-2 border border-grey-50 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 box-border"
             style="max-width: 100%; box-sizing: border-box;"
             placeholder="List name..."
             aria-label="Edit list name"
@@ -217,7 +217,7 @@
         <div class="flex justify-between items-center">
           <button
             onclick={handleArchiveClick}
-            class="px-4 py-2 text-red-600 border border-red-300 rounded hover:bg-red-50"
+            class="px-4 py-2 text-grey-100 border border-grey-50 rounded bg-grey-20 hover:bg-grey-30"
             aria-label="Archive this list"
           >
             Archive
@@ -225,14 +225,14 @@
           <div class="flex justify-end gap-3">
             <button
               onclick={handleCancel}
-              class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+              class="px-4 py-2 border border-grey-50 rounded bg-grey-20 hover:bg-grey-30"
               aria-label="Cancel editing and discard changes"
             >
               Cancel
             </button>
             <button
               onclick={handleSave}
-              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               disabled={showValidation}
               aria-label={showValidation ? "Save disabled: list name cannot be empty" : "Save list name changes"}
             >
@@ -243,14 +243,14 @@
       {:else if modalState === 'confirm-archive'}
         <h3 id="modal-title" class="text-lg font-semibold mb-4">Archive List</h3>
         
-        <p class="mb-6 text-sm text-gray-600">
+        <p class="mb-6 text-sm text-grey-100">
           Archive this list? This will archive all tasks in the list.
         </p>
         
         <div class="flex justify-end gap-3">
           <button
             onclick={handleArchiveCancel}
-            class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+            class="px-4 py-2 border border-grey-50 rounded bg-grey-20 hover:bg-grey-30"
             aria-label="Cancel archiving"
           >
             Cancel

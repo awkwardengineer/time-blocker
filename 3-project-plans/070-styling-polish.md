@@ -60,15 +60,15 @@ Update the application to use the same styling system developed in the ui-kit fo
    - ✅ **App.svelte**: Update print layout styling (1056px × 816px container, inset border)
    - ✅ **App.svelte**: Ensure print CSS matches ui-kit specifications
 
-5. **Update List Components**
-   - **ListColumn.svelte**: Apply list title styling (font-gilda, text-[24px], text-grey-110)
-   - **ListColumn.svelte**: Update hover and focus states (hover:bg-grey-20, focus:ring-2 focus:ring-blue-500)
-   - **ListColumn.svelte**: Update drag handle styling (text-grey-60, cursor-grab)
-   - **CreateListDropZone.svelte**: Apply create list button styling (text-grey-60, font-gilda, hover:underline)
-   - **CreateListDropZone.svelte**: Update input state styling (border-b-2 border-grey-60, focus:border-blue-500)
-   - **ListEditModal.svelte**: Apply modal styling to match ui-kit
-   - **ListEditModal.svelte**: Update archive button variants (border border-grey-50, bg-grey-20)
-   - **ListEditModal.svelte**: Update confirmation modal styling
+5. **Update List Components** ✅
+   - ✅ **ListColumn.svelte**: Apply list title styling (font-gilda, text-[24px], text-grey-110)
+   - ✅ **ListColumn.svelte**: Update hover and focus states (hover:bg-grey-20, focus:ring-2 focus:ring-blue-500)
+   - ✅ **ListColumn.svelte**: Update drag handle styling (text-grey-60, cursor-grab)
+   - ✅ **CreateListDropZone.svelte**: Apply create list button styling (text-grey-60, font-gilda, hover:underline)
+   - ✅ **CreateListDropZone.svelte**: Update input state styling (border-b-2 border-grey-60, focus:border-blue-500)
+   - ✅ **ListEditModal.svelte**: Apply modal styling to match ui-kit
+   - ✅ **ListEditModal.svelte**: Update archive button variants (border border-grey-50, bg-grey-20)
+   - ✅ **ListEditModal.svelte**: Update confirmation modal styling
 
 6. **Update Task Components**
    - **TaskList.svelte**: Apply task item styling (border-b border-grey-50, hover:bg-grey-20, etc.)
@@ -151,3 +151,47 @@ Update the application to use the same styling system developed in the ui-kit fo
 - **Accessibility**: Maintain focus indicators and keyboard navigation
 - Requires: All previous milestones (functionality must be complete)
 - This milestone focuses on visual design application, not new functionality
+
+## Bottom-Up Refactor Plan
+
+### Strategy
+Instead of applying styling piecemeal, refactor components to match the UI kit HTML structure exactly. This "lift and shift" approach ensures:
+- Exact structural match with UI kit
+- All classes match exactly (no missing or incorrect classes)
+- Easier to spot discrepancies
+- Should resolve font and hover state issues
+
+### Approach: Bottom-Up (Leaf to Root)
+Start with the smallest components and work up to the container:
+
+1. **TaskList.svelte** (Leaf component)
+   - Copy exact HTML structure from `ui-kit/sections/full-page-layout.html`
+   - Match list wrapper: `flex flex-col mb-6 w-full`
+   - Match list title container: `flex items-center gap-2 rounded transition-colors hover:bg-grey-20`
+   - Match list title: `cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 transition-colors flex-1 min-w-0`
+   - Match task list: `space-y-0 m-0 p-0 list-none w-full`
+   - Match task items: `flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full`
+   - Preserve all functionality (drag-and-drop, keyboard navigation, modals)
+
+2. **ListColumn.svelte** (Parent component)
+   - Match column structure: `flex flex-col pt-0 min-w-0 px-2 border-r border-grey-50`
+   - Match "Create new list" button structure
+   - Preserve all functionality
+
+3. **Board.svelte** (Container component)
+   - Match grid structure: `grid grid-cols-5 w-full py-4 px-1`
+   - Ensure proper nesting
+
+4. **App.svelte** (Root component)
+   - Already matches UI kit structure from step 4
+
+### Key Differences to Fix
+- TaskList: Change `gap-1` to `mb-6` on list wrapper, remove `px-1 py-1` from title container
+- Ensure all classes match UI kit exactly (no extra classes, no missing classes)
+- Verify hover states work (they're on parent containers in UI kit)
+
+### Benefits
+- Structural match ensures styling works correctly
+- Easier to maintain - UI kit is the source of truth
+- Reduces styling bugs from class mismatches
+- Makes it obvious when something doesn't match

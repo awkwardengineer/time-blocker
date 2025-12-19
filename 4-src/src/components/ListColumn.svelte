@@ -144,7 +144,7 @@
       onkeydown={(e) => onCreateListKeydown(e, columnIndex)}
       role="button"
       tabindex="0"
-      class="cursor-pointer hover:underline print:hidden m-0 p-0 create-list-wrapper {columnLists.length === 0 ? 'create-list-empty-column' : ''}"
+      class="cursor-pointer hover:underline print:hidden m-0 p-0 leading-none text-grey-60 font-gilda text-[24px] create-list-wrapper {columnLists.length === 0 ? 'create-list-empty-column' : ''}"
       aria-label="Create new list"
     >
       Create new list
@@ -162,13 +162,13 @@
     margin: 0;
     padding: 0;
     border: 0;
-    border-bottom: 2px solid rgb(209, 213, 219); /* border-gray-300 */
+    border-bottom: 2px solid rgb(188, 188, 188); /* border-grey-60 */
     background: transparent;
     outline: none;
   }
   
   .create-list-input:focus {
-    border-bottom-color: rgb(59, 130, 246); /* border-blue-500 */
+    border-bottom-color: rgb(107, 143, 217); /* border-blue-500 */
   }
   
   .create-list-input::placeholder {

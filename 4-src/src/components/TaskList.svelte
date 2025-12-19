@@ -845,7 +845,7 @@
       onkeydown={handleListNameKeydown}
       role="button"
       tabindex="0"
-      class="list-title cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda rounded -my-1 transition-colors flex-1 min-w-0 focus:bg-grey-20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+      class="list-title cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 transition-colors flex-1 min-w-0 focus:bg-grey-20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
       aria-label={`Rename list: ${listName}`}
     >
       {listName}
