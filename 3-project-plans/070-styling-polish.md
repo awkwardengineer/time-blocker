@@ -87,11 +87,11 @@ Update the application to use the same styling system developed in the ui-kit fo
    - **TaskEditModal.svelte**: Update button styling to match ui-kit
    - **TaskEditModal.svelte**: Update validation error styling
 
-7. **Update Shared Components**
-   - **ConfirmationModal.svelte**: Apply modal styling to match ui-kit
-   - **ConfirmationModal.svelte**: Update button styling
-   - **ArchivedView.svelte**: Apply archived view styling (line-through text, restore button)
-   - **ArchivedView.svelte**: Update list badge styling
+7. **Update Shared Components** ✅
+   - ✅ **ConfirmationModal.svelte**: Apply modal styling to match ui-kit (bg-grey-10, border-grey-50, text-grey-110)
+   - ✅ **ConfirmationModal.svelte**: Update button styling (border-grey-50, hover:bg-grey-20)
+   - ✅ **ArchivedView.svelte**: Apply archived view styling (line-through text with text-grey-100, restore button)
+   - ✅ **ArchivedView.svelte**: Update list badge styling (bg-grey-30, text-grey-60, border-grey-50)
 
 8. **Update Empty States**
    - Apply empty state styling for "no lists" (text-grey-60, font-gilda)
@@ -183,11 +183,11 @@ Start with the smallest components and work up to the container:
    - Match "Create new list" button structure
    - Preserve all functionality
 
-3. **Board.svelte** (Container component)
+3. **Board.svelte** (Container component) ✅
    - Match grid structure: `grid grid-cols-5 w-full py-4 px-1`
    - Ensure proper nesting
 
-4. **App.svelte** (Root component)
+4. **App.svelte** (Root component) ✅
    - Already matches UI kit structure from step 4
 
 ### Key Differences to Fix
