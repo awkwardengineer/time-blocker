@@ -4,10 +4,10 @@
 Update the application to use the same styling system developed in the ui-kit folder. This includes applying the complete design system (colors, typography, fonts, components) to all Svelte components to match the visual design established in the ui-kit reference.
 
 ## Acceptance Criteria
-- [ ] All fonts from ui-kit are configured (Urbanist, Gilda Display, Allura)
-- [ ] Complete color palette matches ui-kit (grey scale, accent colors)
-- [ ] Typography scale matches ui-kit (all font sizes and letter spacing)
-- [ ] Custom checkbox styling matches ui-kit (circular checkboxes with filled center when checked)
+- [x] All fonts from ui-kit are configured (Urbanist, Gilda Display, Allura)
+- [x] Complete color palette matches ui-kit (grey scale, accent colors)
+- [x] Typography scale matches ui-kit (all font sizes and letter spacing)
+- [x] Custom checkbox styling matches ui-kit (circular checkboxes with filled center when checked)
 - [ ] Component styling matches ui-kit examples:
   - [ ] Task items (default, hover, checked states)
   - [ ] List titles (default, hover, focus states)
@@ -22,37 +22,37 @@ Update the application to use the same styling system developed in the ui-kit fo
 
 ## Implementation Steps
 
-1. **Sync tailwind.config.js to Match UI Kit**
+1. **Sync tailwind.config.js to Match UI Kit** ✅
    - **Current State**: The ui-kit uses CDN Tailwind with inline config in `template.html`, while the app uses `tailwind.config.js`. They are NOT currently synced.
    - **Goal**: Update `tailwind.config.js` to match the ui-kit configuration exactly
    - Sync `tailwind.config.js` with ui-kit template.html Tailwind config:
-     - Add Allura font to fontFamily (currently missing)
-     - Add missing decorative typography sizes (decorative-large, decorative-medium, decorative-small)
-     - Add Allura letter spacing ('allura': '0.03em')
-     - Fix letter spacing values to match ui-kit exactly ('gilda-main': '0.05em', 'gilda-sub': '0.03em' instead of '5%' and '3%')
-     - Verify all colors match ui-kit exactly (they appear to match already)
-     - Ensure all typography sizes match ui-kit
-   - **Verification**: After updating, verify that `tailwind.config.js` contains all the same configuration as the ui-kit inline config
+     - ✅ Add Allura font to fontFamily (currently missing)
+     - ✅ Add missing decorative typography sizes (decorative-large, decorative-medium, decorative-small)
+     - ✅ Add Allura letter spacing ('allura': '0.03em')
+     - ✅ Fix letter spacing values to match ui-kit exactly ('gilda-main': '0.05em', 'gilda-sub': '0.03em' instead of '5%' and '3%')
+     - ✅ Verify all colors match ui-kit exactly (they appear to match already)
+     - ✅ Ensure all typography sizes match ui-kit
+   - **Verification**: After updating, verify that `tailwind.config.js` contains all the same configuration as the ui-kit inline config ✅
 
-2. **Update UI Kit to Use tailwind.config.js as Source of Truth**
+2. **Update UI Kit to Use tailwind.config.js as Source of Truth** ✅
    - **Goal**: Make the ui-kit use `tailwind.config.js` instead of inline config
    - Update `ui-kit/template.html` to read from `tailwind.config.js`:
-     - Research approach: Since ui-kit uses CDN Tailwind, we may need to:
-       - Option A: Generate a config object from `tailwind.config.js` and inject it into the template
+     - ✅ Research approach: Since ui-kit uses CDN Tailwind, we may need to:
+       - ✅ Option A: Generate a config object from `tailwind.config.js` and inject it into the template
        - Option B: Use a build script to read `tailwind.config.js` and generate the inline config
        - Option C: Switch ui-kit to use local Tailwind build instead of CDN
-     - Update `ui-kit/build.js` if needed to handle config injection
-     - Remove inline Tailwind config from `template.html` and replace with reference to `tailwind.config.js`
+     - ✅ Update `ui-kit/build.js` if needed to handle config injection
+     - ✅ Remove inline Tailwind config from `template.html` and replace with reference to `tailwind.config.js`
    - **Verification**: After updating, verify that:
-     - UI kit still renders correctly
-     - UI kit uses the same config as the app
-     - Changes to `tailwind.config.js` are reflected in the ui-kit
+     - ✅ UI kit still renders correctly
+     - ✅ UI kit uses the same config as the app
+     - ✅ Changes to `tailwind.config.js` are reflected in the ui-kit
 
-3. **Update Global Styles (app.css)**
-   - Add Allura font import
-   - Add custom checkbox styling (circular with filled center when checked)
-   - Add column width CSS variables and utilities (if needed for print layout)
-   - Ensure base body styling matches ui-kit
+3. **Update Global Styles (app.css)** ✅
+   - ✅ Add Allura font import (added to index.html)
+   - ✅ Add custom checkbox styling (circular with filled center when checked) - moved to components/checkbox.css
+   - ⏸️ Add column width CSS variables and utilities (if needed for print layout) - deferred to step 8 (print styling)
+   - ✅ Ensure base body styling matches ui-kit (bg-grey-10, font-urbanist classes)
 
 4. **Update Task Components**
    - **TaskList.svelte**: Apply task item styling (border-b border-grey-50, hover:bg-grey-20, etc.)

@@ -2,18 +2,4 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    font-family: 'Urbanist', sans-serif;
-  }
-}
-
-@layer utilities {
-  /* Custom letter spacing for Gilda Display */
-  .tracking-gilda-main {
-    letter-spacing: 0.05em; /* 5% */
-  }
-  .tracking-gilda-sub {
-    letter-spacing: 0.03em; /* 3% */
-  }
-}
+@import './components/checkbox.css';

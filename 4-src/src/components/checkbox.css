@@ -1,0 +1,42 @@
+:root {
+  /* CSS custom properties for checkbox pseudo-elements (can't use Tailwind classes in ::before) */
+  --color-grey-60: #BCBCBC;
+  --color-grey-100: #757373;
+}
+
+/* Custom circular checkboxes */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--color-grey-60);
+  border-radius: 50%;
+  background-color: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Small filled circle inside when checked */
+input[type="checkbox"]:checked::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-grey-100);
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--color-grey-100);
+}
+
+input[type="checkbox"]:checked:hover::before {
+  background-color: var(--color-grey-100);
+}
+
