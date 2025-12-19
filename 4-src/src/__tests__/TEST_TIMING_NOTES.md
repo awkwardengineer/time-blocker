@@ -65,9 +65,9 @@ expect(within(section).queryByPlaceholderText('Add new task...')).not.toBeInTheD
 
 ### App.archivedView.test.js - "shows active lists with archived tasks with [List Active] badge"
 
-**Issue**: Test times out when checking for task to disappear from main view after archiving. The test fails when all tests run together but passes when run in isolation. The DOM may not have updated yet when checking for task removal, even with `waitFor`.
+**Issue**: Test fails with "Unable to find role='checkbox'" when trying to get checkbox before tasks have loaded. The test was calling `getFirstCheckboxFor('Work')` immediately after getting the list section, but tasks might still be loading (showing "Loading tasks...").
 
-**Root Cause**: Similar to taskCreation test - bindable prop updates and liveQuery updates may not propagate synchronously when all tests run together. The test was using a negative assertion (checking for task to disappear) before verifying the positive assertion (archived view to appear).
+**Root Cause**: The test didn't wait for tasks to load before trying to access checkboxes. When the list is still in loading state, there are no checkboxes in the DOM yet.
 
 **Fixes Applied** (December 2024):
 1. **Test timeout**: Added explicit test timeout of 15000ms
@@ -75,6 +75,7 @@ expect(within(section).queryByPlaceholderText('Add new task...')).not.toBeInTheD
 3. **Stale references**: Re-query checkbox inside waitFor after clicking to avoid stale reference
 4. **Timeout increases**: Increased timeout for archived view check from 3000ms to 10000ms
 5. **Assertion order**: Use positive assertions first, then negative assertions after
+6. **Wait for tasks to load** (Dec 2024): Added wait for "Task 1" to appear before trying to get checkbox - ensures tasks are loaded before accessing checkboxes
 
 **Current Status (Dec 2024)**: 
 - ✅ Test passes when run in isolation
@@ -106,6 +107,23 @@ expect(within(section).queryByPlaceholderText('Add new task...')).not.toBeInTheD
 - Investigate test isolation - ensure `beforeEach` properly resets state
 - Consider using `$effect` to watch for state changes instead of relying on timing
 - May need to add explicit waits in test setup/teardown
+
+### App.test.js - "persists task state across rerenders (simulating refresh)"
+
+**Issue**: Test fails with "Unable to find role='checkbox'" after re-rendering. After unmounting and re-rendering the App, the test waits for 'Work' text to appear but doesn't wait for tasks to actually load before trying to get checkboxes.
+
+**Root Cause**: After re-rendering, tasks need time to load via liveQuery. The test was waiting for the list name to appear but not for tasks to load, so when `getFirstCheckboxFor` was called, there were no checkboxes in the DOM yet.
+
+**Fixes Applied** (December 2024):
+1. **Wait for tasks before initial checkbox**: Added wait for "Task 1" to appear before getting the initial checkbox
+2. **Wait for tasks after re-render**: After re-rendering, wait for list section, then wait for "Task 1" to appear before getting the refreshed checkbox
+3. **Test timeout**: Added explicit test timeout of 15000ms to allow for re-render and task loading
+4. **Positive assertions first**: Follow the pattern of waiting for tasks to appear (positive assertion) before accessing checkboxes
+
+**Current Status (Dec 2024)**: 
+- ✅ Test passes when run in isolation
+- ✅ Test is now stable when all tests run together
+- The fix ensures tasks are loaded before accessing checkboxes in both initial render and after re-render
 
 ## Known Issues from Test Suite Review
 

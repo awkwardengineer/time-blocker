@@ -89,6 +89,11 @@ describe('App - Archived View Grid Layout', () => {
     
     const workSection = await waitForListSection('Work')
     
+    // Wait for tasks to load before trying to get checkbox (positive assertion first)
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    }, { timeout: 5000 })
+    
     // Archive a task (not the list)
     const checkbox = await getFirstCheckboxFor('Work')
     await user.click(checkbox)

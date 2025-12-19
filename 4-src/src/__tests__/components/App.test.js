@@ -230,6 +230,12 @@ describe('App', () => {
     const view = render(App)
 
     const workSection = await waitForListSection('Work')
+    
+    // Wait for tasks to load before trying to get checkbox (positive assertion first)
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    }, { timeout: 5000 })
+    
     const checkbox = await getFirstCheckboxFor('Work')
     await user.click(checkbox)
 
@@ -240,15 +246,23 @@ describe('App', () => {
     view.unmount()
     render(App)
 
+    // Wait for list to appear, then wait for tasks to load
     await waitFor(() => {
       expect(screen.getByText('Work')).toBeInTheDocument()
     })
+    
+    const refreshedWorkSection = await waitForListSection('Work')
+    
+    // Wait for tasks to load after re-render (positive assertion first)
+    await waitFor(() => {
+      expect(within(refreshedWorkSection).getByText('Task 1')).toBeInTheDocument()
+    }, { timeout: 5000 })
 
     const refreshedCheckbox = await getFirstCheckboxFor('Work')
     await waitFor(() => {
       expect(refreshedCheckbox).toBeChecked()
     })
-  })
+  }, 15000)
 
   it('displays tasks in correct order initially', async () => {
     render(App)
