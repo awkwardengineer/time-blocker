@@ -63,7 +63,10 @@
               500: '#FF6B6B', // Carnation
             },
             blue: {
-              500: '#6B8FD9', // Soft muted blue for focus rings
+              400: '#8BA8E5', // Lighter blue for disabled states
+              500: '#6B8FD9', // Primary blue for buttons and focus rings
+              600: '#5A7BC4', // Darker blue for hover states
+              700: '#4A6BAF', // Darkest blue for active/pressed states
             },
           },
         },
@@ -138,14 +141,8 @@
     }
     
     /* Static state displays - show hover/focus states without interaction */
-    .static-hover {
-      background-color: rgb(249, 250, 251); /* bg-gray-50 */
-    }
-    .static-hover-text {
-      text-decoration: underline;
-    }
     .static-focus {
-      outline: 2px solid rgb(59, 130, 246); /* outline-blue-500 */
+      outline: 2px solid #6B8FD9; /* outline-blue-500 */
       outline-offset: 2px;
     }
     
@@ -311,27 +308,52 @@
         </div>
       </div>
 
+      <!-- Blue Colors -->
+      <div class="space-y-6 pt-8 border-t">
+        <h3 class="text-3xl font-normal font-urbanist text-grey-110">Blue Colors</h3>
+        <div class="grid grid-cols-4 gap-4">
+          <div class="space-y-2">
+            <div class="h-24 rounded border border-grey-40" style="background-color: #8BA8E5;"></div>
+            <p class="text-sm font-semibold">Blue 400</p>
+            <p class="text-xs text-grey-100">#8BA8E5</p>
+            <p class="text-xs text-grey-100 italic">Disabled States</p>
+          </div>
+          <div class="space-y-2">
+            <div class="h-24 rounded border border-grey-40" style="background-color: #6B8FD9;"></div>
+            <p class="text-sm font-semibold">Blue 500</p>
+            <p class="text-xs text-grey-100">#6B8FD9</p>
+            <p class="text-xs text-grey-100 italic">Primary / Focus Ring</p>
+          </div>
+          <div class="space-y-2">
+            <div class="h-24 rounded border border-grey-40" style="background-color: #5A7BC4;"></div>
+            <p class="text-sm font-semibold">Blue 600</p>
+            <p class="text-xs text-grey-100">#5A7BC4</p>
+            <p class="text-xs text-grey-100 italic">Hover States</p>
+          </div>
+          <div class="space-y-2">
+            <div class="h-24 rounded border border-grey-40" style="background-color: #4A6BAF;"></div>
+            <p class="text-sm font-semibold">Blue 700</p>
+            <p class="text-xs text-grey-100">#4A6BAF</p>
+            <p class="text-xs text-grey-100 italic">Active / Pressed</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Accent Colors -->
       <div class="space-y-6 pt-8 border-t">
-        <h3 class="text-3xl font-normal font-urbanist text-gray-700">Accent Colors</h3>
-        <div class="grid grid-cols-3 gap-4">
+        <h3 class="text-3xl font-normal font-urbanist text-grey-110">Accent Colors</h3>
+        <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <div class="h-24 rounded border border-gray-200" style="background-color: #6B8FD9;"></div>
-            <p class="text-sm font-semibold">Blue 500</p>
-            <p class="text-xs text-gray-600">#6B8FD9</p>
-            <p class="text-xs text-gray-500 italic">Focus Ring</p>
-          </div>
-          <div class="space-y-2">
-            <div class="h-24 rounded border border-gray-200" style="background-color: #F6921E;"></div>
+            <div class="h-24 rounded border border-grey-40" style="background-color: #F6921E;"></div>
             <p class="text-sm font-semibold">Orange 500</p>
-            <p class="text-xs text-gray-600">#F6921E</p>
-            <p class="text-xs text-gray-500 italic">Carrot Orange</p>
+            <p class="text-xs text-grey-100">#F6921E</p>
+            <p class="text-xs text-grey-100 italic">Carrot Orange</p>
           </div>
           <div class="space-y-2">
-            <div class="h-24 rounded border border-gray-200" style="background-color: #FF6B6B;"></div>
+            <div class="h-24 rounded border border-grey-40" style="background-color: #FF6B6B;"></div>
             <p class="text-sm font-semibold">Red 500</p>
-            <p class="text-xs text-gray-600">#FF6B6B</p>
-            <p class="text-xs text-gray-500 italic">Carnation</p>
+            <p class="text-xs text-grey-100">#FF6B6B</p>
+            <p class="text-xs text-grey-100 italic">Carnation</p>
           </div>
         </div>
       </div>
@@ -354,9 +376,9 @@
                     <div class="flex flex-col pt-0 min-w-0 px-2 border-r border-grey-50">
                 <!-- First List -->
                 <div class="flex flex-col mb-6 w-full">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 rounded transition-colors hover:bg-grey-20">
                       <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
-                      <h2 class="cursor-pointer m-0 px-0 py-2 leading-none text-grey-110 font-gilda text-[24px]">Personal</h2>
+                      <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 transition-colors flex-1 min-w-0">Personal</h2>
                     </div>
                     <ul class="space-y-0 m-0 p-0 list-none w-full">
                       <li class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
@@ -379,9 +401,9 @@
                   
                   <!-- Second List -->
                   <div class="flex flex-col mb-6 w-full">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 rounded transition-colors hover:bg-grey-20">
                       <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
-                      <h2 class="cursor-pointer m-0 px-0 py-2 leading-none text-grey-110 font-gilda text-[24px]">Health</h2>
+                      <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 transition-colors flex-1 min-w-0">Health</h2>
                     </div>
                     <ul class="space-y-0 m-0 p-0 list-none w-full">
                       <li class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
@@ -404,16 +426,16 @@
                 
                 <!-- Create new list button -->
                 <div class="flex items-center mt-6">
-                  <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+                  <h2 class="cursor-pointer hover:underline m-0 px-2 py-2 leading-none text-grey-60 font-gilda text-[24px] rounded -my-1">Create new list</h2>
                 </div>
               </div>
               
               <!-- Column 1 - Sample List -->
                     <div class="flex flex-col pt-0 min-w-0 px-2 border-r border-grey-50">
                 <div class="flex flex-col mb-6 w-full">
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 rounded transition-colors hover:bg-grey-20">
                     <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
-                    <h2 class="cursor-pointer m-0 px-0 py-2 leading-none text-grey-110 font-gilda text-[24px]">Work</h2>
+                    <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 transition-colors flex-1 min-w-0">Work</h2>
                   </div>
                   <ul class="space-y-0 m-0 p-0 list-none w-full">
                     <li class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
@@ -425,7 +447,7 @@
                       <span class="text-grey-60 cursor-grab active:cursor-grabbing select-none">⋮⋮</span>
                       <input type="checkbox" checked class="cursor-pointer" />
                       <span class="line-through cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100">Team standup</span>
-                      <button class="px-2 py-1 text-sm bg-grey-30 hover:bg-grey-40 rounded print:hidden">Archive</button>
+                      <button class="px-2 py-1 text-sm bg-grey-30 hover:hover:bg-grey-40 rounded print:hidden">Archive</button>
                     </li>
                     <li class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full">
                       <span class="text-grey-60 cursor-grab active:cursor-grabbing select-none">⋮⋮</span>
@@ -442,16 +464,16 @@
                 
                 <!-- Create new list button -->
                 <div class="flex items-center mt-6">
-                  <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+                  <h2 class="cursor-pointer hover:underline m-0 px-2 py-2 leading-none text-grey-60 font-gilda text-[24px] rounded -my-1">Create new list</h2>
                 </div>
               </div>
               
               <!-- Column 2 - Empty List -->
                     <div class="flex flex-col pt-0 min-w-0 px-2 border-r border-grey-50">
                 <div class="flex flex-col mb-6 w-full">
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 rounded transition-colors hover:bg-grey-20">
                     <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
-                    <h2 class="cursor-pointer m-0 px-0 py-2 leading-none text-grey-110 font-gilda text-[24px]">Shopping</h2>
+                    <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 transition-colors flex-1 min-w-0">Shopping</h2>
                   </div>
                   <ul class="space-y-0 m-0 p-0 list-none w-full">
                   </ul>
@@ -467,7 +489,7 @@
                     <div class="flex flex-col pt-0 min-w-0 px-2 border-r border-grey-50">
                 <div class="flex flex-col mb-6 w-full">
                   <div class="flex items-center">
-                    <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+                    <h2 class="cursor-pointer hover:underline m-0 px-2 py-2 leading-none text-grey-60 font-gilda text-[24px] rounded -my-1">Create new list</h2>
                   </div>
                 </div>
               </div>
@@ -476,7 +498,7 @@
               <div class="flex flex-col pt-0 min-w-0 px-2">
                 <div class="flex flex-col mb-6 w-full">
                   <div class="flex items-center">
-                    <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+                    <h2 class="cursor-pointer hover:underline m-0 px-2 py-2 leading-none text-grey-60 font-gilda text-[24px] rounded -my-1">Create new list</h2>
                   </div>
                 </div>
               </div>
@@ -521,7 +543,7 @@
               <div class="flex items-center gap-2 py-1 border-b border-grey-50 bg-grey-20 w-full">
                 <span class="text-grey-60 select-none invisible">⋮⋮</span>
                 <input type="checkbox" disabled class="cursor-pointer opacity-0" tabindex="-1" aria-hidden="true" />
-                <span class="cursor-pointer hover:underline break-words flex-1">Add Task</span>
+                <span class="cursor-pointer bg-grey-20-text break-words flex-1">Add Task</span>
               </div>
             </div>
           </div>
@@ -529,10 +551,10 @@
           <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
             <p class="text-sm font-medium text-grey-100">Empty List Variant</p>
             <div class="column-width">
-              <div class="flex items-center gap-2 py-1 border-b border-grey-50 hover:bg-grey-20 w-full">
+              <div class="flex items-center gap-2 py-1 border-b border-grey-50 bg-grey-20 w-full">
                 <span class="text-grey-60 select-none invisible">⋮⋮</span>
                 <input type="checkbox" disabled class="cursor-pointer opacity-0" tabindex="-1" aria-hidden="true" />
-                <span class="cursor-pointer hover:underline break-words flex-1 text-grey-60">Add your first task</span>
+                <span class="cursor-pointer bg-grey-20-text break-words flex-1 text-grey-60">Add your first task</span>
               </div>
             </div>
           </div>
@@ -549,7 +571,7 @@
                     class="flex-1 break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto border border-grey-50 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows="1"
                   ></textarea>
-                  <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save</button>
+                  <button class="px-4 py-2 bg-blue-500 text-white rounded bg-grey-20-bg-blue">Save</button>
                 </div>
               </div>
             </div>
@@ -593,7 +615,7 @@
                 <li class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move bg-grey-20 w-full">
                   <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
                   <input type="checkbox" class="cursor-pointer" />
-                  <span class="cursor-pointer hover:underline break-words flex-1">Sample task text</span>
+                  <span class="cursor-pointer bg-grey-20-text break-words flex-1">Sample task text</span>
                 </li>
               </ul>
             </div>
@@ -607,7 +629,7 @@
                   <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
                   <input type="checkbox" checked class="cursor-pointer" />
                   <span class="line-through cursor-pointer hover:underline break-words flex-1">Sample completed task</span>
-                  <button class="px-2 py-1 text-sm bg-grey-30 hover:bg-grey-40 rounded print:hidden">Archive</button>
+                  <button class="px-2 py-1 text-sm bg-grey-30 bg-grey-20-bg-grey-40 rounded print:hidden">Archive</button>
                 </li>
               </ul>
             </div>
@@ -676,9 +698,11 @@
           </div>
           
           <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
-            <p class="text-sm font-medium text-grey-100">Task Archive Button</p>
-            <div>
-              <button class="px-2 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded">Archive</button>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Task Archive Button</p>
+              <div>
+                <button class="px-2 py-1 text-sm bg-grey-30 bg-grey-20-bg-grey-40 rounded">Archive</button>
+              </div>
             </div>
           </div>
         </div>
@@ -700,10 +724,10 @@
                 >Sample task text</textarea>
               </div>
               <div class="flex justify-between items-center">
-                <button class="px-4 py-2 text-sm text-grey-100 hover:text-grey-110 underline">Archive instead</button>
+                <button class="px-4 py-2 text-sm text-grey-100 bg-grey-20-text-grey underline">Archive instead</button>
                 <div class="flex gap-3">
-                <button class="px-4 py-2 border border-grey-50 rounded hover:bg-grey-20">Cancel</button>
-                <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save</button>
+                <button class="px-4 py-2 border border-grey-50 rounded bg-grey-20">Cancel</button>
+                <button class="px-4 py-2 bg-blue-500 text-white rounded bg-grey-20-bg-blue">Save</button>
                 </div>
               </div>
             </div>
@@ -724,7 +748,7 @@
                 <button class="px-4 py-2 text-sm text-grey-100 hover:text-grey-110 underline">Archive instead</button>
                 <div class="flex gap-3">
                   <button class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
-                  <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 opacity-50 cursor-not-allowed" disabled>Save</button>
+                  <button class="px-4 py-2 bg-blue-400 text-white rounded cursor-not-allowed" disabled>Save</button>
                 </div>
               </div>
             </div>
@@ -754,7 +778,7 @@
           <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
             <p class="text-sm font-medium text-grey-100">Button Hover</p>
             <div class="column-width">
-              <h2 class="cursor-pointer static-hover-text m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+              <h2 class="cursor-pointer underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
             </div>
           </div>
           
@@ -767,7 +791,7 @@
                   placeholder="List name..."
                   class="cursor-pointer border-0 border-b-2 border-grey-60 bg-transparent outline-none focus:border-blue-500 px-0 py-0 font-gilda text-grey-110"
                 />
-                <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">Save</button>
+                <button class="px-4 py-2 bg-blue-500 text-white rounded bg-blue-600 text-sm">Save</button>
               </div>
             </div>
           </div>
@@ -790,7 +814,7 @@
           <div class="column-width">
             <div class="flex items-center gap-2">
               <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
-              <h2 class="cursor-pointer m-0 px-0 py-2 leading-none text-grey-110 font-gilda text-[24px]">List Name</h2>
+              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 flex-1 min-w-0">List Name</h2>
             </div>
           </div>
         </div>
@@ -798,9 +822,9 @@
         <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
           <p class="text-sm font-medium text-grey-100">Hover</p>
           <div class="column-width">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 rounded transition-colors bg-grey-20">
               <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
-              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda rounded -my-1 bg-grey-20 flex-1 min-w-0">List Name</h2>
+              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 flex-1 min-w-0">List Name</h2>
             </div>
           </div>
         </div>
@@ -808,9 +832,9 @@
         <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
           <p class="text-sm font-medium text-grey-100">Focused</p>
           <div class="column-width">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 rounded transition-colors bg-grey-20">
               <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
-              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda rounded -my-1 bg-grey-20 outline-none ring-2 ring-blue-500 ring-offset-1 flex-1 min-w-0" tabindex="0" role="button">List Name</h2>
+              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 outline-none ring-2 ring-blue-500 ring-offset-1 flex-1 min-w-0" tabindex="0" role="button">List Name</h2>
             </div>
           </div>
         </div>
@@ -818,9 +842,9 @@
         <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
           <p class="text-sm font-medium text-grey-100">Working Example</p>
           <div class="column-width">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 rounded transition-colors hover:bg-grey-20">
               <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
-              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda rounded -my-1 transition-colors hover:bg-grey-20 focus:bg-grey-20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 flex-1 min-w-0" tabindex="0" role="button">List Name</h2>
+              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda rounded -my-1 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 flex-1 min-w-0" tabindex="0" role="button">List Name</h2>
             </div>
           </div>
         </div>
@@ -844,10 +868,10 @@
                 />
               </div>
               <div class="flex justify-between items-center">
-                <button class="px-4 py-2 text-red-500 border border-red-400 rounded hover:bg-red-50">Archive</button>
+                <button class="px-4 py-2 text-grey-100 border border-grey-50 rounded bg-grey-20">Archive</button>
                 <div class="flex gap-3">
-                <button class="px-4 py-2 border border-grey-50 rounded hover:bg-grey-20">Cancel</button>
-                <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save</button>
+                <button class="px-4 py-2 border border-grey-50 rounded bg-grey-20">Cancel</button>
+                <button class="px-4 py-2 bg-blue-500 text-white rounded bg-blue-600">Save</button>
                 </div>
               </div>
             </div>
@@ -859,8 +883,8 @@
               <h3 class="text-lg font-semibold mb-4">Archive List</h3>
                 <p class="mb-6 text-sm text-grey-100">Archive this list? This will archive all tasks in the list.</p>
               <div class="flex justify-end gap-3">
-                <button class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
-                <button class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Archive</button>
+                <button class="px-4 py-2 border border-grey-50 rounded bg-grey-20">Cancel</button>
+                <button class="px-4 py-2 bg-blue-500 text-white rounded bg-blue-600">Archive</button>
               </div>
             </div>
           </div>
@@ -878,152 +902,201 @@
         <h3 class="text-3xl font-normal font-urbanist text-grey-110">Buttons</h3>
         
         <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Primary (Save)</h4>
-          <div class="flex gap-4 items-center flex-wrap">
-                <button class="px-4 py-2 bg-blue-500 text-white rounded">Save</button>
-                <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save (Hover)</button>
-                <button class="px-4 py-2 bg-blue-500 text-white rounded opacity-50 cursor-not-allowed" disabled>Save (Disabled)</button>
-          </div>
-        </div>
-
-        <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Secondary (Cancel)</h4>
-          <div class="flex gap-4 items-center flex-wrap">
-                <button class="px-4 py-2 border border-grey-50 rounded">Cancel</button>
-                <button class="px-4 py-2 border border-grey-50 rounded hover:bg-grey-20">Cancel (Hover)</button>
-          </div>
-        </div>
-
-        <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Archive Buttons</h4>
+          <h4 class="text-xl font-medium text-grey-100">Primary (Save)</h4>
           <div class="space-y-2">
-            <div class="flex gap-4 items-center flex-wrap">
-              <button class="px-2 py-1 text-sm bg-grey-30 rounded">Archive (Task)</button>
-              <button class="px-2 py-1 text-sm bg-grey-30 rounded hover:bg-grey-40">Archive (Task Hover)</button>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Default</p>
+              <button class="px-4 py-2 bg-blue-500 text-white rounded w-fit">Save</button>
             </div>
-            <div class="flex gap-4 items-center flex-wrap">
-              <button class="px-4 py-2 text-red-600 border border-red-300 rounded">Archive (List Edit)</button>
-              <button class="px-4 py-2 text-red-600 border border-red-300 rounded hover:bg-red-50">Archive (List Edit Hover)</button>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Hover</p>
+              <button class="px-4 py-2 bg-blue-600 text-white rounded w-fit">Save</button>
             </div>
-            <div class="flex gap-4 items-center flex-wrap">
-              <button class="px-4 py-2 bg-red-600 text-white rounded">Archive (Confirm)</button>
-              <button class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Archive (Confirm Hover)</button>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Disabled</p>
+              <button class="px-4 py-2 bg-blue-400 text-white rounded cursor-not-allowed w-fit" disabled>Save</button>
             </div>
           </div>
         </div>
 
         <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Restore Button</h4>
-          <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Restore</button>
+          <h4 class="text-xl font-medium text-grey-100">Secondary (Cancel)</h4>
+          <div class="space-y-2">
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Default</p>
+              <button class="px-4 py-2 border border-grey-50 rounded w-fit">Cancel</button>
+            </div>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Hover</p>
+              <button class="px-4 py-2 border border-grey-50 rounded bg-grey-20 w-fit">Cancel</button>
+            </div>
+          </div>
         </div>
 
         <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Link-style Button</h4>
-          <button class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 underline">Archive instead</button>
+          <h4 class="text-xl font-medium text-grey-100">Archive Buttons</h4>
+          <div class="space-y-2">
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Task Archive (Default)</p>
+              <button class="px-2 py-1 text-sm bg-grey-30 rounded w-fit">Archive</button>
+            </div>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Task Archive (Hover)</p>
+              <button class="px-2 py-1 text-sm bg-grey-40 rounded w-fit">Archive</button>
+            </div>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">List Edit Archive (Default)</p>
+              <button class="px-4 py-2 text-grey-100 border border-grey-50 rounded w-fit">Archive</button>
+            </div>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">List Edit Archive (Hover)</p>
+              <button class="px-4 py-2 text-grey-100 border border-grey-50 rounded bg-grey-20 w-fit">Archive</button>
+            </div>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Confirm Archive (Default)</p>
+              <button class="px-4 py-2 bg-blue-500 text-white rounded w-fit">Archive</button>
+            </div>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Confirm Archive (Hover)</p>
+              <button class="px-4 py-2 bg-blue-600 text-white rounded w-fit">Archive</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-grey-100">Restore Button</h4>
+          <div class="space-y-2">
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Default</p>
+              <button class="px-3 py-1 bg-blue-500 text-white rounded text-sm w-fit">Restore</button>
+            </div>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Hover</p>
+              <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm w-fit">Restore</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-grey-100">Link-style Button</h4>
+          <div class="space-y-2">
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Default</p>
+              <button class="px-4 py-2 text-sm text-grey-100 underline w-fit">Archive instead</button>
+            </div>
+            <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+              <p class="text-sm font-medium text-grey-100">Hover</p>
+              <button class="px-4 py-2 text-sm text-grey-110 underline w-fit">Archive instead</button>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Empty States -->
       <div class="space-y-6 border-b pb-8">
-        <h3 class="text-3xl font-normal font-urbanist text-gray-700">Empty States</h3>
+        <h3 class="text-3xl font-normal font-urbanist text-grey-110">Empty States</h3>
         
         <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Empty Task List</h4>
-          <div class="column-width border rounded p-4">
-            <ul class="space-y-2 min-h-[24px] border-dashed border-gray-300 p-4 m-0 p-0 list-none">
-              <li class="list-none">
-                  <div class="flex items-center gap-2 p-2 border rounded hover:bg-grey-20 w-full">
-                    <span class="text-grey-60 select-none" style="visibility: hidden;">⋮⋮</span>
-                  <input type="checkbox" disabled class="cursor-pointer opacity-0" tabindex="-1" aria-hidden="true" />
-                  <span class="cursor-pointer hover:underline break-words flex-1">Add your first task</span>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Empty Column</h4>
-          <div class="column-width border rounded p-4">
-            <div class="min-h-[48px] border-dashed border-gray-300 p-4 mb-4">
-              <h2 class="cursor-pointer hover:underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-start">
+            <p class="text-sm font-medium text-grey-100">Empty Task List</p>
+            <div class="column-width border rounded p-4">
+              <ul class="space-y-2 min-h-[24px] border-dashed border-grey-50 p-4 m-0 p-0 list-none">
+                <li class="list-none">
+                    <div class="flex items-center gap-2 p-2 border rounded bg-grey-20 w-full">
+                      <span class="text-grey-60 select-none" style="visibility: hidden;">⋮⋮</span>
+                    <input type="checkbox" disabled class="cursor-pointer opacity-0" tabindex="-1" aria-hidden="true" />
+                    <span class="cursor-pointer underline break-words flex-1">Add your first task</span>
+                  </div>
+                </li>
+              </ul>
             </div>
           </div>
-        </div>
 
-        <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">No Archived Items</h4>
-          <p class="text-gray-600">No archived lists or tasks</p>
-        </div>
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-start">
+            <p class="text-sm font-medium text-grey-100">Empty Column</p>
+            <div class="column-width border rounded p-4">
+              <div class="min-h-[48px] border-dashed border-grey-50 p-4 mb-4">
+                <h2 class="cursor-pointer underline m-0 p-0 leading-none text-grey-60 font-gilda text-[24px]">Create new list</h2>
+              </div>
+            </div>
+          </div>
 
-        <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Loading States</h4>
-          <div class="space-y-2">
-            <p>Loading...</p>
-            <p>Loading tasks...</p>
-            <p>Loading data...</p>
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+            <p class="text-sm font-medium text-grey-100">No Archived Items</p>
+            <p class="text-grey-100">No archived lists or tasks</p>
+          </div>
+
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+            <p class="text-sm font-medium text-grey-100">Loading States</p>
+            <div class="space-y-2">
+              <p class="text-grey-100">Loading...</p>
+              <p class="text-grey-100">Loading tasks...</p>
+              <p class="text-grey-100">Loading data...</p>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Archived View -->
       <div class="space-y-6 border-b pb-8">
-        <h3 class="text-3xl font-normal font-urbanist text-gray-700">Archived View</h3>
+        <h3 class="text-3xl font-normal font-urbanist text-grey-110">Archived View</h3>
         
         <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Archived Task</h4>
-          <div class="flex items-center gap-3">
-            <span class="line-through">Archived task text</span>
-            <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Restore</button>
-          </div>
-        </div>
-
-        <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">List Badges</h4>
-          <div class="flex gap-4 items-center">
-            <div class="flex items-center gap-2">
-              <h3 class="text-lg font-semibold">List Name</h3>
-              <span class="text-xs bg-gray-200 px-2 py-1 rounded">[List Archived]</span>
-              <span class="text-sm text-gray-500">- Mon Jan 15 2024</span>
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+            <p class="text-sm font-medium text-grey-100">Archived Task</p>
+            <div class="flex items-center gap-3">
+              <span class="line-through text-grey-100">Archived task text</span>
+              <button class="px-3 py-1 bg-blue-500 text-white rounded text-sm">Restore</button>
             </div>
           </div>
-          <div class="flex gap-4 items-center mt-2">
-            <div class="flex items-center gap-2">
-              <h3 class="text-lg font-semibold">List Name</h3>
-              <span class="text-xs bg-green-100 px-2 py-1 rounded">[List Active]</span>
+
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-start">
+            <p class="text-sm font-medium text-grey-100">List Badges</p>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2">
+                <h3 class="text-lg font-semibold text-grey-110">List Name</h3>
+                <span class="text-xs bg-grey-30 px-2 py-1 rounded text-grey-100">[List Archived]</span>
+                <span class="text-sm text-grey-100">- Mon Jan 15 2024</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-lg font-semibold text-grey-110">List Name</h3>
+                <span class="text-xs bg-grey-20 px-2 py-1 rounded text-grey-100">[List Active]</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">No Tasks in List</h4>
-          <p class="text-sm text-gray-500 italic">No archived tasks</p>
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
+            <p class="text-sm font-medium text-grey-100">No Tasks in List</p>
+            <p class="text-sm text-grey-100 italic">No archived tasks</p>
+          </div>
         </div>
       </div>
 
       <!-- Print States -->
       <div class="space-y-6">
-        <h3 class="text-3xl font-normal font-urbanist text-gray-700">Print States</h3>
+        <h3 class="text-3xl font-normal font-urbanist text-grey-110">Print States</h3>
         
         <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Hidden in Print</h4>
-          <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
-            <li>Print button</li>
-            <li>Archive buttons (print:hidden class)</li>
-            <li>Drag handles (via @media print CSS)</li>
-            <li>Create list components (print:hidden)</li>
-            <li>Archived view (print:hidden)</li>
-            <li>Add task components (print:hidden)</li>
-          </ul>
-        </div>
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-start">
+            <p class="text-sm font-medium text-grey-100">Hidden in Print</p>
+            <ul class="list-disc list-inside space-y-1 text-sm text-grey-100">
+              <li>Print button</li>
+              <li>Archive buttons (print:hidden class)</li>
+              <li>Drag handles (via @media print CSS)</li>
+              <li>Create list components (print:hidden)</li>
+              <li>Archived view (print:hidden)</li>
+              <li>Add task components (print:hidden)</li>
+            </ul>
+          </div>
 
-        <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Print Layout</h4>
-          <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
-            <li>Fixed width/height container (1056px x 816px)</li>
-            <li>Landscape orientation, no margins</li>
-            <li>Inset border (grey-80) at 16px inset</li>
-          </ul>
+          <div class="grid grid-cols-[200px_1fr] gap-4 items-start">
+            <p class="text-sm font-medium text-grey-100">Print Layout</p>
+            <ul class="list-disc list-inside space-y-1 text-sm text-grey-100">
+              <li>Fixed width/height container (1056px x 816px)</li>
+              <li>Landscape orientation, no margins</li>
+              <li>Inset border (grey-80) at 16px inset</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
