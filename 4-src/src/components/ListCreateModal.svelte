@@ -109,7 +109,7 @@
           bind:this={inputElement}
           bind:value={listName}
           type="text"
-          class="list-input w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="list-input w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-gilda text-[24px] text-grey-110"
           placeholder="List name (optional)..."
           onkeydown={handleKeydown}
           aria-label="Enter list name (optional)"
@@ -153,9 +153,7 @@
   }
   
   .list-input {
-    font-family: inherit;
-    font-size: inherit;
-    line-height: inherit;
+    line-height: 1; /* leading-none equivalent */
   }
 </style>
 

@@ -112,7 +112,7 @@
           bind:this={createListInputElement}
           bind:value={createListInput}
           type="text"
-          class="create-list-input cursor-pointer hover:underline"
+          class="create-list-input cursor-pointer hover:underline font-gilda text-[24px] text-grey-110"
           placeholder="List name..."
           onkeydown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -157,16 +157,13 @@
 <style>
   /* Style the create list input to match h2 exactly */
   .create-list-input {
-    font-size: inherit;
-    font-weight: inherit;
-    line-height: inherit;
-    font-family: inherit;
     margin: 0;
     padding: 0;
     border: 0;
     border-bottom: 2px solid rgb(188, 188, 188); /* border-grey-60 */
     background: transparent;
     outline: none;
+    line-height: 1; /* leading-none equivalent */
   }
   
   .create-list-input:focus {

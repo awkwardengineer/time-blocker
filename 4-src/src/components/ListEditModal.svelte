@@ -200,7 +200,7 @@
             bind:this={inputElement}
             bind:value={editedName}
             type="text"
-            class="list-input w-full px-3 py-2 border border-grey-50 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 box-border"
+            class="list-input w-full px-3 py-2 border border-grey-50 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 box-border font-gilda text-[24px] text-grey-110"
             style="max-width: 100%; box-sizing: border-box;"
             placeholder="List name..."
             aria-label="Edit list name"
@@ -282,9 +282,7 @@
   }
   
   .list-input {
-    font-family: inherit;
-    font-size: inherit;
-    line-height: inherit;
+    line-height: 1; /* leading-none equivalent */
   }
 </style>
 
