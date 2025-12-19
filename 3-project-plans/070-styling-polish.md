@@ -200,3 +200,53 @@ Start with the smallest components and work up to the container:
 - Easier to maintain - UI kit is the source of truth
 - Reduces styling bugs from class mismatches
 - Makes it obvious when something doesn't match
+
+## Additional UI Tweaks & Bug Fixes
+
+### Styling Fixes (Easy Implementation)
+
+1. **Fix List Title Input Font and Size**
+   - Apply correct font (font-gilda) and font size (text-[24px]) to list title input
+   - Ensure it matches the list title display styling
+
+2. **Fix List Focus Ring Shape**
+   - When focused on a list, the focus ring should be square/rectangular to match the list container
+   - Update focus ring styling to match the list title container shape
+
+3. **Update Dropzone Styling**
+   - Change dropzone color from yellow to match design system
+   - Ensure dropzones fit the area properly
+   - Fix list dropzones so they appear correctly
+
+4. **Update Button Styling**
+   - Apply button styling from Figma design files
+   - Ensure all button variants match the design system
+
+5. **Fix Task Edit Modal Alignment and Layout**
+   - Fix modal "shifting" issue - ensure proper alignment
+   - Fix button spillover - ensure buttons fit within modal boundaries
+   - May need to address overall modal design/layout
+
+6. **Fix List Title Edit Modal Alignment and Typography**
+   - Fix modal "shifting" issue similar to task edit modal
+   - Fix button/content spillover
+   - Apply correct font (font-gilda) to match list title styling
+
+### Behavior Changes (Medium Implementation)
+
+7. **Update List Input Behavior**
+   - Make list input fill the full width of the column
+   - Eliminate save button (new behavior to be specified)
+   - Update input interaction flow
+
+8. **Update Task Input Behavior**
+   - Make task input fill the full width of the column
+   - Apply similar behavior updates as list input (to be specified)
+   - Update input interaction flow
+
+### Drag and Drop Changes (Complex Implementation)
+
+9. **Eliminate All Drag Handles**
+   - Remove drag handles from all components (they take up too much space)
+   - Ensure drag-and-drop functionality still works without visible handles
+   - May need to make entire items draggable or use alternative drag trigger
