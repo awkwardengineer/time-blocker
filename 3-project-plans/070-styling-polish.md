@@ -205,11 +205,11 @@ Start with the smallest components and work up to the container:
 
 ### Styling Fixes (Easy Implementation)
 
-1. **Fix List Title Input Font and Size**
+1. **Fix List Title Input Font and Size** ✅
    - Apply correct font (font-gilda) and font size (text-[24px]) to list title input
    - Ensure it matches the list title display styling
 
-2. **Fix List Focus Ring Shape**
+2. **Fix List Focus Ring Shape** ✅
    - When focused on a list, the focus ring should be square/rectangular to match the list container
    - Update focus ring styling to match the list title container shape
 

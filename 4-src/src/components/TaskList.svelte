@@ -39,6 +39,7 @@
   let listSectionElement = $state(null); // Reference to the main list section div
   let addTaskContainerElement = $state(null); // Reference to the add-task-container
   let addTaskTextareaElement = $state(null); // Reference to the add-task textarea
+  let listTitleContainerElement = $state(null); // Reference to the list title container
   
   // Track last blurred task-related element and whether the next Tab
   // should refocus it (mirrors list behavior in App.svelte).
@@ -831,27 +832,40 @@
 </script>
 
 <div bind:this={listSectionElement} data-list-id={listId} class="flex flex-col mb-6 w-full">
+  <!-- 
+    Outer wrapper for focus ring - always square/rectangular
+    The focus border must be on this outer container to avoid tracing child element shapes.
+    The h2 inside has rounded corners and negative margin, which would cause box-shadow/outline
+    to follow its shape. By using a border on this outer wrapper with explicit square corners,
+    we ensure a clean rectangular focus indicator.
+  -->
   <div 
-    class="flex items-center gap-2 rounded transition-colors hover:bg-grey-20"
+    bind:this={listTitleContainerElement}
+    class="focus-within:border-2 focus-within:border-blue-500 focus-within:rounded-none focus-within:-m-[2px] focus-within:p-[2px] focus-within:box-border"
   >
-    <span 
-      class="drag-handle text-grey-60 cursor-grab active:cursor-grabbing select-none print:hidden" 
-      title="Drag to reorder list"
-      tabindex="-1"
-      aria-hidden="true"
+    <!-- Inner wrapper for content with hover/rounded styles -->
+    <div 
+      class="flex items-center gap-2 transition-colors hover:bg-grey-20 hover:rounded focus-within:bg-grey-20 py-1"
     >
-      ⋮⋮
-    </span>
-    <h2 
-      onclick={handleListNameClick}
-      onkeydown={handleListNameKeydown}
-      role="button"
-      tabindex="0"
-      class="list-title cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 transition-colors flex-1 min-w-0 focus:bg-grey-20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-      aria-label={`Rename list: ${listName}`}
-    >
-      {listName}
-    </h2>
+      <span 
+        class="drag-handle text-grey-60 cursor-grab active:cursor-grabbing select-none print:hidden" 
+        title="Drag to reorder list"
+        tabindex="-1"
+        aria-hidden="true"
+      >
+        ⋮⋮
+      </span>
+      <h2 
+        onclick={handleListNameClick}
+        onkeydown={handleListNameKeydown}
+        role="button"
+        tabindex="0"
+        class="list-title cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 transition-colors flex-1 min-w-0 focus:outline-none"
+        aria-label={`Rename list: ${listName}`}
+      >
+        {listName}
+      </h2>
+    </div>
   </div>
   {#if tasksQuery && $tasksQuery !== undefined}
     <div class="task-list-wrapper m-0 p-0">
@@ -1010,4 +1024,5 @@
   onCancel={handleListEditCancel}
   onArchive={handleListArchive}
 />
+
 
