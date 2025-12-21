@@ -873,7 +873,7 @@
   -->
   <div 
     bind:this={listTitleContainerElement}
-    class="border-2 border-transparent focus-within:border-blue-500 focus-within:rounded-none box-border"
+    class="border-2 border-transparent focus-within:border-blue-500 focus-within:rounded box-border"
   >
     <!-- Inner wrapper for content with hover/rounded styles -->
     <div 
