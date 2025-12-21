@@ -873,11 +873,11 @@
   -->
   <div 
     bind:this={listTitleContainerElement}
-    class="focus-within:border-2 focus-within:border-blue-500 focus-within:rounded-none focus-within:-m-[2px] focus-within:p-[2px] focus-within:box-border"
+    class="border-2 border-transparent focus-within:border-blue-500 focus-within:rounded-none box-border"
   >
     <!-- Inner wrapper for content with hover/rounded styles -->
     <div 
-      class="flex items-center gap-2 transition-colors hover:bg-grey-20 hover:rounded focus-within:bg-grey-20 py-1"
+      class="flex items-center gap-2 transition-colors hover:bg-grey-20 hover:rounded py-1"
     >
       <span 
         class="drag-handle text-grey-60 cursor-grab active:cursor-grabbing select-none print:hidden" 
