@@ -17,7 +17,8 @@ const sections = [
   'full-page-layout.html',
   'task-lifecycle.html',
   'list-lifecycle.html',
-  'shared-components.html'
+  'shared-components.html',
+  'dropzone-styling.html'
 ];
 
 try {

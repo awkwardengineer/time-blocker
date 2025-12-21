@@ -55,7 +55,13 @@
     use:dndzone={{
       items: columnLists,
       type: 'list', // Shared type enables cross-column dragging
-      zoneTabIndex: -1 // Prevent entire column container from being focusable
+      zoneTabIndex: -1, // Prevent entire column container from being focusable
+      dropTargetStyle: {
+        outline: 'none',
+        boxShadow: 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)', // blue-500 with 40% opacity - inset shadow acts like border without affecting layout
+        // Removed backgroundColor to prevent layout recalculation during drag
+        borderRadius: '4px'
+      }
     }}
     onconsider={onListConsider}
     onfinalize={onListFinalize}

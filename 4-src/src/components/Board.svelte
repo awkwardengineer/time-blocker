@@ -11,7 +11,6 @@
   import { useListCreation } from '../lib/useListCreation.js';
   import TaskList from './TaskList.svelte';
   import ListColumn from './ListColumn.svelte';
-  import CreateListDropZone from './CreateListDropZone.svelte';
 
   // Reactive query for lists - automatically updates when lists change
   let lists = liveQuery(() => getAllLists());
@@ -31,12 +30,6 @@
   let createListColumnIndex = $state(null); // null means not active, 0-4 means active for that column
   let createListInput = $state('');
   let createListInputElement = $state(null);
-  
-  // State for drop zone on "Create new list" section
-  // Note: creating new unnamed lists from dropped tasks has been removed.
-  // The drop zone remains for visual feedback only and no longer creates lists.
-  let createListDropZoneItems = $state([]);
-  let createListDropZoneElement = $state(null);
 
   // State for keyboard-based list dragging
   let keyboardDrag = $state({
@@ -304,23 +297,6 @@
     return setupFocusEffect();
   });
   
-  // Handle drag events for "Create new list" drop zone - consider event for visual feedback
-  function handleCreateListConsider(event) {
-    // Update local state for visual feedback during drag
-    createListDropZoneItems = event.detail.items;
-  }
-  
-  // Handle drag events for "Create new list" drop zone - finalize event
-  // Creating new unnamed lists from dropped tasks has been removed; we now
-  // only reset the drop zone items.
-  async function handleCreateListFinalize(event) {
-    // Update local state for immediate visual feedback
-    createListDropZoneItems = event.detail.items;
-    
-    // Always reset the drop zone; do not create new lists from tasks.
-    createListDropZoneItems = [];
-  }
-  
   // Handle list drag events - consider event for visual reordering
   // The drag library REQUIRES the items array to match DOM structure during drag
   // We MUST update draggableLists here to provide visual feedback
@@ -391,14 +367,6 @@
         />
       {/each}
     </div>
-    
-    <!-- Drop zone for creating new list from dragged task -->
-    <CreateListDropZone
-      bind:createListDropZoneElement
-      {createListDropZoneItems}
-      onConsider={handleCreateListConsider}
-      onFinalize={handleCreateListFinalize}
-    />
   {/if}
 </div>
 

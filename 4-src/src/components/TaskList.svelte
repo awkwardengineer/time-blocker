@@ -874,7 +874,13 @@
         use:dndzone={{ 
           items: draggableTasks,
           type: 'task', // Shared type for all lists - enables cross-list dragging
-          zoneTabIndex: -1 // Prevent entire task list <ul> from being focusable
+          zoneTabIndex: -1, // Prevent entire task list <ul> from being focusable
+          dropTargetStyle: {
+            outline: 'none',
+            boxShadow: 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)', // blue-500 with 40% opacity - inset shadow acts like border without affecting layout
+            backgroundColor: 'rgba(107, 143, 217, 0.04)', // blue-500 with 4% opacity
+            borderRadius: '4px'
+          }
         }}
         onconsider={handleConsider}
         onfinalize={handleFinalize}

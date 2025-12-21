@@ -3,3 +3,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Ensure dragged elements maintain proper positioning and don't float away */
+/* The library uses transforms for positioning during drag */
+[aria-grabbed="true"] {
+  z-index: 1000;
+  /* Don't override position - let the library handle it */
+  /* But ensure it stays visible and properly layered */
+}
+
+/* Prevent dropzone from resizing when dropTargetStyle is applied */
+[use\:dndzone] {
+  box-sizing: border-box;
+}
+
+/* Ensure list wrappers maintain their size during drag */
+/* Prevent the list container from resizing when dropTargetStyle is applied */
+[use\:dndzone] > [data-id][aria-grabbed="true"],
+[use\:dndzone] > [data-id]:has([aria-grabbed="true"]) {
+  /* Lock height to prevent resizing during drag */
+  height: auto;
+  min-height: fit-content;
+}
+
+/* When a list is being dragged, ensure its wrapper maintains size */
+div[data-id][aria-grabbed="true"] {
+  flex-shrink: 0;
+}

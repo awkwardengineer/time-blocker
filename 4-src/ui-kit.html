@@ -882,7 +882,7 @@
                 <input 
                   type="text"
                   placeholder="List name..."
-                  class="cursor-pointer border-0 border-b-2 border-grey-60 bg-transparent outline-none focus:border-blue-500 px-0 py-0 font-gilda text-grey-110"
+                  class="cursor-pointer border-0 border-b-2 border-grey-60 bg-transparent outline-none focus:border-blue-500 px-0 py-0 font-gilda text-[24px] text-grey-110"
                 />
                 <button class="px-4 py-2 bg-blue-500 text-white rounded bg-blue-600 text-sm">Save</button>
               </div>
@@ -925,9 +925,9 @@
         <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
           <p class="text-sm font-medium text-grey-100">Focused</p>
           <div class="column-width">
-            <div class="flex items-center gap-2 rounded transition-colors bg-grey-20">
+            <div class="flex items-center gap-2 transition-colors bg-grey-20 outline-none ring-2 ring-blue-500 ring-offset-1 rounded-none">
               <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
-              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 outline-none ring-2 ring-blue-500 ring-offset-1 flex-1 min-w-0" tabindex="0" role="button">List Name</h2>
+              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 flex-1 min-w-0" tabindex="0" role="button">List Name</h2>
             </div>
           </div>
         </div>
@@ -935,9 +935,9 @@
         <div class="grid grid-cols-[200px_1fr] gap-4 items-center">
           <p class="text-sm font-medium text-grey-100">Working Example</p>
           <div class="column-width">
-            <div class="flex items-center gap-2 rounded transition-colors hover:bg-grey-20">
+            <div class="flex items-center gap-2 rounded transition-colors hover:bg-grey-20 focus-within:bg-grey-20 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-1 focus-within:rounded-none">
               <span class="text-grey-60 cursor-grab select-none">⋮⋮</span>
-              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda rounded -my-1 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 flex-1 min-w-0" tabindex="0" role="button">List Name</h2>
+              <h2 class="cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda rounded -my-1 transition-colors focus:outline-none flex-1 min-w-0" tabindex="0" role="button">List Name</h2>
             </div>
           </div>
         </div>
@@ -956,7 +956,7 @@
                 <input 
                   type="text"
                   value="Sample List Name"
-                  class="w-full px-3 py-2 border border-grey-50 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="w-full px-3 py-2 border border-grey-50 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-gilda text-[24px] text-grey-110"
                   placeholder="List name..."
                 />
               </div>
@@ -1141,6 +1141,94 @@
             <li>Landscape orientation, no margins</li>
             <li>Inset border (grey-80) at 16px inset</li>
           </ul>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Dropzone Styling -->
+    <section class="bg-grey-10 p-20 rounded-3xl space-y-12">
+      <h2 class="text-5xl font-normal font-urbanist text-grey-110">Dropzone Styling</h2>
+      
+      <div class="space-y-8">
+        <p class="text-body font-urbanist text-grey-100">
+          Dropzones appear when dragging tasks or lists to indicate valid drop targets. 
+          Choose a color that provides clear visual feedback without being distracting.
+        </p>
+
+        <!-- Option 1: Subtle Grey -->
+        <div class="space-y-4 border-b pb-8">
+          <h3 class="text-3xl font-normal font-urbanist text-grey-110">Option 1: Subtle Grey</h3>
+          <p class="text-body font-urbanist text-grey-100">
+            Uses <strong>grey-30</strong> (#EBEBE5) background with <strong>grey-60</strong> (#BCBCBC) border. 
+            Neutral and unobtrusive, blends well with the design system.
+          </p>
+          <div class="space-y-4">
+            <div class="column-width border rounded p-4 bg-grey-10">
+              <div class="min-h-[48px] border-2 border-dashed border-grey-60 rounded" style="background-color: rgba(235, 235, 229, 0.5);">
+                <div class="flex items-center justify-center h-full p-4">
+                  <span class="text-grey-100 text-sm">Drop zone indicator</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-grey-20 p-4 rounded">
+              <code class="text-sm text-grey-110 font-mono">
+                background-color: rgba(235, 235, 229, 0.5); /* grey-30 with 50% opacity */<br>
+                border: 2px dashed #BCBCBC; /* grey-60 */
+              </code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Option 2: Light Blue (Selected) -->
+        <div class="space-y-4 border-b pb-8">
+          <div class="flex items-center gap-4">
+            <h3 class="text-3xl font-normal font-urbanist text-grey-110">Option 2: Light Blue</h3>
+            <span class="px-3 py-1 bg-grey-20 rounded text-sm text-grey-100">Selected</span>
+          </div>
+          <p class="text-body font-urbanist text-grey-100">
+            Uses <strong>blue-500</strong> (#6B8FD9) with very light opacity (4%) for background and dashed border. 
+            Matches the focus ring color, providing visual consistency with interactive elements.
+          </p>
+          <div class="space-y-4">
+            <div class="column-width border rounded p-4 bg-grey-10">
+              <div class="min-h-[48px] border-2 border-dashed rounded" style="background-color: rgba(107, 143, 217, 0.04); border-color: rgba(107, 143, 217, 0.4);">
+                <div class="flex items-center justify-center h-full p-4">
+                  <span class="text-grey-100 text-sm">Drop zone indicator</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-grey-20 p-4 rounded">
+              <code class="text-sm text-grey-110 font-mono">
+                background-color: rgba(107, 143, 217, 0.04); /* blue-500 with 4% opacity */<br>
+                border: 2px dashed rgba(107, 143, 217, 0.4); /* blue-500 with 40% opacity */
+              </code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Option 3: Very Light Grey -->
+        <div class="space-y-4">
+          <h3 class="text-3xl font-normal font-urbanist text-grey-110">Option 3: Very Light Grey</h3>
+          <p class="text-body font-urbanist text-grey-100">
+            Uses <strong>grey-20</strong> (#F0F0EE) background with <strong>grey-50</strong> (#DBDBD5) border. 
+            Minimal and subtle, provides the least visual distraction.
+          </p>
+          <div class="space-y-4">
+            <div class="column-width border rounded p-4 bg-grey-10">
+              <div class="min-h-[48px] border-2 border-dashed border-grey-50 rounded bg-grey-20">
+                <div class="flex items-center justify-center h-full p-4">
+                  <span class="text-grey-100 text-sm">Drop zone indicator</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-grey-20 p-4 rounded">
+              <code class="text-sm text-grey-110 font-mono">
+                background-color: #F0F0EE; /* grey-20 */<br>
+                border: 2px dashed #DBDBD5; /* grey-50 */
+              </code>
+            </div>
+          </div>
         </div>
       </div>
     </section>
