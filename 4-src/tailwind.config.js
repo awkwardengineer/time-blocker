@@ -23,7 +23,7 @@ export default {
         'lead': ['20px', { lineHeight: '30px', letterSpacing: '0%' }],
         'highlighted': ['16px', { lineHeight: '24px', letterSpacing: '0%' }],
         'subheading': ['16px', { lineHeight: '24px', letterSpacing: '0%' }],
-        'body': ['16px', { lineHeight: '24px', letterSpacing: '0%' }],
+        'body': ['16px', { lineHeight: '14px', letterSpacing: '0%' }],
         'body-medium': ['14px', { lineHeight: '20px', letterSpacing: '0%' }],
         'body-small': ['14px', { lineHeight: '20px', letterSpacing: '0%' }],
         'card': ['12px', { lineHeight: '14px', letterSpacing: '0%' }],

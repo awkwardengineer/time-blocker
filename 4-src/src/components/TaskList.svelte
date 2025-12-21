@@ -974,7 +974,7 @@
               aria-label={`Mark task "${task.text || 'blank task'}" as ${task.status === 'checked' ? 'unchecked' : 'checked'}`}
             />
             <span 
-              class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100' : 'cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100'}
+              class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100 leading-[14px]' : 'cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100 leading-[14px]'}
               onclick={(e) => handleTaskTextClick(task.id, task.text, e)}
               role="button"
               tabindex="0"
