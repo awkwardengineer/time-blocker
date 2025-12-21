@@ -347,13 +347,44 @@
         shouldRefocusTaskOnNextTab = true;
       }
     } else if (key === 'Escape') {
-      if (isKeyboardTaskDragging) {
+      const draggedElements = typeof document !== 'undefined' ? document.querySelectorAll('li[aria-grabbed="true"], li.svelte-dnd-action-dragged') : [];
+      // Check if the ulElement (dndzone) has active drop zone styles
+      let hasActiveDropZone = false;
+      if (ulElement && ulElement instanceof HTMLElement) {
+        const style = window.getComputedStyle(ulElement);
+        // Check if box-shadow indicates an active drop zone (the library uses inset shadow)
+        if (style.boxShadow && style.boxShadow !== 'none' && style.boxShadow.includes('inset')) {
+          hasActiveDropZone = true;
+        }
+      }
+      // Also check all ul elements in the document for drop zones (for cross-list drags)
+      let allDropZonesCount = 0;
+      if (typeof document !== 'undefined') {
+        const allUls = document.querySelectorAll('ul');
+        for (const ul of allUls) {
+          if (ul instanceof HTMLElement && ul !== ulElement) {
+            const style = window.getComputedStyle(ul);
+            if (style.boxShadow && style.boxShadow !== 'none' && style.boxShadow.includes('inset')) {
+              allDropZonesCount++;
+            }
+          }
+        }
+      }
+      
+      // Check if there's an active drag by looking for drop zones or dragged elements
+      // This is more reliable than isKeyboardTaskDragging because the blur handler
+      // may have already cleared that flag when svelte-dnd-action blurred the element
+      const hasActiveDrag = draggedElements.length > 0 || hasActiveDropZone || allDropZonesCount > 0;
+      
+      if (isKeyboardTaskDragging || hasActiveDrag) {
         // Escape also ends keyboard drag; treat it like a drop for
         // the purposes of Tab-resume focus behavior.
+        // Clear our local state
         isKeyboardTaskDragging = false;
         lastKeyboardDraggedTaskId = taskId;
         lastBlurredTaskElement = currentTarget;
         shouldRefocusTaskOnNextTab = true;
+        // Don't prevent the event - let it propagate to svelte-dnd-action so it can clear drop zones
       } else {
         // Escape when not in drag state - blur the task item
         event.preventDefault();
