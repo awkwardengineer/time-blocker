@@ -1,5 +1,6 @@
 <script>
   import { SPACING_4 } from '../lib/constants.js';
+  import Button from './Button.svelte';
   
   let { isOpen, listId, listName, listPosition, onSave, onCancel, onArchive } = $props();
   
@@ -215,29 +216,29 @@
         </div>
         
         <div class="flex justify-between items-center">
-          <button
+          <Button 
+            variant="secondary" 
             onclick={handleArchiveClick}
-            class="px-4 py-2 bg-white text-grey-110 hover:bg-grey-20 focus:bg-grey-30 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-white disabled:text-grey-60 disabled:cursor-not-allowed"
             aria-label="Archive this list"
           >
             Archive
-          </button>
+          </Button>
           <div class="flex justify-end gap-3">
-            <button
+            <Button 
+              variant="secondary" 
               onclick={handleCancel}
-              class="px-4 py-2 bg-white text-grey-110 hover:bg-grey-20 focus:bg-grey-30 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-white disabled:text-grey-60 disabled:cursor-not-allowed"
               aria-label="Cancel editing and discard changes"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button 
+              variant="primary" 
               onclick={handleSave}
-              class="px-4 py-2 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-grey-50 disabled:text-grey-100 disabled:cursor-not-allowed"
               disabled={showValidation}
               aria-label={showValidation ? "Save disabled: list name cannot be empty" : "Save list name changes"}
             >
               Save
-            </button>
+            </Button>
           </div>
         </div>
       {:else if modalState === 'confirm-archive'}
@@ -248,20 +249,20 @@
         </p>
         
         <div class="flex justify-end gap-3">
-          <button
+          <Button 
+            variant="secondary" 
             onclick={handleArchiveCancel}
-            class="px-4 py-2 bg-white text-grey-110 hover:bg-grey-20 focus:bg-grey-30 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-white disabled:text-grey-60 disabled:cursor-not-allowed"
             aria-label="Cancel archiving"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button 
+            variant="primary" 
             onclick={handleArchiveConfirm}
-            class="px-4 py-2 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-grey-50 disabled:text-grey-100 disabled:cursor-not-allowed"
             aria-label="Confirm archive list"
           >
             Archive
-          </button>
+          </Button>
         </div>
       {/if}
     </div>

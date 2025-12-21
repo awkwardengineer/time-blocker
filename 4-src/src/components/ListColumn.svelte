@@ -1,6 +1,7 @@
 <script>
   import { dndzone } from 'svelte-dnd-action';
   import TaskList from './TaskList.svelte';
+  import Button from './Button.svelte';
   import { isPlaceholderItem } from '../lib/listDndUtils.js';
   import { DOM_UPDATE_DELAY_SHORT_MS } from '../lib/constants.js';
 
@@ -155,13 +156,14 @@
           }}
           aria-label="Enter list name"
         />
-        <button
+        <Button
+          variant="primary"
+          size="small"
           onclick={() => onCreateList(columnIndex)}
-          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
           aria-label="Create list"
         >
           Save
-        </button>
+        </Button>
       </div>
     {:else}
       <div class="flex items-center">

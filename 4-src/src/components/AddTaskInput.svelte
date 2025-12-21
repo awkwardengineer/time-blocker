@@ -1,5 +1,6 @@
 <script>
   import { MAX_TEXTAREA_HEIGHT, TASK_WIDTH } from '../lib/constants.js';
+  import Button from './Button.svelte';
   
   let {
     isInputActive = $bindable(false),
@@ -113,13 +114,13 @@
         class="flex-1 break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto text-body font-urbanist text-grey-100"
         rows="1"
       ></textarea>
-      <button
+      <Button
+        variant="primary"
         onclick={onSave}
         aria-label="Save new task"
-        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
       >
         Save
-      </button>
+      </Button>
     </div>
   {:else}
     <span class="drag-handle text-grey-60 select-none invisible" aria-hidden="true">

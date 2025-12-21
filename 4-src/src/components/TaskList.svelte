@@ -6,6 +6,7 @@
   import TaskEditModal from './TaskEditModal.svelte';
   import ListEditModal from './ListEditModal.svelte';
   import AddTaskInput from './AddTaskInput.svelte';
+  import Button from './Button.svelte';
   import { useClickOutside } from '../lib/useClickOutside.js';
   import { isEmpty, normalizeInput } from '../lib/inputValidation.js';
   import { TASK_WIDTH, FOCUS_RETRY_ATTEMPTS, FOCUS_RETRY_INTERVAL, FOCUS_RETRY_ATTEMPTS_EXTENDED, DOM_UPDATE_DELAY_MS, DOM_UPDATE_DELAY_SHORT_MS, DOM_UPDATE_DELAY_MEDIUM_MS } from '../lib/constants.js';
@@ -974,13 +975,15 @@
               {task.text || '\u00A0'}
             </span>
             {#if task.status === 'checked'}
-              <button 
+              <Button 
+                variant="secondary"
+                size="small"
                 onclick={() => handleArchiveTask(task.id)}
-                class="px-2 py-1 text-sm bg-white text-grey-110 hover:bg-grey-20 focus:bg-grey-30 focus:outline-none focus:ring-2 focus:ring-blue-500 print:hidden"
+                class="print:hidden"
                 aria-label={`Archive task: ${task.text || 'blank task'}`}
               >
                 Archive
-              </button>
+              </Button>
             {/if}
           </li>
         {/each}

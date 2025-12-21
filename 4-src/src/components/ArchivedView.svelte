@@ -2,6 +2,7 @@
   import { liveQuery } from 'dexie';
   import { getArchivedTasks, restoreTask, getAllListsIncludingArchived } from '../lib/dataAccess.js';
   import { PRINT_CONTAINER_WIDTH } from '../lib/constants.js';
+  import Button from './Button.svelte';
   
   // Create liveQuery for archived tasks
   let archivedTasksQuery = $state(null);
@@ -192,12 +193,13 @@
                   {#each tasks as task}
                     <li class="flex items-center gap-3 flex-wrap">
                       <span class="line-through text-grey-100">{task.text}</span>
-                      <button
+                      <Button
+                        variant="primary"
+                        size="small"
                         onclick={() => handleRestore(task.id)}
-                        class="px-3 py-1 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       >
                         Restore
-                      </button>
+                      </Button>
                     </li>
                   {/each}
                 </ul>

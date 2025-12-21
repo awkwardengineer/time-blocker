@@ -1,5 +1,6 @@
 <script>
   import { MAX_TEXTAREA_HEIGHT, TASK_WIDTH, SPACING_4 } from '../lib/constants.js';
+  import Button from './Button.svelte';
   
   let { isOpen, taskId, taskText, taskPosition, onSave, onCancel, onArchive } = $props();
   
@@ -240,21 +241,21 @@
         </button>
         
         <div class="flex gap-3">
-          <button
+          <Button 
+            variant="secondary" 
             onclick={handleCancel}
-            class="px-4 py-2 bg-white text-grey-110 hover:bg-grey-20 focus:bg-grey-30 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-white disabled:text-grey-60 disabled:cursor-not-allowed"
             aria-label="Cancel editing and discard changes"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button 
+            variant="primary" 
             onclick={handleSave}
-            class="px-4 py-2 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-grey-50 disabled:text-grey-100 disabled:cursor-not-allowed"
             disabled={showValidation}
             aria-label={showValidation ? "Save disabled: task cannot be empty" : "Save task changes"}
           >
             Save
-          </button>
+          </Button>
         </div>
       </div>
     </div>
