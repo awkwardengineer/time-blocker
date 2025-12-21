@@ -247,6 +247,11 @@
    * Uses retry mechanism to wait for component initialization instead of fixed delays.
    */
   async function activateAddTaskInput(listId) {
+    // Guard: return early if document is not available (e.g., in test environment)
+    if (typeof document === 'undefined') {
+      return;
+    }
+    
     // Use focusElementWithRetry with a custom getter that finds and clicks the button
     await focusElementWithRetry(
       () => {

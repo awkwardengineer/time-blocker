@@ -543,9 +543,6 @@
   
   async function handleInputEscape(e, inputValue = '') {
     if (e.key === 'Escape') {
-      // Check if list is empty
-      const isListEmpty = draggableTasks.length === 0;
-      
       // Read value from DOM element if available (more reliable)
       let currentValue = inputValue || '';
       if (addTaskTextareaElement) {
@@ -554,41 +551,16 @@
         currentValue = (newTaskInput || '').toString();
       }
       
-      // If list is empty, cancel (close input without creating task)
-      if (isListEmpty) {
-        // Remember this task-related control as the point to resume from on the next Tab.
-        shouldRefocusTaskOnNextTab = true;
-        // Prefer to resume at the Add Task button when it reappears.
-        if (addTaskContainerElement) {
-          const addTaskButton = addTaskContainerElement.querySelector('span[role="button"]');
-          if (addTaskButton && addTaskButton instanceof HTMLElement) {
-            lastBlurredTaskElement = addTaskButton;
-          } else {
-            lastBlurredTaskElement = null;
-          }
-        } else {
-          lastBlurredTaskElement = null;
-        }
-
-        isInputActive = false;
-        onInputChange('');
-        // Wait for Svelte's reactive updates to complete
-        await tick();
-        await tick();
-        await new Promise(resolve => requestAnimationFrame(resolve));
-        await new Promise(resolve => setTimeout(resolve, DOM_UPDATE_DELAY_MS));
-        return;
-      }
-      
-      // If list is not empty and there's content (whitespace or text), create task
-      // Check if input has any content (including whitespace)
+      // Unified behavior: If there's content (whitespace or text), create task
+      // This works the same for both empty state and regular Add Task button
       if (currentValue.length > 0) {
         // Create task with the current input value
         await handleCreateTask({ closeAfterSave: true });
         return;
       }
       
-      // If list is not empty but input is empty, cancel
+      // If input is empty, cancel (close input without creating task)
+      // This applies to both empty state and regular Add Task button
       shouldRefocusTaskOnNextTab = true;
       if (addTaskContainerElement) {
         const addTaskButton = addTaskContainerElement.querySelector('span[role="button"]');
@@ -603,6 +575,7 @@
 
       isInputActive = false;
       onInputChange('');
+      // Wait for Svelte's reactive updates to complete
       await tick();
       await tick();
       await new Promise(resolve => requestAnimationFrame(resolve));
