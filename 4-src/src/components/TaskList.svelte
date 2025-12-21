@@ -108,6 +108,10 @@
     // Recreate query if listId changed from invalid to valid, or if listId actually changed
     if (isValid && listId) {
       if (!tasksQuery || previousListId !== listId) {
+        // Only clear draggableTasks when listId actually changes (not when recreating query for same list)
+        if (previousListId !== listId) {
+          draggableTasks = [];
+        }
         tasksQuery = liveQuery(() => getTasksForList(listId));
         previousListId = listId;
       }
@@ -115,6 +119,7 @@
       // Invalid listId - clear query and previousListId
       tasksQuery = null;
       previousListId = null;
+      draggableTasks = [];
     }
   });
   
@@ -128,6 +133,16 @@
       );
     }
   });
+
+  // Optimistic state: show content if listId is valid (even if query hasn't resolved yet)
+  // This prevents loading flicker when creating new lists
+  // We check both stableLists and allLists - allLists might update faster
+  const isListValid = $derived(
+    listId && (
+      stableLists.some(list => list.id === listId) ||
+      allLists.some(list => list.id === listId)
+    )
+  );
   
   // Add capture-phase keyboard handler to prevent drag library from intercepting Enter/Space on list title
   $effect(() => {
@@ -891,7 +906,7 @@
       </h2>
     </div>
   </div>
-  {#if tasksQuery && $tasksQuery !== undefined}
+  {#if isListValid}
     <div class="task-list-wrapper m-0 p-0">
       <ul 
         bind:this={ulElement}

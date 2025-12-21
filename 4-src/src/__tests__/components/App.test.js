@@ -405,6 +405,11 @@ describe('App', () => {
 
     const workSection = await waitForListSection('Work')
     
+    // Wait for tasks to load before checking button
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
     // Click "Add Task" button first to show input
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton)

@@ -17,7 +17,12 @@ describe('App - Add Task Button Behavior and Styling', () => {
     render(App)
     const workSection = await waitForListSection('Work')
     
-    // Verify "Add Task" button is visible
+    // Wait for tasks to load (query resolves) - check for a task to appear
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
+    // Now verify "Add Task" button is visible (not "Add your first task")
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     expect(addTaskButton).toBeInTheDocument()
   })
@@ -45,6 +50,11 @@ describe('App - Add Task Button Behavior and Styling', () => {
     render(App)
     const workSection = await waitForListSection('Work')
     
+    // Wait for tasks to load before checking button
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton)
     
@@ -63,6 +73,11 @@ describe('App - Add Task Button Behavior and Styling', () => {
     render(App)
     const workSection = await waitForListSection('Work')
     
+    // Wait for tasks to load before checking button
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton) // Focus first by clicking
     await user.keyboard('{Enter}') // This might close and reopen, so let's just test that Enter works after focus
@@ -76,6 +91,11 @@ describe('App - Add Task Button Behavior and Styling', () => {
     const user = userEvent.setup()
     render(App)
     const workSection = await waitForListSection('Work')
+    
+    // Wait for tasks to load before checking button
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
     
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton) // Focus first
@@ -119,6 +139,11 @@ describe('App - Add Task Button Behavior and Styling', () => {
     render(App)
     const workSection = await waitForListSection('Work')
     
+    // Wait for tasks to load before checking button
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
     // Open input
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton)
@@ -142,6 +167,11 @@ describe('App - Add Task Button Behavior and Styling', () => {
     render(App)
     const workSection = await waitForListSection('Work')
     
+    // Wait for tasks to load before checking button
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
     // Open input
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton)
@@ -164,6 +194,11 @@ describe('App - Add Task Button Behavior and Styling', () => {
   it('button container has proper styling classes', async () => {
     render(App)
     const workSection = await waitForListSection('Work')
+    
+    // Wait for tasks to load before checking button
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
     
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     const buttonContainer = addTaskButton.closest('.add-task-container')

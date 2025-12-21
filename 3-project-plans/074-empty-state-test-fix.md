@@ -57,3 +57,22 @@ The `activateAddTaskInput` function uses `document.querySelector` which is not a
 - May need to add guards or use a different approach to find DOM elements in test context
 - Escape key logic was refactored in `TaskList.svelte` `handleInputEscape` to unify behavior
 
+## Attempted Fix for Loading State Flicker (Reverted)
+
+**Problem:** When creating a new task list, there was a brief loading state flicker before showing the empty state.
+
+**Attempted Solution:** Used `$derived.by()` to create a `shouldShowContent` derived state that:
+- Checked if listId exists in stableLists/allLists
+- If query exists, checked if it's resolved (undefined = loading, array = loaded)
+- If query doesn't exist yet, optimistically showed content (return true)
+
+**Why it failed:** Accessing `$tasksQuery` inside `$derived.by()` created a reactive dependency loop:
+- The derived state accessed `$tasksQuery` (reactive value from liveQuery)
+- This created a dependency that triggered re-evaluation
+- The re-evaluation somehow triggered effects that modified state
+- This caused `effect_update_depth_exceeded` infinite loop error
+
+**Error:** `effect_update_depth_exceeded` / `infinite_loop_guard` - page wouldn't load
+
+**Next approach:** Use a simpler optimistic approach - track query state separately without accessing reactive values inside derived state, or use a simple flag that gets set optimistically when list is created.
+

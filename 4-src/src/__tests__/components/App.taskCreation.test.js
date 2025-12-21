@@ -20,6 +20,11 @@ describe('App - Task Creation UX Behaviors', () => {
     render(App)
     const workSection = await waitForListSection('Work')
     
+    // Wait for tasks to load before checking button text
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     expect(addTaskButton).toBeInTheDocument()
     
@@ -142,6 +147,12 @@ describe('App - Task Creation UX Behaviors', () => {
   it('Button hidden during print but retains space', async () => {
     render(App)
     const workSection = await waitForListSection('Work')
+    
+    // Wait for tasks to load before checking button
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    })
+    
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     
     // Verify button is visible normally

@@ -49,7 +49,19 @@ export async function waitForListSection(listName = 'Work') {
 }
 
 // Helper: Open task input field by clicking "Add Task" button
+// Waits for tasks to load first (for optimistic display behavior)
+// With optimistic display, button text changes from "Add your first task" to "Add Task" 
+// once query resolves and tasks load. We wait for the button text to be correct.
 export async function openTaskInput(user, listSection, listName = 'Work') {
+  // Wait for "Add Task" button to appear (not "Add your first task")
+  // This indicates the query has resolved and tasks have loaded
+  await waitFor(() => {
+    const addTaskButton = within(listSection).queryByRole('button', { 
+      name: new RegExp(`add new task to ${listName}`, 'i') 
+    })
+    expect(addTaskButton).toBeInTheDocument()
+  }, { timeout: 3000 })
+  
   const addTaskButton = within(listSection).getByRole('button', { 
     name: new RegExp(`add new task to ${listName}`, 'i') 
   })
