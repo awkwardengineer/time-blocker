@@ -213,33 +213,28 @@ Start with the smallest components and work up to the container:
    - When focused on a list, the focus ring should be square/rectangular to match the list container
    - Update focus ring styling to match the list title container shape
 
-3. **Update Dropzone Styling** ⏸️
-   - Change dropzone color from yellow to match design system
-   - Ensure dropzones fit the area properly
-   - Fix list dropzones so they appear correctly
+3. **Update Dropzone Styling** ✅
+   - Change dropzone color from yellow to match design system ✅
+   - Ensure dropzones fit the area properly ✅
+   - Fix list dropzones so they appear correctly ✅
    
-   **Attempted Implementation Notes:**
+   **Implementation Notes:**
    - Added UI Kit section with 3 dropzone styling options (Option 2: Light Blue selected)
    - Library uses `outline` property, not `border` for default dropzone styling (`rgba(255, 255, 102, 0.7)`)
    - Library has `dropTargetStyle` configuration option that can be used to customize styling
-   - Previous attempts:
-     1. CSS overrides with `!important` - didn't work (inline styles have higher specificity)
-     2. JavaScript MutationObserver to watch for style changes - partially worked but caused layout issues
-     3. Using `dropTargetStyle` in dndzone config - unclear if this broke layout or if it was from other changes
-   - **Current Implementation (Attempt 2):**
+   - **Final Implementation:**
      - Using `dropTargetStyle` with Option 2 styling (light blue):
        - `outline: 'none'` - removes yellow outline
-       - Changed from `border` to `boxShadow: 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)'` - to avoid layout shifts
-       - `backgroundColor: 'rgba(107, 143, 217, 0.04)'` - blue-500 with 4% opacity (removed from ListColumn due to resize issues)
+       - `boxShadow: 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)'` - to avoid layout shifts
+       - `backgroundColor: 'rgba(107, 143, 217, 0.04)'` - blue-500 with 4% opacity (applied to TaskList, removed from ListColumn due to resize issues)
        - `borderRadius: '4px'`
      - Applied to: TaskList.svelte, ListColumn.svelte, CreateListDropZone.svelte
-     - **Issues encountered:**
-       - Lists "floating" upwards during drag (fixed by using boxShadow instead of border)
-       - Lists resizing vertically during drag (attempted fixes with CSS, removed backgroundColor from ListColumn)
-       - Drag border not showing consistently
-       - Elements disappearing during drag
-     - **Status**: In progress - needs further investigation
-     - **Next steps**: May need to reconsider approach - possibly use CSS classes instead of inline styles, or find alternative way to apply dropzone styling that doesn't interfere with drag library's positioning
+     - **Fixes applied:**
+       - Fixed drop zones not appearing during keyboard list drag (manually apply dropTargetStyle when keyboard drag is active)
+       - Fixed drop zones not clearing on first Escape press during keyboard task drag (detect active drags via computed styles)
+       - Increased empty column drop zone size from 48px to 96px for better visibility
+       - Updated negative margin on "Create new list" button to maintain proper positioning
+     - **Status**: Complete ✅
 
 4. **Update Button Styling**
    - Apply button styling from Figma design files

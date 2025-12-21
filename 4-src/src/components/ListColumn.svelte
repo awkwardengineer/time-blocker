@@ -125,7 +125,7 @@
     {#if columnLists.length === 0}
       <div 
         bind:this={emptyDropZoneElement}
-        class="empty-drop-zone min-h-[48px]"
+        class="empty-drop-zone min-h-[96px]"
         tabindex="-1"
       ></div>
     {/if}
@@ -208,7 +208,7 @@
   
   /* Position "Create new list" to cover empty drop zone space (only for empty columns) */
   [data-column-index] .create-list-empty-column {
-    margin-top: -48px; /* Shift up to cover min-h-[48px] from empty drop zone */
+    margin-top: -96px; /* Shift up to cover min-h-[96px] from empty drop zone */
   }
   
   /* Ensure list wrapper margins are applied even with dndzone inline styles */
