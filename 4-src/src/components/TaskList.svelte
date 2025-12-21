@@ -666,7 +666,27 @@
     
     try {
       // Create task with normalized text (may be empty string for whitespace-only input)
-      await createTask(listId, taskText);
+      const taskId = await createTask(listId, taskText);
+      
+      // Optimistically add task to draggableTasks to prevent flicker
+      // Calculate order: use max order from current tasks + 1, or 0 if empty
+      const maxOrder = draggableTasks.length > 0 
+        ? Math.max(...draggableTasks.map(t => t.order || 0))
+        : -1;
+      const optimisticOrder = maxOrder + 1;
+      
+      // Create optimistic task object matching database structure
+      const optimisticTask = {
+        id: taskId,
+        text: taskText,
+        listId: listId,
+        order: optimisticOrder,
+        status: 'unchecked'
+      };
+      
+      // Add to end of draggableTasks (since it has the highest order)
+      draggableTasks = [...draggableTasks, optimisticTask];
+      
       onInputChange('');
       // For normal Enter/Save flows, keep input active and focused for sequential creation.
       // When invoked from a Tab-out flow, close the input after creating the task.
@@ -675,6 +695,8 @@
       }
     } catch (error) {
       console.error('Error creating task:', error);
+      // If creation failed, remove optimistic task if it was added
+      // (though it shouldn't be added if createTask throws)
     }
   }
   

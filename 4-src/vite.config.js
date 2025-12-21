@@ -27,6 +27,7 @@ export default defineConfig(({ command, mode }) => {
       environment: 'jsdom',
       setupFiles: ['./src/__tests__/setup.js'],
       passWithNoTests: true, // Allow build to proceed when no tests exist yet
+      reporter: ['verbose'], // Shows all test results with failures prominently displayed
       include: ['src/**/*.{test,spec}.{js,ts,svelte}'],
       exclude: ['src/__tests__/print/**'], // Exclude Playwright e2e tests from Vitest
       resolve: {

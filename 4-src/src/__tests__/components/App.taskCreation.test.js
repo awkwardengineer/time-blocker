@@ -109,10 +109,10 @@ describe('App - Task Creation UX Behaviors', () => {
     const input = await openTaskInput(user, workSection, 'Work')
     expect(input).toBeInTheDocument()
     
-    // Type something (but don't save)
+    // Type something
     await user.type(input, 'Some text')
     
-    // Press Escape
+    // Press Escape - with text, Escape creates the task and closes input
     await user.keyboard('{Escape}')
     
     // Wait for input to disappear and button to reappear
@@ -121,8 +121,10 @@ describe('App - Task Creation UX Behaviors', () => {
       expect(within(workSection).getByRole('button', { name: /add new task to work/i })).toBeInTheDocument()
     })
     
-    // Verify task was NOT created
-    expect(within(workSection).queryByText('Some text')).not.toBeInTheDocument()
+    // Verify task WAS created (Escape with text creates task)
+    await waitFor(() => {
+      expect(within(workSection).getByText('Some text')).toBeInTheDocument()
+    })
   })
 
   it('Click-outside closes input and shows button', async () => {
