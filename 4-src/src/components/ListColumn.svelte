@@ -135,36 +135,25 @@
   <!-- Create List button/input - per column, appears in all columns (outside dndzone) -->
   <div class="flex flex-col mb-6 w-full print:hidden {columnLists.length === 0 ? 'create-list-empty-column' : ''}">
     {#if createListColumnIndex === columnIndex}
-      <div class="flex items-center gap-2">
-        <input
-          bind:this={createListInputElement}
-          bind:value={createListInput}
-          type="text"
-          class="create-list-input cursor-pointer hover:underline font-gilda text-[24px] text-grey-110"
-          placeholder="List name..."
-          onkeydown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              onCreateList(columnIndex);
-            } else if (e.key === 'Escape') {
-              onCreateListInputEscape(e);
-            } else if (e.key === 'Tab') {
-              // When tabbing away, close empty input or create + close when it has content.
-              // Let the browser move focus naturally; creation/close happens in the background.
-              onCreateListOnTab(columnIndex);
-            }
-          }}
-          aria-label="Enter list name"
-        />
-        <Button
-          variant="primary"
-          size="small"
-          onclick={() => onCreateList(columnIndex)}
-          aria-label="Create list"
-        >
-          Save
-        </Button>
-      </div>
+      <input
+        bind:this={createListInputElement}
+        bind:value={createListInput}
+        type="text"
+        class="create-list-input cursor-pointer hover:underline font-gilda text-[24px] text-grey-110 placeholder:italic w-full"
+        placeholder="start typing..."
+        onkeydown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            onCreateList(columnIndex);
+          } else if (e.key === 'Escape') {
+            onCreateListInputEscape(e, columnIndex, columnLists.length === 0);
+          } else if (e.key === 'Tab') {
+            // Create list if there's whitespace or text, then close input
+            onCreateListOnTab(columnIndex);
+          }
+        }}
+        aria-label="Enter list name"
+      />
     {:else}
       <div class="flex items-center">
         <h2 
@@ -201,6 +190,7 @@
   
   .create-list-input::placeholder {
     opacity: 0.5;
+    font-style: italic;
   }
   
   /* Explicitly reset h2 margins for "Create new list" in columns */

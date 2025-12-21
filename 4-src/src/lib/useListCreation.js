@@ -8,7 +8,7 @@
 
 import { tick } from 'svelte';
 import { createList } from './dataAccess.js';
-import { validateAndNormalizeListInput } from './inputValidation.js';
+import { normalizeInput } from './inputValidation.js';
 import { useClickOutside } from './useClickOutside.js';
 
 /**
@@ -59,9 +59,29 @@ export function useListCreation(state) {
 
   /**
    * Handle Escape key in create list input
+   * @param {KeyboardEvent} e - The keyboard event
+   * @param {number} columnIndex - The column index
+   * @param {boolean} isColumnEmpty - Whether the column has no lists
    */
-  function handleCreateListInputEscape(e) {
+  function handleCreateListInputEscape(e, columnIndex, isColumnEmpty) {
     if (e.key === 'Escape') {
+      const inputValue = getInput() || '';
+      
+      // If column is empty, cancel (close input without creating list)
+      if (isColumnEmpty) {
+        setColumnIndex(null);
+        setInput('');
+        return;
+      }
+      
+      // If column is not empty and there's content (whitespace or text), create list
+      if (inputValue.length > 0) {
+        // Create list with the current input value (whitespace creates unnamed list)
+        handleCreateList(columnIndex, true); // closeAfterSave = true
+        return;
+      }
+      
+      // If column is not empty but input is empty, cancel
       setColumnIndex(null);
       setInput('');
     }
@@ -69,34 +89,43 @@ export function useListCreation(state) {
 
   /**
    * Handle creating a list (Enter/Save)
+   * @param {number} columnIndex - The column index
+   * @param {boolean} closeAfterSave - Whether to close input after creating list
    */
-  async function handleCreateList(columnIndex) {
+  async function handleCreateList(columnIndex, closeAfterSave = false) {
     const inputValue = getInput() || '';
     
-    // Validate and normalize input
-    const { valid, normalized: normalizedText } = validateAndNormalizeListInput(inputValue);
-    if (!valid) {
-      // Invalid input (empty or whitespace-only) - close input
-      setColumnIndex(null);
+    // Check if input is empty string "" - exit list creation
+    if (inputValue === '') {
+      if (closeAfterSave) {
+        setColumnIndex(null);
+      }
       setInput('');
       return;
     }
     
+    // Normalize input (handles whitespace-only input by trimming)
+    // Even if normalized text is empty (whitespace-only), we still create a list (unnamed)
+    // as per the new behavior: whitespace should create a list
+    const { text: normalizedText } = normalizeInput(inputValue);
+    
     try {
-      await createList(normalizedText, columnIndex);
-      // Clear input but keep it open for creating another list
+      // Create list with normalized text (may be empty string for whitespace-only input = unnamed list)
+      await createList(normalizedText || null, columnIndex);
       setInput('');
-      // Keep createListColumnIndex set to columnIndex so input stays open
-      // Lists will update automatically via liveQuery
-      // The "add a new task" empty state will appear below the newly created list automatically
-      
-      // Refocus the create list input after the list is created
-      await tick();
-      const inputElement = getInputElement();
-      if (inputElement) {
-        setTimeout(() => {
-          inputElement.focus();
-        }, 0);
+      // For normal Enter flows, keep input active and focused for sequential creation.
+      // When invoked from Escape/Tab flows, close the input after creating the list.
+      if (closeAfterSave) {
+        setColumnIndex(null);
+      } else {
+        // Refocus the create list input after the list is created
+        await tick();
+        const inputElement = getInputElement();
+        if (inputElement) {
+          setTimeout(() => {
+            inputElement.focus();
+          }, 0);
+        }
       }
     } catch (error) {
       console.error('Error creating list:', error);
@@ -106,29 +135,12 @@ export function useListCreation(state) {
   /**
    * Handle "Tab" key from the create list input.
    * When tabbing away:
-   * - If input is empty/whitespace-only, close the input (no list created).
-   * - If input has content, create the list once, then close the input so focus can move on.
+   * - If input is empty, close the input (no list created).
+   * - If input has whitespace or text, create the list once, then close the input so focus can move on.
    */
   async function handleCreateListOnTab(columnIndex) {
-    const inputValue = getInput() || '';
-    
-    // Validate and normalize input
-    const { valid, normalized: normalizedText } = validateAndNormalizeListInput(inputValue);
-    if (!valid) {
-      // Invalid input (empty or whitespace-only) - close input without creating
-      setColumnIndex(null);
-      setInput('');
-      return;
-    }
-    
-    try {
-      await createList(normalizedText, columnIndex);
-      // Clear and close input after creating the list so focus can move forward
-      setInput('');
-      setColumnIndex(null);
-    } catch (error) {
-      console.error('Error creating list on Tab:', error);
-    }
+    // Create list if there's whitespace or text, then close input
+    await handleCreateList(columnIndex, true); // closeAfterSave = true
   }
 
   /**
@@ -150,11 +162,6 @@ export function useListCreation(state) {
       },
       {
         ignoreElements: [],
-        checkIgnoreClick: (e) => {
-          // Check if click is on a Save button
-          const saveButton = e.target.closest('button');
-          return saveButton && saveButton.textContent?.trim() === 'Save';
-        },
         shouldClose: () => {
           // Only close if input hasn't changed (no content)
           return !getInput() || getInput().trim() === '';

@@ -253,10 +253,15 @@ Start with the smallest components and work up to the container:
 
 ### Behavior Changes (Medium Implementation)
 
-7. **Update List Input Behavior**
-   - Make list input fill the full width of the column
-   - Eliminate save button (new behavior to be specified)
-   - Update input interaction flow
+7. **Update List Input Behavior** ✅
+   - ✅ Make list input fill the full width of the column (removed save button, input takes full width)
+   - ✅ Remove save button - input creates lists automatically on Enter, Tab, or Escape
+   - ✅ Updated keyboard behavior:
+     - If column is empty and user presses Escape → cancel (close input without creating list)
+     - If input contains whitespace (e.g., " ") and user presses Escape, Enter, or Tab → create list (unnamed list)
+     - If input contains text and user presses Escape, Enter, or Tab → create list
+   - ✅ Input field appears when clicking "Create new list" button
+   - ✅ Placeholder text updated to italic "start typing..."
 
 8. **Update Task Input Behavior** ✅
    - ✅ Make task input fill the same width as task text (removed save button, input takes full width)
