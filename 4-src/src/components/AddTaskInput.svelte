@@ -102,9 +102,6 @@
   style={marginLeft ? "margin-left: 1.5rem;" : ""}
 >
   {#if isInputActive}
-    <span class="drag-handle text-grey-60 select-none invisible" aria-hidden="true">
-      ⋮⋮
-    </span>
     <input
       type="checkbox"
       disabled
@@ -123,9 +120,6 @@
       style="height: 24px;"
     ></textarea>
   {:else}
-    <span class="drag-handle text-grey-60 select-none invisible" aria-hidden="true">
-      ⋮⋮
-    </span>
     <input
       type="checkbox"
       disabled

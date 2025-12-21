@@ -29,8 +29,9 @@
     const modalPaddingTop = 24; // p-6 = 1.5rem = 24px
     const titleHeight = 24; // Approximate h3 height
     const titleMarginBottom = SPACING_4; // mb-4 = 1rem = 16px
-    const inputPaddingTop = 8; // py-2 = 0.5rem = 8px
-    const offsetToInputTop = modalPaddingTop + titleHeight + titleMarginBottom + inputPaddingTop - 8; // Reduced by 8px to shift down
+    const inputBorderTop = 1; // border = 1px
+    const inputPaddingTop = 7; // padding adjusted to account for border (7px + 1px border = 8px total)
+    const offsetToInputTop = modalPaddingTop + titleHeight + titleMarginBottom + inputBorderTop + inputPaddingTop - 8; // Reduced by 8px to shift down
     
     // Position modal so input aligns with list name
     const top = listPosition.top - offsetToInputTop;
@@ -201,8 +202,8 @@
             bind:this={inputElement}
             bind:value={editedName}
             type="text"
-            class="list-input w-full px-3 py-2 border border-grey-50 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 box-border font-gilda text-[24px] text-grey-110"
-            style="max-width: 100%; box-sizing: border-box;"
+            class="list-input w-full px-2 py-2 border border-grey-50 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 box-border font-gilda text-[24px] text-grey-110"
+            style="max-width: 100%; box-sizing: border-box; padding-left: 7px; padding-right: 7px; padding-top: 7px; padding-bottom: 7px;"
             placeholder="List name..."
             aria-label="Edit list name"
             aria-describedby={showValidation ? "validation-message" : undefined}

@@ -135,25 +135,30 @@
   <!-- Create List button/input - per column, appears in all columns (outside dndzone) -->
   <div class="flex flex-col mb-6 w-full print:hidden {columnLists.length === 0 ? 'create-list-empty-column' : ''}">
     {#if createListColumnIndex === columnIndex}
-      <input
-        bind:this={createListInputElement}
-        bind:value={createListInput}
-        type="text"
-        class="create-list-input cursor-pointer hover:underline font-gilda text-[24px] text-grey-110 placeholder:italic w-full"
-        placeholder="start typing..."
-        onkeydown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            onCreateList(columnIndex);
-          } else if (e.key === 'Escape') {
-            onCreateListInputEscape(e, columnIndex, columnLists.length === 0);
-          } else if (e.key === 'Tab') {
-            // Create list if there's whitespace or text, then close input
-            onCreateListOnTab(columnIndex);
-          }
-        }}
-        aria-label="Enter list name"
-      />
+      <div class="flex items-center">
+        <div class="create-list-input-wrapper border-2 border-transparent focus-within:border-blue-500 focus-within:rounded box-border -mx-0.5">
+          <input
+            bind:this={createListInputElement}
+            bind:value={createListInput}
+            type="text"
+            class="create-list-input cursor-pointer hover:underline font-gilda text-[24px] text-grey-60 placeholder:italic w-full m-0 px-2 py-2 leading-none rounded -my-1"
+            style="padding-bottom: 6px;"
+            placeholder="start typing..."
+            onkeydown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                onCreateList(columnIndex);
+              } else if (e.key === 'Escape') {
+                onCreateListInputEscape(e, columnIndex, columnLists.length === 0);
+              } else if (e.key === 'Tab') {
+                // Create list if there's whitespace or text, then close input
+                onCreateListOnTab(columnIndex);
+              }
+            }}
+            aria-label="Enter list name"
+          />
+        </div>
+      </div>
     {:else}
       <div class="flex items-center">
         <h2 
@@ -174,18 +179,41 @@
 
 <style>
   /* Style the create list input to match h2 exactly */
+  .create-list-input-wrapper {
+    display: flex;
+    align-items: center;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+  
+  .create-list-input-wrapper:focus-within {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+  
   .create-list-input {
-    margin: 0;
-    padding: 0;
     border: 0;
     border-bottom: 2px solid rgb(188, 188, 188); /* border-grey-60 */
     background: transparent;
     outline: none;
     line-height: 1; /* leading-none equivalent */
+    color: rgb(188, 188, 188); /* text-grey-60 to match button */
+    box-shadow: none !important;
+    filter: none !important;
+  }
+  
+  .create-list-input:not(:placeholder-shown) {
+    color: rgb(50, 50, 50); /* text-grey-110 when text is entered */
   }
   
   .create-list-input:focus {
-    border-bottom-color: rgb(107, 143, 217); /* border-blue-500 */
+    border-bottom-color: rgb(188, 188, 188); /* Keep grey border, focus ring is on wrapper */
+    box-shadow: none !important;
+  }
+  
+  .create-list-input-wrapper:focus-within .create-list-input {
+    border-bottom-color: rgb(188, 188, 188); /* Keep grey border when focused */
+    box-shadow: none !important;
   }
   
   .create-list-input::placeholder {

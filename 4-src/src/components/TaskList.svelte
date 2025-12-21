@@ -904,16 +904,8 @@
   >
     <!-- Inner wrapper for content with hover/rounded styles -->
     <div 
-      class="flex items-center gap-2 transition-colors hover:bg-grey-20 hover:rounded py-1"
+      class="flex items-center transition-colors hover:bg-grey-20 hover:rounded py-1"
     >
-      <span 
-        class="drag-handle text-grey-60 cursor-grab active:cursor-grabbing select-none print:hidden" 
-        title="Drag to reorder list"
-        tabindex="-1"
-        aria-hidden="true"
-      >
-        ⋮⋮
-      </span>
       <h2 
         onclick={handleListNameClick}
         onkeydown={handleListNameKeydown}
@@ -952,14 +944,6 @@
             onkeydowncapture={(e) => handleTaskItemKeydownCapture(e, task.id)}
             onblur={(e) => handleTaskItemBlur(e, task.id)}
           >
-            <span 
-              class="text-grey-60 cursor-grab active:cursor-grabbing select-none" 
-              title="Drag to reorder"
-              tabindex="-1"
-              aria-hidden="true"
-            >
-              ⋮⋮
-            </span>
             <input
               type="checkbox"
               checked={task.status === 'checked'}
