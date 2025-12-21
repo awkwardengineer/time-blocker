@@ -12,7 +12,7 @@
   <div class="flex justify-end print:hidden" style="width: {PRINT_CONTAINER_WIDTH}px;">
     <button
       onclick={handlePrint}
-      class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+      class="px-6 py-3 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-grey-50 disabled:text-grey-100 disabled:cursor-not-allowed"
     >
       Print
     </button>

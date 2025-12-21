@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build:ui-kit": "node ui-kit/build.js",
-    "dev": "npm run build:ui-kit && vite",
+    "dev": "npm run build:ui-kit && concurrently \"node ui-kit/build.js --watch\" \"vite\"",
     "prebuild": "npm test",
     "build": "vite build",
     "preview": "vite preview",
@@ -29,7 +29,8 @@
     "svelte": "^5.43.8",
     "tailwindcss": "^3.4.1",
     "vite": "^7.2.4",
-    "vitest": "^4.0.14"
+    "vitest": "^4.0.14",
+    "concurrently": "^9.1.2"
   },
   "dependencies": {
     "dexie": "^4.2.1",

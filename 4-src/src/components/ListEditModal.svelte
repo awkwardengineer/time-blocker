@@ -217,7 +217,7 @@
         <div class="flex justify-between items-center">
           <button
             onclick={handleArchiveClick}
-            class="px-4 py-2 text-grey-100 border border-grey-50 rounded bg-grey-20 hover:bg-grey-30"
+            class="px-4 py-2 bg-white text-grey-110 hover:bg-grey-20 focus:bg-grey-30 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-white disabled:text-grey-60 disabled:cursor-not-allowed"
             aria-label="Archive this list"
           >
             Archive
@@ -225,14 +225,14 @@
           <div class="flex justify-end gap-3">
             <button
               onclick={handleCancel}
-              class="px-4 py-2 border border-grey-50 rounded bg-grey-20 hover:bg-grey-30"
+              class="px-4 py-2 bg-white text-grey-110 hover:bg-grey-20 focus:bg-grey-30 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-white disabled:text-grey-60 disabled:cursor-not-allowed"
               aria-label="Cancel editing and discard changes"
             >
               Cancel
             </button>
             <button
               onclick={handleSave}
-              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              class="px-4 py-2 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-grey-50 disabled:text-grey-100 disabled:cursor-not-allowed"
               disabled={showValidation}
               aria-label={showValidation ? "Save disabled: list name cannot be empty" : "Save list name changes"}
             >
@@ -250,14 +250,14 @@
         <div class="flex justify-end gap-3">
           <button
             onclick={handleArchiveCancel}
-            class="px-4 py-2 border border-grey-50 rounded bg-grey-20 hover:bg-grey-30"
+            class="px-4 py-2 bg-white text-grey-110 hover:bg-grey-20 focus:bg-grey-30 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-white disabled:text-grey-60 disabled:cursor-not-allowed"
             aria-label="Cancel archiving"
           >
             Cancel
           </button>
           <button
             onclick={handleArchiveConfirm}
-            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            class="px-4 py-2 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-grey-50 disabled:text-grey-100 disabled:cursor-not-allowed"
             aria-label="Confirm archive list"
           >
             Archive

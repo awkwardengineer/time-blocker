@@ -194,7 +194,7 @@
                       <span class="line-through text-grey-100">{task.text}</span>
                       <button
                         onclick={() => handleRestore(task.id)}
-                        class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                        class="px-3 py-1 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       >
                         Restore
                       </button>

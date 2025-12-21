@@ -7,44 +7,65 @@
         <h3 class="text-3xl font-normal font-urbanist text-grey-110">Buttons</h3>
         
         <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Primary (Save)</h4>
-          <div class="flex gap-4 items-center flex-wrap">
-                <button class="px-4 py-2 bg-blue-500 text-white rounded">Save</button>
-                <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save (Hover)</button>
-                <button class="px-4 py-2 bg-blue-500 text-white rounded opacity-50 cursor-not-allowed" disabled>Save (Disabled)</button>
-          </div>
-        </div>
-
-        <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Secondary (Cancel)</h4>
-          <div class="flex gap-4 items-center flex-wrap">
-                <button class="px-4 py-2 border border-grey-50 rounded">Cancel</button>
-                <button class="px-4 py-2 border border-grey-50 rounded hover:bg-grey-20">Cancel (Hover)</button>
-          </div>
-        </div>
-
-        <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Archive Buttons</h4>
-          <div class="space-y-2">
+          <h4 class="text-xl font-medium text-gray-600">Primary Button</h4>
+          <div class="flex flex-col gap-4 items-start">
             <div class="flex gap-4 items-center flex-wrap">
-              <button class="px-2 py-1 text-sm bg-grey-30 rounded">Archive (Task)</button>
-              <button class="px-2 py-1 text-sm bg-grey-30 rounded hover:bg-grey-40">Archive (Task Hover)</button>
+              <button class="px-4 py-2 bg-grey-80 text-grey-110">Button</button>
+              <span class="text-sm text-gray-600">Default</span>
             </div>
             <div class="flex gap-4 items-center flex-wrap">
-              <button class="px-4 py-2 text-red-600 border border-red-300 rounded">Archive (List Edit)</button>
-              <button class="px-4 py-2 text-red-600 border border-red-300 rounded hover:bg-red-50">Archive (List Edit Hover)</button>
+              <button class="px-4 py-2 bg-grey-90 text-grey-110">Button</button>
+              <span class="text-sm text-gray-600">Hover</span>
             </div>
             <div class="flex gap-4 items-center flex-wrap">
-              <button class="px-4 py-2 bg-red-600 text-white rounded">Archive (Confirm)</button>
-              <button class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Archive (Confirm Hover)</button>
+              <button class="px-4 py-2 bg-grey-90 text-grey-110 focus:outline-none focus:ring-2 focus:ring-blue-500" tabindex="0">Button</button>
+              <span class="text-sm text-gray-600">Focused (tab or click to see blue ring)</span>
+            </div>
+            <div class="flex gap-4 items-center flex-wrap">
+              <button class="px-4 py-2 bg-grey-100 text-grey-110">Button</button>
+              <span class="text-sm text-gray-600">Selected</span>
+            </div>
+            <div class="flex gap-4 items-center flex-wrap">
+              <button class="px-4 py-2 bg-grey-50 text-grey-100 cursor-not-allowed" disabled>Button</button>
+              <span class="text-sm text-gray-600">Disabled</span>
             </div>
           </div>
         </div>
 
         <div class="space-y-4">
-          <h4 class="text-xl font-medium text-gray-600">Restore Button</h4>
-          <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Restore</button>
+          <h4 class="text-xl font-medium text-gray-600">Secondary Button</h4>
+          <div class="flex flex-col gap-4 items-start">
+            <div class="flex gap-4 items-center flex-wrap">
+              <button class="px-4 py-2 bg-white text-grey-110">Button</button>
+              <span class="text-sm text-gray-600">Default</span>
+            </div>
+            <div class="flex gap-4 items-center flex-wrap">
+              <button class="px-4 py-2 bg-grey-20 text-grey-110">Button</button>
+              <span class="text-sm text-gray-600">Hover</span>
+            </div>
+            <div class="flex gap-4 items-center flex-wrap">
+              <button class="px-4 py-2 bg-grey-30 text-grey-110 focus:outline-none focus:ring-2 focus:ring-blue-500" tabindex="0">Button</button>
+              <span class="text-sm text-gray-600">Focused (tab or click to see blue ring)</span>
+            </div>
+            <div class="flex gap-4 items-center flex-wrap">
+              <button class="px-4 py-2 bg-grey-40 text-grey-110">Button</button>
+              <span class="text-sm text-gray-600">Selected</span>
+            </div>
+            <div class="flex gap-4 items-center flex-wrap">
+              <button class="px-4 py-2 bg-white text-grey-60 cursor-not-allowed" disabled>Button</button>
+              <span class="text-sm text-gray-600">Disabled</span>
+            </div>
+          </div>
         </div>
+
+        <div class="space-y-4">
+          <h4 class="text-xl font-medium text-gray-600">Working Example</h4>
+          <div class="flex gap-3 items-center flex-wrap">
+            <button class="px-4 py-2 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-grey-50 disabled:text-grey-100 disabled:cursor-not-allowed">Save</button>
+            <button class="px-4 py-2 bg-white text-grey-110 hover:bg-grey-20 focus:bg-grey-30 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-white disabled:text-grey-60 disabled:cursor-not-allowed">Cancel</button>
+          </div>
+        </div>
+
 
         <div class="space-y-4">
           <h4 class="text-xl font-medium text-gray-600">Link-style Button</h4>
@@ -103,7 +124,7 @@
           <h4 class="text-xl font-medium text-gray-600">Archived Task</h4>
           <div class="flex items-center gap-3">
             <span class="line-through">Archived task text</span>
-            <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Restore</button>
+            <button class="px-3 py-1 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">Restore</button>
           </div>
         </div>
 

@@ -40,13 +40,13 @@
       <div class="flex justify-end gap-3">
         <button
           onclick={handleCancel}
-          class="px-4 py-2 border border-grey-50 rounded hover:bg-grey-20"
+          class="px-4 py-2 bg-white text-grey-110 hover:bg-grey-20 focus:bg-grey-30 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-white disabled:text-grey-60 disabled:cursor-not-allowed"
         >
           Cancel
         </button>
         <button
           onclick={handleConfirm}
-          class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          class="px-4 py-2 bg-grey-80 text-grey-110 hover:bg-grey-90 focus:bg-grey-90 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-grey-50 disabled:text-grey-100 disabled:cursor-not-allowed"
         >
           {confirmButtonText}
         </button>
