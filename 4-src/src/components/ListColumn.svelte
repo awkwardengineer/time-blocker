@@ -47,6 +47,27 @@
       clearTimeout(timeoutId);
     };
   });
+
+  // Apply drop zone styling during keyboard drag
+  // When keyboard drag is active, show drop zones on all columns (including source column)
+  $effect(() => {
+    if (!dndzoneElement || !(dndzoneElement instanceof HTMLElement)) return;
+    
+    const isKeyboardDragActive = keyboardListDrag?.active === true;
+    
+    // Apply drop zone styling if keyboard drag is active
+    if (isKeyboardDragActive) {
+      // Apply the same styles as dropTargetStyle
+      dndzoneElement.style.outline = 'none';
+      dndzoneElement.style.boxShadow = 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)';
+      dndzoneElement.style.borderRadius = '4px';
+    } else {
+      // Remove drop zone styling
+      dndzoneElement.style.outline = '';
+      dndzoneElement.style.boxShadow = '';
+      dndzoneElement.style.borderRadius = '';
+    }
+  });
 </script>
 
 <div class="flex flex-col pt-0 min-w-0 px-2 {columnIndex < 4 ? 'border-r border-grey-50' : ''}" data-column-index={columnIndex}>
