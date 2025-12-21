@@ -31,7 +31,7 @@
       // Small delay to ensure textarea is rendered
       setTimeout(() => {
         inputElement?.focus();
-        // Auto-resize textarea to fit content, starting with single line height (14px = line-height of text-body)
+        // Auto-resize textarea to fit content, starting with single line height (24px = line-height of text-body)
         if (inputElement instanceof HTMLTextAreaElement) {
           inputElement.style.height = 'auto';
           const scrollHeight = inputElement.scrollHeight;
@@ -115,7 +115,7 @@
       value={inputValue}
       oninput={(e) => onInputChange?.(e.currentTarget.value)}
       onkeydown={handleKeydown}
-      class="flex-1 break-words resize-none max-h-[10rem] overflow-y-auto text-body font-urbanist text-grey-100 placeholder:italic leading-[14px]"
+      class="flex-1 break-words resize-none max-h-[10rem] overflow-y-auto text-body font-urbanist text-grey-100 placeholder:italic"
       rows="1"
       style="height: 24px;"
     ></textarea>
@@ -128,7 +128,7 @@
       tabindex="-1"
     />
     <span 
-      class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-60 leading-[14px]"
+      class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-60"
       onclick={onActivate}
       onkeydown={handleButtonKeydown}
       role="button"
