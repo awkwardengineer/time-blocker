@@ -74,14 +74,14 @@ export function useListCreation(state) {
         return;
       }
       
-      // If column is not empty and there's content (whitespace or text), create list
-      if (inputValue.length > 0) {
-        // Create list with the current input value (whitespace creates unnamed list)
+      // If column is not empty and there's content (non-whitespace text), create list
+      if (inputValue.trim().length > 0) {
+        // Create list with the current input value
         handleCreateList(columnIndex, true); // closeAfterSave = true
         return;
       }
       
-      // If column is not empty but input is empty, cancel
+      // If column is not empty but input is empty or whitespace-only, cancel
       setColumnIndex(null);
       setInput('');
     }
@@ -95,18 +95,14 @@ export function useListCreation(state) {
   async function handleCreateList(columnIndex, closeAfterSave = false) {
     const inputValue = getInput() || '';
     
-    // Check if input is empty string "" - exit list creation
-    if (inputValue === '') {
-      if (closeAfterSave) {
-        setColumnIndex(null);
-      }
+    // Check if input is empty string "" or whitespace-only - exit list creation and close input
+    if (inputValue === '' || inputValue.trim() === '') {
+      setColumnIndex(null);
       setInput('');
       return;
     }
     
     // Normalize input (handles whitespace-only input by trimming)
-    // Even if normalized text is empty (whitespace-only), we still create a list (unnamed)
-    // as per the new behavior: whitespace should create a list
     const { text: normalizedText } = normalizeInput(inputValue);
     
     try {

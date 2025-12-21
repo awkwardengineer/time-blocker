@@ -54,7 +54,7 @@ export async function openTaskInput(user, listSection, listName = 'Work') {
     name: new RegExp(`add new task to ${listName}`, 'i') 
   })
   await user.click(addTaskButton)
-  return await within(listSection).findByPlaceholderText('Add new task...')
+  return await within(listSection).findByPlaceholderText('start typing...')
 }
 
 // Helper: Wait for tasks to load in a list section

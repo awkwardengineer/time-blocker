@@ -42,6 +42,10 @@ export async function getAllListsIncludingArchived() {
  */
 export async function createList(name, columnIndex = null) {
   // Validate: name cannot be empty string '' or whitespace-only
+  // Handle null case (unnamed lists are not allowed - empty/whitespace should close input instead)
+  if (name === null || name === undefined) {
+    throw new Error('List name cannot be null or undefined');
+  }
   const trimmedName = name.trim();
   if (trimmedName === '') {
     throw new Error('List name cannot be empty or whitespace-only');

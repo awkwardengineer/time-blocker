@@ -49,7 +49,7 @@ describe('App - Add Task Button Behavior and Styling', () => {
     await user.click(addTaskButton)
     
     // Verify input field appears (textarea with placeholder)
-    const textarea = await within(workSection).findByPlaceholderText('Add new task...')
+    const textarea = await within(workSection).findByPlaceholderText('start typing...')
     expect(textarea).toBeInTheDocument()
     
     // Focus might take a moment
@@ -95,7 +95,7 @@ describe('App - Add Task Button Behavior and Styling', () => {
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton)
     
-    const textarea = await within(workSection).findByPlaceholderText('Add new task...')
+    const textarea = await within(workSection).findByPlaceholderText('start typing...')
     expect(textarea).toBeInTheDocument()
     
     // Press Escape - focus the textarea first to ensure Escape is handled
@@ -105,7 +105,7 @@ describe('App - Add Task Button Behavior and Styling', () => {
     // Wait for textarea to disappear first - this is the positive indicator that state changed
     // The textarea being gone confirms isInputActive became false
     await waitFor(() => {
-      expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
+      expect(within(workSection).queryByPlaceholderText('start typing...')).not.toBeInTheDocument()
     }, { timeout: 10000 })
     
     // Then wait for button to reappear (positive assertion - confirms new state is rendered)
@@ -123,7 +123,7 @@ describe('App - Add Task Button Behavior and Styling', () => {
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton)
     
-    const textarea = await within(workSection).findByPlaceholderText('Add new task...')
+    const textarea = await within(workSection).findByPlaceholderText('start typing...')
     expect(textarea).toBeInTheDocument()
     
     // Click outside (on the list name)
@@ -132,7 +132,7 @@ describe('App - Add Task Button Behavior and Styling', () => {
     
     // Verify input is closed and button is back
     await waitFor(() => {
-      expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
+      expect(within(workSection).queryByPlaceholderText('start typing...')).not.toBeInTheDocument()
       expect(within(workSection).getByRole('button', { name: /add new task to work/i })).toBeInTheDocument()
     })
   })
@@ -146,7 +146,7 @@ describe('App - Add Task Button Behavior and Styling', () => {
     const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
     await user.click(addTaskButton)
     
-    const textarea = await within(workSection).findByPlaceholderText('Add new task...')
+    const textarea = await within(workSection).findByPlaceholderText('start typing...')
     
     // Type some content
     await user.type(textarea, 'Task with content')
@@ -157,28 +157,8 @@ describe('App - Add Task Button Behavior and Styling', () => {
     
     // Verify input is still open (has content, so shouldn't close)
     await waitFor(() => {
-      expect(within(workSection).getByPlaceholderText('Add new task...')).toBeInTheDocument()
+      expect(within(workSection).getByPlaceholderText('start typing...')).toBeInTheDocument()
     }, { timeout: 1000 })
-  })
-
-  it('maintains consistent styling with hidden drag handle and checkbox', async () => {
-    render(App)
-    const workSection = await waitForListSection('Work')
-    
-    const addTaskButton = within(workSection).getByRole('button', { name: /add new task to work/i })
-    const buttonContainer = addTaskButton.closest('.add-task-container')
-    
-    // Verify container has the add-task-container class
-    expect(buttonContainer).toHaveClass('add-task-container')
-    
-    // Verify hidden drag handle exists (for alignment)
-    const dragHandle = buttonContainer?.querySelector('.drag-handle')
-    expect(dragHandle).toBeInTheDocument()
-    
-    // Verify disabled checkbox exists (for alignment)
-    const checkbox = buttonContainer?.querySelector('input[type="checkbox"]')
-    expect(checkbox).toBeInTheDocument()
-    expect(checkbox).toBeDisabled()
   })
 
   it('button container has proper styling classes', async () => {

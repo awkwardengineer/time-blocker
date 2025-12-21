@@ -103,7 +103,7 @@ describe('App', () => {
     await user.click(addTaskButton)
     
     // Wait for input to appear and get it
-    const input = await within(workSection).findByPlaceholderText('Add new task...')
+    const input = await within(workSection).findByPlaceholderText('start typing...')
     await user.type(input, 'UI Task')
     await user.keyboard('{Enter}')
 
@@ -410,7 +410,7 @@ describe('App', () => {
     await user.click(addTaskButton)
     
     // Wait for input to appear and get it
-    const input = await within(workSection).findByPlaceholderText('Add new task...')
+    const input = await within(workSection).findByPlaceholderText('start typing...')
     await user.type(input, 'New Task')
     await user.keyboard('{Enter}')
 

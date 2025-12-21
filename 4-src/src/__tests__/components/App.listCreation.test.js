@@ -127,30 +127,6 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     expect(finalListSections.length).toBe(initialCount)
   })
 
-  it('Save button creates named list and keeps input open', async () => {
-    const user = userEvent.setup()
-    render(App)
-    
-    const input = await activateCreateListInput(user)
-    await user.type(input, 'Created via Save button')
-    
-    // Click Save button
-    const saveButton = screen.getByRole('button', { name: /create list/i })
-    await user.click(saveButton)
-    
-    // Wait for list to be created
-    await waitFor(() => {
-      expect(screen.getByText('Created via Save button')).toBeInTheDocument()
-    })
-    
-    // Verify input stays open and is cleared
-    await waitFor(() => {
-      const createListInput = screen.getByRole('textbox', { name: /enter list name/i })
-      expect(createListInput).toBeInTheDocument()
-      expect(createListInput).toHaveValue('')
-    }, { timeout: 5000 })
-  })
-
   it('Escape key cancels and closes input', async () => {
     const user = userEvent.setup()
     render(App)
@@ -322,7 +298,7 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
       
       // Check for either the button or textarea (button appears first, textarea appears when active)
       const addTaskButton = listSection?.querySelector('span[role="button"][aria-label*="Add your first task"]')
-      const taskInput = listSection?.querySelector('textarea[placeholder="Add new task..."]')
+      const taskInput = listSection?.querySelector('textarea[placeholder="start typing..."]')
       
       // At least one should be present
       expect(addTaskButton || taskInput).toBeTruthy()

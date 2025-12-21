@@ -25,9 +25,13 @@ describe('App - Task Creation UX Behaviors', () => {
     
     const input = await openTaskInput(user, workSection, 'Work')
     
-    // Verify input is visible and focused
+    // Verify input is visible
     expect(input).toBeInTheDocument()
-    expect(input).toHaveFocus()
+    
+    // Wait for focus (focus is set asynchronously)
+    await waitFor(() => {
+      expect(input).toHaveFocus()
+    }, { timeout: 2000 })
   })
 
   it('Enter key on empty string "" exits task creation (closes input, shows button)', async () => {
@@ -51,7 +55,7 @@ describe('App - Task Creation UX Behaviors', () => {
     }, { timeout: 10000 })
 
     // Then verify textarea is gone (negative assertion after positive succeeds)
-    expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
+    expect(within(workSection).queryByPlaceholderText('start typing...')).not.toBeInTheDocument()
   }, 15000)
 
   it('Enter key creates task (including blank tasks with whitespace) and automatically opens new input for sequential creation', async () => {
@@ -70,7 +74,7 @@ describe('App - Task Creation UX Behaviors', () => {
     })
     
     // Verify new input is automatically opened and focused (sequential creation)
-    const input2 = await within(workSection).findByPlaceholderText('Add new task...')
+    const input2 = await within(workSection).findByPlaceholderText('start typing...')
     expect(input2).toBeInTheDocument()
     expect(input2).toHaveFocus()
     
@@ -87,7 +91,7 @@ describe('App - Task Creation UX Behaviors', () => {
     })
     
     // Verify new input is again automatically opened
-    const input3 = await within(workSection).findByPlaceholderText('Add new task...')
+    const input3 = await within(workSection).findByPlaceholderText('start typing...')
     expect(input3).toBeInTheDocument()
     expect(input3).toHaveFocus()
   })
@@ -108,7 +112,7 @@ describe('App - Task Creation UX Behaviors', () => {
     
     // Wait for input to disappear and button to reappear
     await waitFor(() => {
-      expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
+      expect(within(workSection).queryByPlaceholderText('start typing...')).not.toBeInTheDocument()
       expect(within(workSection).getByRole('button', { name: /add new task to work/i })).toBeInTheDocument()
     })
     
@@ -130,7 +134,7 @@ describe('App - Task Creation UX Behaviors', () => {
     
     // Wait for input to disappear and button to reappear
     await waitFor(() => {
-      expect(within(workSection).queryByPlaceholderText('Add new task...')).not.toBeInTheDocument()
+      expect(within(workSection).queryByPlaceholderText('start typing...')).not.toBeInTheDocument()
       expect(within(workSection).getByRole('button', { name: /add new task to work/i })).toBeInTheDocument()
     })
   })
