@@ -541,13 +541,55 @@
     // Focus will be handled by $effect after input is rendered
   }
   
-  async function handleInputEscape(e) {
+  async function handleInputEscape(e, inputValue = '') {
     if (e.key === 'Escape') {
-      // Remember this task-related control as the point to resume from on the next Tab.
-      // We mirror list behavior by letting Escape blur/close the input,
-      // then treating the *next* Tab as "refocus the thing I was just working on".
+      // Check if list is empty
+      const isListEmpty = draggableTasks.length === 0;
+      
+      // Read value from DOM element if available (more reliable)
+      let currentValue = inputValue || '';
+      if (addTaskTextareaElement) {
+        currentValue = (addTaskTextareaElement.value || '').toString();
+      } else if (newTaskInput) {
+        currentValue = (newTaskInput || '').toString();
+      }
+      
+      // If list is empty, cancel (close input without creating task)
+      if (isListEmpty) {
+        // Remember this task-related control as the point to resume from on the next Tab.
+        shouldRefocusTaskOnNextTab = true;
+        // Prefer to resume at the Add Task button when it reappears.
+        if (addTaskContainerElement) {
+          const addTaskButton = addTaskContainerElement.querySelector('span[role="button"]');
+          if (addTaskButton && addTaskButton instanceof HTMLElement) {
+            lastBlurredTaskElement = addTaskButton;
+          } else {
+            lastBlurredTaskElement = null;
+          }
+        } else {
+          lastBlurredTaskElement = null;
+        }
+
+        isInputActive = false;
+        onInputChange('');
+        // Wait for Svelte's reactive updates to complete
+        await tick();
+        await tick();
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise(resolve => setTimeout(resolve, DOM_UPDATE_DELAY_MS));
+        return;
+      }
+      
+      // If list is not empty and there's content (whitespace or text), create task
+      // Check if input has any content (including whitespace)
+      if (currentValue.length > 0) {
+        // Create task with the current input value
+        await handleCreateTask({ closeAfterSave: true });
+        return;
+      }
+      
+      // If list is not empty but input is empty, cancel
       shouldRefocusTaskOnNextTab = true;
-      // Prefer to resume at the Add Task button when it reappears.
       if (addTaskContainerElement) {
         const addTaskButton = addTaskContainerElement.querySelector('span[role="button"]');
         if (addTaskButton && addTaskButton instanceof HTMLElement) {
@@ -561,14 +603,8 @@
 
       isInputActive = false;
       onInputChange('');
-      // Wait for Svelte's reactive updates to complete
-      // Use multiple ticks to ensure all reactive updates propagate
       await tick();
       await tick();
-      // Wait for DOM to actually update (similar to waitFor in tests)
-      // tick() schedules updates, but DOM updates happen in next microtask
-      // Use requestAnimationFrame to ensure DOM has updated, then add a delay
-      // This is especially important in test environments where timing can be different
       await new Promise(resolve => requestAnimationFrame(resolve));
       await new Promise(resolve => setTimeout(resolve, DOM_UPDATE_DELAY_MS));
     }
@@ -592,18 +628,6 @@
       },
       {
         ignoreElements: [],
-        checkIgnoreClick: (e) => {
-          // Use reactive reference to the add-task container
-          if (!addTaskContainerElement) return false;
-          
-          // Check if click is on the Save button - don't close, let Save handle it
-          const saveButton = addTaskContainerElement.querySelector('button');
-          if (saveButton && saveButton.contains(e.target)) {
-            return true; // Ignore this click
-          }
-          
-          return false;
-        },
         shouldClose: () => {
           // Only close if input hasn't changed (no content)
           // Check both reactive state and actual DOM element value for reliability
@@ -647,10 +671,13 @@
       return;
     }
     
-    // Check if input contains only whitespace (e.g., " ", "      ")
+    // Normalize input (handles whitespace-only input by trimming)
+    // Even if normalized text is empty (whitespace-only), we still create a task
+    // as per the new behavior: whitespace should create a task
     const { text: taskText } = normalizeInput(inputValue);
     
     try {
+      // Create task with normalized text (may be empty string for whitespace-only input)
       await createTask(listId, taskText);
       onInputChange('');
       // For normal Enter/Save flows, keep input active and focused for sequential creation.
@@ -1002,7 +1029,7 @@
             onEscape={handleInputEscape}
             onActivate={handleAddTaskClick}
             buttonText="Add your first task"
-            placeholder="Add new task..."
+            placeholder="start typing..."
             ariaLabel="Add your first task to {listName}"
             marginLeft={false}
           />
@@ -1018,7 +1045,7 @@
           onEscape={handleInputEscape}
           onActivate={handleAddTaskClick}
           buttonText="Add Task"
-          placeholder="Add new task..."
+          placeholder="start typing..."
           ariaLabel="Add new task to {listName}"
           marginLeft={false}
         />

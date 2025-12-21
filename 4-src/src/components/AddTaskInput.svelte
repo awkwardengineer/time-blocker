@@ -1,6 +1,5 @@
 <script>
   import { MAX_TEXTAREA_HEIGHT, TASK_WIDTH } from '../lib/constants.js';
-  import Button from './Button.svelte';
   
   let {
     isInputActive = $bindable(false),
@@ -10,7 +9,7 @@
     onEscape,
     onActivate,
     buttonText = 'Add Task',
-    placeholder = 'Add new task...',
+    placeholder = 'start typing...',
     ariaLabel,
     marginLeft = false,
     containerElement = $bindable(null),
@@ -32,12 +31,19 @@
       // Small delay to ensure textarea is rendered
       setTimeout(() => {
         inputElement?.focus();
-        // Auto-resize textarea to fit content
+        // Auto-resize textarea to fit content, starting with single line height (24px = line-height of text-body)
         if (inputElement instanceof HTMLTextAreaElement) {
           inputElement.style.height = 'auto';
-          inputElement.style.height = `${Math.min(inputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`; // max-h-[10rem] = 160px
+          const scrollHeight = inputElement.scrollHeight;
+          // Use at least 24px (single line height) but allow it to grow
+          inputElement.style.height = `${Math.max(24, Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
         }
       }, 0);
+    } else if (!isInputActive && inputElement) {
+      // Reset height when input becomes inactive
+      if (inputElement instanceof HTMLTextAreaElement) {
+        inputElement.style.height = '24px';
+      }
     }
   });
   
@@ -46,7 +52,9 @@
     if (inputElement && inputElement instanceof HTMLTextAreaElement) {
       const resizeTextarea = () => {
         inputElement.style.height = 'auto';
-        inputElement.style.height = `${Math.min(inputElement.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
+        const scrollHeight = inputElement.scrollHeight;
+        // Use at least 24px (single line height) but allow it to grow
+        inputElement.style.height = `${Math.max(24, Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
       };
       
       inputElement.addEventListener('input', resizeTextarea);
@@ -59,14 +67,14 @@
   function handleKeydown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      // Create task if there's whitespace or text
       onSave?.();
     } else if (e.key === 'Escape') {
-      onEscape?.(e);
+      e.preventDefault();
+      // Pass the input value so parent can decide: cancel if list empty, create task if whitespace/text
+      onEscape?.(e, inputValue);
     } else if (e.key === 'Tab') {
-      // When tabbing away from the input:
-      // - If empty, task creation handler will close the input.
-      // - If it has content, task creation handler will create the task, then close the input.
-      // Let the browser move focus naturally; we just trigger the appropriate save/close behavior.
+      // Create task if there's whitespace or text, then close input
       onSave?.({ closeAfterSave: true });
     }
   }
@@ -104,24 +112,16 @@
       aria-hidden="true"
       tabindex="-1"
     />
-    <div class="flex gap-2 flex-1">
-      <textarea
-        bind:this={inputElement}
-        {placeholder}
-        value={inputValue}
-        oninput={(e) => onInputChange?.(e.currentTarget.value)}
-        onkeydown={handleKeydown}
-        class="flex-1 break-words resize-none min-h-[2.5rem] max-h-[10rem] overflow-y-auto text-body font-urbanist text-grey-100"
-        rows="1"
-      ></textarea>
-      <Button
-        variant="primary"
-        onclick={onSave}
-        aria-label="Save new task"
-      >
-        Save
-      </Button>
-    </div>
+    <textarea
+      bind:this={inputElement}
+      {placeholder}
+      value={inputValue}
+      oninput={(e) => onInputChange?.(e.currentTarget.value)}
+      onkeydown={handleKeydown}
+      class="flex-1 break-words resize-none max-h-[10rem] overflow-y-auto text-body font-urbanist text-grey-100 placeholder:italic"
+      rows="1"
+      style="height: 24px;"
+    ></textarea>
   {:else}
     <span class="drag-handle text-grey-60 select-none invisible" aria-hidden="true">
       ⋮⋮

@@ -258,10 +258,14 @@ Start with the smallest components and work up to the container:
    - Eliminate save button (new behavior to be specified)
    - Update input interaction flow
 
-8. **Update Task Input Behavior**
-   - Make task input fill the full width of the column
-   - Apply similar behavior updates as list input (to be specified)
-   - Update input interaction flow
+8. **Update Task Input Behavior** ✅
+   - ✅ Make task input fill the same width as task text (removed save button, input takes full width)
+   - ✅ Remove save button - input creates tasks automatically on Enter, Tab, or Escape
+   - ✅ Updated keyboard behavior:
+     - If list is empty and user presses Escape → cancel (close input without creating task)
+     - If input contains whitespace (e.g., " ") and user presses Escape, Enter, or Tab → create task
+     - If input contains text and user presses Escape, Enter, or Tab → create task
+   - ✅ Input field appears when clicking "Add Task" or "Add your first task" button
 
 ### Drag and Drop Changes (Complex Implementation)
 
