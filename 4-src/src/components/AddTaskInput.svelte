@@ -105,7 +105,7 @@
     <input
       type="checkbox"
       disabled
-      class="cursor-pointer opacity-0"
+      class="cursor-pointer"
       aria-hidden="true"
       tabindex="-1"
     />
