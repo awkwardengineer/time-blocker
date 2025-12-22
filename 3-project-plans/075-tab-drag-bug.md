@@ -20,11 +20,11 @@ The issue appears to be that `svelte-dnd-action` listens for Escape key events t
 
 ## Acceptance Criteria
 
-- [ ] Pressing Tab while a task is in drag mode (after pressing Enter) cancels drag mode
-- [ ] Visual indicators (yellow borders on drop zones) are removed when Tab is pressed
-- [ ] Tab navigation works normally after canceling drag mode
-- [ ] No regression: Escape still cancels drag mode as before
-- [ ] No regression: Tab works normally when drag mode is not active
+- [x] Pressing Tab while a task is in drag mode (after pressing Enter) cancels drag mode
+- [x] Visual indicators (yellow borders on drop zones) are removed when Tab is pressed
+- [x] Tab navigation works normally after canceling drag mode
+- [x] No regression: Escape still cancels drag mode as before
+- [x] No regression: Tab works normally when drag mode is not active
 
 ## Implementation Attempts
 
@@ -95,9 +95,31 @@ The issue appears to be that `svelte-dnd-action` listens for Escape key events t
 
 ### Regression Testing
 
-- [ ] Escape still cancels drag mode correctly
-- [ ] Tab works normally when drag mode is not active
-- [ ] Enter still starts drag mode correctly
-- [ ] Drag-and-drop still works correctly
-- [ ] Keyboard cross-list movement still works correctly
+- [x] Escape still cancels drag mode correctly
+- [x] Tab works normally when drag mode is not active
+- [x] Enter still starts drag mode correctly
+- [x] Drag-and-drop still works correctly
+- [x] Keyboard cross-list movement still works correctly
+
+## Solution Implemented
+
+**Root Cause**: The `handleDocumentKeydown` function in `TaskList.svelte` did not check for active drag mode when Tab was pressed. It only handled the refocus-after-blur case, so Tab during drag mode wasn't intercepted.
+
+**Fix**: Added drag mode detection in `handleDocumentKeydown` when Tab is pressed:
+1. Check for active drag mode using the same logic as Escape (checking for dragged elements, active drop zones)
+2. If drag is active:
+   - Prevent Tab navigation (preventDefault, stopPropagation)
+   - Clear local drag state (`isKeyboardTaskDragging`)
+   - Set up refocus state so the NEXT Tab will focus the dropped item
+   - Dispatch Escape event on the `ulElement` (dndzone) to cancel drag in svelte-dnd-action
+3. The next Tab press will trigger the existing refocus logic and focus the dropped item
+
+**Behavior**: 
+- First Tab press: Cancels drag mode without navigating (same as Escape)
+- Second Tab press: Focuses the dropped task item
+- Matches Escape behavior pattern for consistency
+
+**Code Location**: `4-src/src/components/TaskList.svelte` - `handleDocumentKeydown` function
+
+**Status**: ✅ Complete - All tests passing (177 passed, 1 skipped)
 

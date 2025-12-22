@@ -424,6 +424,77 @@
     async function handleDocumentKeydown(e) {
       const key = e.key;
 
+      // Handle Tab during active drag mode - cancel drag first (similar to Escape)
+      if (key === 'Tab') {
+        const draggedElements = typeof document !== 'undefined' ? document.querySelectorAll('li[aria-grabbed="true"], li.svelte-dnd-action-dragged') : [];
+        // Check if the ulElement (dndzone) has active drop zone styles
+        let hasActiveDropZone = false;
+        if (ulElement && ulElement instanceof HTMLElement) {
+          const style = window.getComputedStyle(ulElement);
+          // Check if box-shadow indicates an active drop zone (the library uses inset shadow)
+          if (style.boxShadow && style.boxShadow !== 'none' && style.boxShadow.includes('inset')) {
+            hasActiveDropZone = true;
+          }
+        }
+        // Also check all ul elements in the document for drop zones (for cross-list drags)
+        let allDropZonesCount = 0;
+        if (typeof document !== 'undefined') {
+          const allUls = document.querySelectorAll('ul');
+          for (const ul of allUls) {
+            if (ul instanceof HTMLElement && ul !== ulElement) {
+              const style = window.getComputedStyle(ul);
+              if (style.boxShadow && style.boxShadow !== 'none' && style.boxShadow.includes('inset')) {
+                allDropZonesCount++;
+              }
+            }
+          }
+        }
+        
+        // Check if there's an active drag by looking for drop zones or dragged elements
+        // This is more reliable than isKeyboardTaskDragging because the blur handler
+        // may have already cleared that flag when svelte-dnd-action blurred the element
+        const hasActiveDrag = draggedElements.length > 0 || hasActiveDropZone || allDropZonesCount > 0;
+        
+        if (hasActiveDrag || isKeyboardTaskDragging) {
+          // Tab should cancel drag mode (like Escape does)
+          // Prevent Tab from navigating - the NEXT Tab will refocus the dropped item
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          e.stopPropagation();
+          
+          // Clear our local state
+          isKeyboardTaskDragging = false;
+          if (typeof document !== 'undefined' && document.activeElement) {
+            const activeElement = document.activeElement;
+            const focusedLi = activeElement.closest('li[data-id]');
+            if (focusedLi && focusedLi instanceof HTMLElement) {
+              const taskIdAttr = focusedLi.getAttribute('data-id');
+              if (taskIdAttr) {
+                const taskId = parseInt(taskIdAttr);
+                lastKeyboardDraggedTaskId = taskId;
+                lastBlurredTaskElement = focusedLi;
+                shouldRefocusTaskOnNextTab = true;
+              }
+            }
+          }
+          // Dispatch Escape event to cancel drag mode in svelte-dnd-action
+          // We need to dispatch it on the ulElement (dndzone) so svelte-dnd-action can handle it
+          if (ulElement && ulElement instanceof HTMLElement) {
+            const escapeEvent = new KeyboardEvent('keydown', {
+              key: 'Escape',
+              code: 'Escape',
+              keyCode: 27,
+              which: 27,
+              bubbles: true,
+              cancelable: true,
+              composed: true
+            });
+            ulElement.dispatchEvent(escapeEvent);
+          }
+          return;
+        }
+      }
+
       // Handle Tab resume after blur for tasks (mirrors list behavior in App.svelte)
       if (
         key === 'Tab' &&
