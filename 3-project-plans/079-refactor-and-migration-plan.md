@@ -191,33 +191,28 @@ src/lib/drag/
    - ✅ Updated `TaskList.svelte` to use extracted handlers (reduced from ~841 to ~723 lines, ~118 lines removed)
    - ✅ All tests pass (177 passed, 1 skipped)
 
-#### 8. **Reduce Component Size**
-   - Split large components if needed:
-     - Consider extracting drag-related UI into sub-components
-     - Extract keyboard navigation logic (already partially done with capture-phase handlers)
-     - Extract focus management logic (Tab resume behavior, focus restoration)
-   - Target: `TaskList.svelte` <800 lines (ideally <600)
-     - Current: 1161 lines
-     - Drag handlers: ~50 lines → extract
-     - Keyboard drag logic: ~300 lines → extract
-     - Capture-phase handlers: ~150 lines → extract
-     - Cross-list movement: ~100 lines → extract
-     - Focus management: ~100 lines → extract
-     - Estimated reduction: ~700 lines → target achievable
-   - Keep component focused on rendering and user interaction
-   - Move business logic to handlers/utilities
+#### 8. **Reduce Component Size** ✅
+   - ✅ Extracted drag handlers (step 1)
+   - ✅ Extracted keyboard drag logic (step 2)
+   - ✅ Extracted capture-phase handlers (step 7)
+   - ✅ Simplified state management (step 6)
+   - ✅ Target achieved: `TaskList.svelte` reduced from 1161 to 723 lines (38% reduction, well below <800 target)
+   - ✅ Component now focused on rendering and user interaction
+   - ✅ Business logic moved to handlers/utilities
+   - **Note**: Remaining code is appropriate component-specific logic (task creation, editing, archiving, modal handling)
 
-#### 9. **Update Component Imports and Usage**
-   - Update `TaskList.svelte` to import from new modules:
-     - Import `taskDragHandlers` instead of inline handlers
-     - Import `taskKeyboardDrag` utilities instead of inline keyboard logic
-     - Import `dragAdapter` instead of direct `dndzone` usage
-     - Import `dragDetectionUtils` instead of library-specific DOM queries
-     - Import capture-phase handlers from extracted module
-   - Update `ListColumn.svelte` similarly (if needed)
-   - Update `Board.svelte` similarly (if needed)
-   - Replace all library-specific code with adapter/utility calls
-   - Verify components are now library-agnostic (only adapter knows about `svelte-dnd-action`)
+#### 9. **Update Component Imports and Usage** ✅
+   - ✅ Updated `TaskList.svelte` to import from new modules:
+     - ✅ `taskDragHandlers` (processTaskConsider, processTaskFinalize)
+     - ✅ `taskKeyboardDrag` (createTaskItemKeydownCaptureHandler, createTaskItemBlurHandler, setupTaskKeyboardDragDocumentHandler)
+     - ✅ `dragAdapter` (createDragZone, handleDragConsider, handleDragFinalize)
+     - ✅ `capturePhaseHandlers` (setupListTitleKeydownCapture, setupAddTaskButtonKeydownCapture, setupTaskTextKeydownCapture)
+     - ✅ `syncDragState` (syncTasksForDrag)
+   - ✅ Updated `ListColumn.svelte` to use `dragAdapter` (createDragZone)
+   - ✅ Updated `Board.svelte` to use `dragAdapter` (handleDragConsider, handleDragFinalize) and `syncDragState` (syncListsForDrag)
+   - ✅ Replaced all library-specific code with adapter/utility calls
+   - ✅ Verified components are now library-agnostic (only `dragAdapter.js` knows about `svelte-dnd-action`)
+   - ✅ All tests pass (177 passed, 1 skipped)
 
 #### 10. **Update Tests**
    - Ensure all existing tests still pass
