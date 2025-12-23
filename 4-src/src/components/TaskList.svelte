@@ -2,7 +2,8 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
-  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskOrderCrossList, updateTaskText, updateListName, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
+  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateListName, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
+  import { processTaskConsider, processTaskFinalize, findNeighborListId, moveTaskToNextList, moveTaskToPreviousList } from '../lib/drag/taskDragHandlers.js';
   import TaskEditModal from './TaskEditModal.svelte';
   import ListEditModal from './ListEditModal.svelte';
   import AddTaskInput from './AddTaskInput.svelte';
@@ -54,51 +55,6 @@
   
   let previousListId = $state(null);
   
-  /**
-   * Return all non-archived lists in visual column order.
-   * Columns are ordered left-to-right by columnIndex, and within
-   * each column lists are ordered top-to-bottom by their order.
-   */
-  function getListsInColumnOrder(lists) {
-    if (!Array.isArray(lists)) return [];
-    return [...lists].sort((a, b) => {
-      const colA = a?.columnIndex ?? 0;
-      const colB = b?.columnIndex ?? 0;
-      if (colA !== colB) return colA - colB;
-
-      const orderA = a?.order ?? 0;
-      const orderB = b?.order ?? 0;
-      if (orderA !== orderB) return orderA - orderB;
-
-      const idA = a?.id ?? 0;
-      const idB = b?.id ?? 0;
-      return idA - idB;
-    });
-  }
-
-  /**
-   * Find the next/previous list ID relative to the current list,
-   * using visual column order (left-to-right columns, top-to-bottom rows).
-   */
-  function findNeighborListId(currentListId, lists, direction) {
-    const ordered = getListsInColumnOrder(lists);
-    if (!ordered.length) return null;
-
-    const index = ordered.findIndex((l) => l.id === currentListId);
-    if (index === -1) return null;
-
-    if (direction === 'next') {
-      if (index >= ordered.length - 1) return null;
-      return ordered[index + 1].id;
-    }
-
-    if (direction === 'prev') {
-      if (index <= 0) return null;
-      return ordered[index - 1].id;
-    }
-
-    return null;
-  }
   
   $effect(() => {
     // Validate that listId exists in stableLists before creating query
@@ -292,40 +248,11 @@
     };
   });
   
-  // Move task to next list (first position)
-  async function moveTaskToNextList(taskId, nextListId) {
-    try {
-      // Get all tasks from next list
-      const nextListTasks = await getTasksForList(nextListId);
-      // Create new array with this task at the beginning
-      const newTasks = [{ id: taskId }, ...nextListTasks];
-      await updateTaskOrderCrossList(nextListId, newTasks);
-    } catch (error) {
-      console.error('Error moving task to next list:', error);
-    }
-  }
-  
-  // Move task to previous list (last position)
-  async function moveTaskToPreviousList(taskId, prevListId) {
-    try {
-      // Get all tasks from previous list
-      const prevListTasks = await getTasksForList(prevListId);
-      // Create new array with this task at the end
-      const newTasks = [...prevListTasks, { id: taskId }];
-      await updateTaskOrderCrossList(prevListId, newTasks);
-    } catch (error) {
-      console.error('Error moving task to previous list:', error);
-    }
-  }
-  
   // Handle drag events - consider event for visual reordering only
   function handleConsider(event) {
     // Update local state for visual feedback during drag
     // No database updates here - prevents liveQuery interference
-    // Filter out any invalid items (only keep items with numeric IDs - real tasks)
-    draggableTasks = event.detail.items.filter(item => 
-      item && typeof item.id === 'number'
-    );
+    draggableTasks = processTaskConsider(event.detail.items);
   }
   
   /**
@@ -602,21 +529,14 @@
   
   // Handle drag events - finalize event for database updates
   async function handleFinalize(event) {
-    // Filter out any invalid items (only keep items with numeric IDs - real tasks)
-    const validItems = event.detail.items.filter(item => 
-      item && typeof item.id === 'number'
-    );
-    
-    // Update local state for immediate visual feedback
-    draggableTasks = validItems;
-    
-    // Update database with new order values
-    // Supports both same-list reordering and cross-list moves
     try {
-      await updateTaskOrderCrossList(listId, validItems);
+      // Process finalize event: filter items and update database
+      const validItems = await processTaskFinalize(event.detail.items, listId);
+      
+      // Update local state for immediate visual feedback
+      draggableTasks = validItems;
       // liveQuery will automatically update the UI after database changes
     } catch (error) {
-      console.error('Error updating task order:', error);
       // On error, revert draggableTasks to match database state
       // The $effect will sync it back from liveQuery
     }

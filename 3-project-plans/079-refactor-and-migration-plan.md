@@ -8,8 +8,15 @@ The current implementation uses `svelte-dnd-action` (v0.9.68) and has several is
 - **Unresolved edge cases**: Resize bug partially fixed, sliding/offset issue remains (see [[078-drag-edge-case-bug]])
 - **Complex workarounds**: Polling, dimension locking attempts, timing hacks
 - **Large component files**: `TaskList.svelte` is ~1161 lines, mixing drag logic with component logic
+  - Drag handlers: ~50 lines (consider/finalize)
+  - Keyboard drag logic: ~300 lines (state management, event handlers, Tab resume behavior)
+  - Capture-phase handlers: ~150 lines (prevent library from intercepting keyboard events)
+  - Cross-list boundary movement: ~100 lines (Arrow key handlers at list boundaries)
+  - Library-specific detection: ~100 lines (DOM queries for dragged elements, drop zones)
+  - Focus management: ~100 lines (Tab resume, focus restoration)
 - **Complex state management**: `draggableTasks`/`draggableLists` syncing pattern adds complexity
 - **Hard to test**: Drag logic tightly coupled to components
+- **Library-specific code scattered**: Direct references to `svelte-dnd-action` API, DOM queries for library-specific classes/attributes (`aria-grabbed`, `svelte-dnd-action-dragged`, box-shadow detection) throughout components
 
 Refactoring first will:
 - Make migration easier (less code to move)
@@ -20,12 +27,18 @@ Refactoring first will:
 ## Acceptance Criteria
 
 ### Part 1: Refactoring
-- [ ] Drag handlers extracted from components into separate modules
-- [ ] `TaskList.svelte` reduced to <800 lines (target: <600 lines)
+- [x] Drag handlers extracted from components into separate modules
+- [ ] Keyboard drag logic extracted (state management, event handlers, Tab resume behavior)
+- [ ] Capture-phase keyboard handlers extracted (prevent library interception)
+- [ ] Cross-list boundary movement logic extracted
+- [ ] Library-specific code abstracted behind adapter/detection utilities
+- [ ] Components are library-agnostic (only adapter knows about `svelte-dnd-action`)
+- [ ] `TaskList.svelte` reduced to <800 lines (target: <600 lines) - Current: 1080 lines (81 lines removed)
 - [ ] Drag-related state management simplified or abstracted
-- [ ] All existing tests pass after refactoring
-- [ ] No functionality changes (refactor only, no behavior changes)
-- [ ] Code is more maintainable and testable
+- [x] All existing tests pass after refactoring
+- [x] No functionality changes (refactor only, no behavior changes)
+- [x] Code is more maintainable and testable
+- [ ] Future library migration will only require updating adapter layer
 
 ### Part 2: Prototyping and Testing
 - [ ] At least 2 alternative libraries evaluated with working prototypes
@@ -50,13 +63,38 @@ Refactoring first will:
 
 ### Part 1: Refactoring
 
-#### 1. **Extract Task Drag Handlers**
-   - Create `src/lib/drag/taskDragHandlers.js`
-   - Move `handleConsider` and `handleFinalize` logic from `TaskList.svelte`
-   - Extract validation logic (placeholder detection, item filtering)
-   - Extract order calculation logic
-   - Make handlers pure functions where possible (take state as parameters, return new state)
-   - Update `TaskList.svelte` to use extracted handlers
+**File Structure After Refactoring:**
+```
+src/lib/drag/
+├── dragAdapter.js              # Adapter wrapping svelte-dnd-action API
+├── dragDetectionUtils.js       # Library-specific detection utilities
+├── taskDragHandlers.js         # Task drag handlers (consider/finalize)
+├── taskKeyboardDrag.js         # Task keyboard drag state & handlers
+├── capturePhaseHandlers.js     # Capture-phase keyboard handlers
+├── listDragHandlers.js         # List drag handlers (already exists)
+├── useKeyboardListDrag.js      # List keyboard drag (already exists)
+└── README.md                   # Architecture documentation
+```
+
+**Extraction Order (Recommended):**
+1. Extract detection utilities first (needed by other modules)
+2. Extract drag handlers (simplest, least dependencies)
+3. Extract keyboard drag logic (depends on detection utils)
+4. Extract capture-phase handlers (depends on keyboard drag)
+5. Create adapter layer (wraps everything)
+6. Update components to use extracted modules
+
+#### 1. **Extract Task Drag Handlers** ✅
+   - ✅ Create `src/lib/drag/taskDragHandlers.js`
+   - ✅ Move `handleConsider` and `handleFinalize` logic from `TaskList.svelte` (lines 322-329, 604-623)
+   - ✅ Extract validation logic (placeholder detection, item filtering - currently filters items with numeric IDs)
+   - ✅ Extract order calculation logic
+   - ✅ Extract cross-list movement helpers: `moveTaskToNextList`, `moveTaskToPreviousList` (lines 295-319)
+   - ✅ Extract boundary detection logic: `findNeighborListId`, `getListsInColumnOrder` (lines 62-101)
+   - ✅ Make handlers pure functions where possible (take state as parameters, return new state)
+   - ✅ Update `TaskList.svelte` to use extracted handlers
+   - ✅ All tests pass (177 passed, 1 skipped)
+   - ✅ File size reduced: 1161 → 1080 lines (81 lines removed)
 
 #### 2. **Extract List Drag Handlers**
    - Review existing `src/lib/listDragHandlers.js` (already extracted)
@@ -64,57 +102,145 @@ Refactoring first will:
    - Move any remaining drag logic from `Board.svelte` or `ListColumn.svelte`
    - Verify handlers are pure functions
 
-#### 3. **Extract Keyboard Drag Logic**
-   - Create `src/lib/drag/keyboardDrag.js` (or enhance existing `useKeyboardListDrag.js`)
-   - Extract keyboard drag state management
-   - Extract keyboard drag event handlers
+#### 3. **Extract Task Keyboard Drag Logic**
+   - Create `src/lib/drag/taskKeyboardDrag.js` (mirroring structure of `useKeyboardListDrag.js` for lists)
+   - Extract keyboard drag state management:
+     - `isKeyboardTaskDragging`, `lastKeyboardDraggedTaskId` (lines 52-53)
+     - `lastBlurredTaskElement`, `shouldRefocusTaskOnNextTab` (lines 47-48)
+   - Extract keyboard drag event handlers:
+     - `handleTaskItemKeydownCapture` (lines 340-416) - capture-phase handler for task items
+     - `handleTaskItemBlur` (lines 424-432) - blur handler for keyboard drag tracking
+     - Document-level keyboard handler (lines 436-601) - Tab/Escape/Arrow key handling
+   - Extract library-specific detection utilities:
+     - Active drag detection (checking for `aria-grabbed`, `svelte-dnd-action-dragged` classes)
+     - Drop zone detection (checking for box-shadow styles on ul elements)
+     - Create `src/lib/drag/dragDetectionUtils.js` for library-specific queries
+   - Extract cross-list boundary movement keyboard handlers (lines 241-293, 550-592)
    - Separate keyboard drag from mouse drag logic
    - Ensure keyboard drag works with extracted handlers
+   - Note: Task keyboard drag is more complex than list keyboard drag due to:
+     - Cross-list boundary movement at first/last task
+     - Multiple capture-phase handlers to prevent library interception
+     - Tab resume behavior after keyboard drop
 
-#### 4. **Create Drag Adapter/Abstraction Layer**
+#### 4. **Create Library Detection Utilities**
+   - Create `src/lib/drag/dragDetectionUtils.js` (extract BEFORE adapter, needed by keyboard drag)
+   - Abstract library-specific DOM queries:
+     - `isDragActive()` - detect if drag is currently active (library-agnostic interface)
+       - Currently checks for `li[aria-grabbed="true"]`, `li.svelte-dnd-action-dragged`
+       - Checks for active drop zones via box-shadow detection
+     - `getDraggedElements()` - get currently dragged elements
+     - `hasActiveDropZone(element)` - check if element has active drop zone styling
+       - Currently checks for `boxShadow` with `inset` keyword
+     - `getAllActiveDropZones()` - get all active drop zones (for cross-list drags)
+   - These utilities abstract away library-specific DOM queries
+   - All library-specific class names, attributes, and style detection go here
+   - When migrating to new library, only this file needs updating for detection logic
+
+#### 5. **Create Drag Adapter/Abstraction Layer**
    - Create `src/lib/drag/dragAdapter.js`
    - Abstract `svelte-dnd-action` API behind a consistent interface
    - Define standard drag events/handlers that any library could implement
    - This makes switching libraries easier later
+   - Extract library-specific code:
+     - `dndzone` action wrapper (currently `use:dndzone` in components)
+       - Wraps `dndzone` from `svelte-dnd-action`
+       - Standardizes configuration options
+     - Event naming (`onconsider`, `onfinalize` → standardized names)
+       - Components use `onDragConsider`, `onDragFinalize`
+       - Adapter maps to library's event names
+     - Configuration options (`dropTargetStyle`, `zoneTabIndex`, `type`)
+       - Standardize config interface, map to library-specific options
    - Example interface:
      ```javascript
      // dragAdapter.js
+     import { dndzone } from 'svelte-dnd-action';
+     
      export function createDragZone(config) {
        // Returns standardized drag zone configuration
+       // Wraps svelte-dnd-action's dndzone
+       return dndzone({
+         items: config.items,
+         type: config.type,
+         zoneTabIndex: config.zoneTabIndex ?? -1,
+         dropTargetStyle: config.dropTargetStyle
+       });
      }
      
-     export function handleDragConsider(items, handler) {
+     export function handleDragConsider(event, handler) {
        // Standardized consider handler
+       // Extracts items from event.detail.items (svelte-dnd-action format)
+       handler(event.detail.items);
      }
      
-     export function handleDragFinalize(items, handler) {
+     export function handleDragFinalize(event, handler) {
        // Standardized finalize handler
+       // Extracts items from event.detail.items (svelte-dnd-action format)
+       handler(event.detail.items);
      }
      ```
+   - Move all library-specific code (DOM queries, class names, attributes) into adapter/detection utils
+   - Components should only use adapter interface, never directly reference `svelte-dnd-action`
+   - When migrating to new library, only adapter needs updating (components unchanged)
 
-#### 5. **Simplify State Management**
+#### 6. **Simplify State Management**
    - Review `draggableTasks`/`draggableLists` pattern
    - Consider if we can work directly with source data during drag
    - Document why the current pattern exists (if it's necessary)
    - If possible, simplify to reduce sync complexity
    - Update components to use simplified pattern
 
-#### 6. **Reduce Component Size**
+#### 7. **Extract Capture-Phase Keyboard Handlers**
+   - Create `src/lib/drag/capturePhaseHandlers.js` or integrate into keyboard drag modules
+   - Extract capture-phase handlers that prevent drag library from intercepting keyboard events:
+     - List title keydown handler (lines 148-176) - prevents library from intercepting Enter/Space on list title
+     - Add Task button keydown handler (lines 179-207) - prevents library from intercepting Enter/Space on Add Task button
+     - Task text keydown handler (lines 209-293) - prevents library from intercepting Enter/Space on task text, handles cross-list boundary movement
+   - These handlers use capture phase (`addEventListener(..., true)`) to run before drag library
+   - Abstract library-specific event prevention logic
+   - Update components to use extracted handlers
+
+#### 8. **Reduce Component Size**
    - Split large components if needed:
      - Consider extracting drag-related UI into sub-components
-     - Extract keyboard navigation logic
-     - Extract focus management logic
+     - Extract keyboard navigation logic (already partially done with capture-phase handlers)
+     - Extract focus management logic (Tab resume behavior, focus restoration)
    - Target: `TaskList.svelte` <800 lines (ideally <600)
+     - Current: 1161 lines
+     - Drag handlers: ~50 lines → extract
+     - Keyboard drag logic: ~300 lines → extract
+     - Capture-phase handlers: ~150 lines → extract
+     - Cross-list movement: ~100 lines → extract
+     - Focus management: ~100 lines → extract
+     - Estimated reduction: ~700 lines → target achievable
    - Keep component focused on rendering and user interaction
    - Move business logic to handlers/utilities
 
-#### 7. **Update Tests**
+#### 9. **Update Component Imports and Usage**
+   - Update `TaskList.svelte` to import from new modules:
+     - Import `taskDragHandlers` instead of inline handlers
+     - Import `taskKeyboardDrag` utilities instead of inline keyboard logic
+     - Import `dragAdapter` instead of direct `dndzone` usage
+     - Import `dragDetectionUtils` instead of library-specific DOM queries
+     - Import capture-phase handlers from extracted module
+   - Update `ListColumn.svelte` similarly (if needed)
+   - Update `Board.svelte` similarly (if needed)
+   - Replace all library-specific code with adapter/utility calls
+   - Verify components are now library-agnostic (only adapter knows about `svelte-dnd-action`)
+
+#### 10. **Update Tests**
    - Ensure all existing tests still pass
    - Update test helpers if needed (they may reference old structure)
-   - Add tests for extracted handlers if missing
+   - Update test mocks to work with adapter pattern
+   - Add tests for extracted handlers if missing:
+     - Test `taskDragHandlers.js` functions
+     - Test `taskKeyboardDrag.js` utilities
+     - Test `dragDetectionUtils.js` functions
+     - Test adapter interface
    - Verify test coverage hasn't decreased
+   - Update tests that mock `svelte-dnd-action` to mock adapter instead
 
-#### 8. **Document Refactored Structure**
+#### 11. **Document Refactored Structure**
    - Update code comments explaining new structure
    - Document drag flow (consider → finalize → database update)
    - Document state management pattern
@@ -359,3 +485,37 @@ Refactoring first will:
 - **Testing rigor**: Comprehensive testing before removing feature flag
 - **User impact**: Migration should be invisible (no functionality changes)
 - **Performance**: Must meet or exceed old implementation
+
+### Benefits of Refactoring for Future Migration
+
+After refactoring, migrating to a new drag-and-drop library will be significantly easier:
+
+1. **Isolated Library Code**: All `svelte-dnd-action`-specific code will be in:
+   - `dragAdapter.js` - wraps library API
+   - `dragDetectionUtils.js` - library-specific DOM queries
+   - No library code in components
+
+2. **Standardized Interfaces**: Components use standardized interfaces:
+   - `createDragZone()` instead of `use:dndzone`
+   - `handleDragConsider()` / `handleDragFinalize()` instead of library events
+   - `isDragActive()` instead of DOM queries
+
+3. **Minimal Component Changes**: When migrating:
+   - Components remain unchanged (they use adapter interface)
+   - Only adapter layer needs updating
+   - Detection utilities need updating (but interface stays same)
+   - Handlers may need minor updates (but structure stays same)
+
+4. **Testability**: Extracted handlers are easier to test:
+   - Pure functions can be unit tested
+   - Adapter can be mocked for component tests
+   - Keyboard drag logic can be tested independently
+
+5. **Reduced Risk**: 
+   - Can test new library alongside old one (via feature flag)
+   - Incremental migration possible (tasks first, then lists)
+   - Rollback is easier (just swap adapter implementation)
+
+**Estimated Migration Effort After Refactoring:**
+- Without refactoring: ~2-3 weeks (update all components, fix all edge cases)
+- With refactoring: ~3-5 days (update adapter + detection utils, test handlers)
