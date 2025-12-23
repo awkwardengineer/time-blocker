@@ -2,6 +2,7 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { handleDragConsider, handleDragFinalize } from '../lib/drag/dragAdapter.js';
+  import { syncListsForDrag } from '../lib/drag/syncDragState.js';
   import { getAllLists, updateListOrderWithColumn } from '../lib/dataAccess.js';
   import { groupListsIntoColumns, findListPosition } from '../lib/listDndUtils.js';
   import { applyListMoveInColumns } from '../lib/listKeyboardDrag.js';
@@ -70,23 +71,16 @@
     }
   });
   
-  // Sync draggableLists from liveQuery (similar to tasks)
-  let previousDraggableListsCount = $state(0);
+  // Sync draggableLists from liveQuery
+  // Uses utility function to protect liveQuery from mutation by drag library
+  // See syncDragState.js for explanation of why this pattern exists
+  // Note: Only syncs when query is ready - preserves draggableLists during loading/drag
   $effect(() => {
     if ($lists && Array.isArray($lists)) {
-      const newDraggableLists = $lists.map(list => ({ id: list.id, name: list.name, order: list.order, columnIndex: list.columnIndex }));
-      
-      if (newDraggableLists.length !== previousDraggableListsCount) {
-        previousDraggableListsCount = newDraggableLists.length;
-      }
-      
-      draggableLists = newDraggableLists;
-    } else {
-      if (previousDraggableListsCount > 0) {
-        previousDraggableListsCount = 0;
-      }
-      draggableLists = [];
+      draggableLists = syncListsForDrag($lists);
     }
+    // If query is undefined/null (loading), don't update draggableLists
+    // This preserves the current state during drag operations
   });
 
   // Organize lists by column with overflow handling

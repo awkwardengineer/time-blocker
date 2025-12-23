@@ -2,6 +2,7 @@
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
   import { createDragZone, handleDragConsider, handleDragFinalize } from '../lib/drag/dragAdapter.js';
+  import { syncTasksForDrag } from '../lib/drag/syncDragState.js';
   import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateListName, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
   import { processTaskConsider, processTaskFinalize, findNeighborListId, moveTaskToNextList, moveTaskToPreviousList } from '../lib/drag/taskDragHandlers.js';
   import { createTaskItemKeydownCaptureHandler, createTaskItemBlurHandler, setupTaskKeyboardDragDocumentHandler } from '../lib/drag/taskKeyboardDrag.js';
@@ -81,14 +82,15 @@
   });
   
   // Sync liveQuery results to draggableTasks for drag-and-drop
+  // Uses utility function to protect liveQuery from mutation by drag library
+  // See syncDragState.js for explanation of why this pattern exists
+  // Note: Only syncs when query is ready - preserves draggableTasks during loading/drag
   $effect(() => {
     if ($tasksQuery && Array.isArray($tasksQuery)) {
-      // Filter to only unchecked/checked tasks and create a new array
-      // This ensures drag-and-drop only works on non-archived tasks
-      draggableTasks = $tasksQuery.filter(task => 
-        task.status === 'unchecked' || task.status === 'checked'
-      );
+      draggableTasks = syncTasksForDrag($tasksQuery);
     }
+    // If query is undefined/null (loading), don't update draggableTasks
+    // This preserves the current state during drag operations
   });
 
   // Optimistic state: show content if listId is valid (even if query hasn't resolved yet)

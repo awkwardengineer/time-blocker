@@ -167,12 +167,18 @@ src/lib/drag/
    - ✅ When migrating to new library, only adapter needs updating (components unchanged)
    - ✅ All tests pass (177 passed, 1 skipped)
 
-#### 6. **Simplify State Management**
-   - Review `draggableTasks`/`draggableLists` pattern
-   - Consider if we can work directly with source data during drag
-   - Document why the current pattern exists (if it's necessary)
-   - If possible, simplify to reduce sync complexity
-   - Update components to use simplified pattern
+#### 6. **Simplify State Management** ✅
+   - ✅ Review `draggableTasks`/`draggableLists` pattern
+   - ✅ Document why the current pattern exists (protects liveQuery from mutation by drag library)
+   - ✅ Created `src/lib/drag/syncDragState.js` utility with comprehensive documentation
+   - ✅ Extracted sync logic into reusable utility functions:
+     - `syncTasksForDrag()` - syncs tasks with filtering (excludes archived)
+     - `syncListsForDrag()` - syncs lists with transformation
+   - ✅ Simplified sync logic in components (removed unnecessary `previousDraggableListsCount` tracking)
+   - ✅ Fixed infinite loop issue (removed circular dependency in effects)
+   - ✅ Updated `TaskList.svelte` and `Board.svelte` to use utility functions
+   - ✅ All tests pass (177 passed, 1 skipped)
+   - **Conclusion**: Pattern is necessary - drag library needs mutable array, liveQuery must be protected
 
 #### 7. **Extract Capture-Phase Keyboard Handlers**
    - Create `src/lib/drag/capturePhaseHandlers.js` or integrate into keyboard drag modules

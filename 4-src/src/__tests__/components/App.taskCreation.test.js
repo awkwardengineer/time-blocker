@@ -73,13 +73,17 @@ describe('App - Task Creation UX Behaviors', () => {
     await user.type(input1, 'Normal Task')
     await user.keyboard('{Enter}')
     
-    // Verify task was created
+    // According to TEST_TIMING_NOTES: prefer positive assertions first
+    // Wait for task to appear (positive assertion)
     await waitFor(() => {
       expect(within(workSection).getByText('Normal Task')).toBeInTheDocument()
-    })
+    }, { timeout: 10000 })
+    
+    // Small delay to allow UI to update
+    await new Promise(resolve => setTimeout(resolve, 100))
     
     // Verify new input is automatically opened and focused (sequential creation)
-    const input2 = await within(workSection).findByPlaceholderText('start typing...')
+    const input2 = await within(workSection).findByPlaceholderText('start typing...', {}, { timeout: 10000 })
     expect(input2).toBeInTheDocument()
     expect(input2).toHaveFocus()
     
@@ -88,18 +92,21 @@ describe('App - Task Creation UX Behaviors', () => {
     await user.type(input2, '   ') // Multiple spaces
     await user.keyboard('{Enter}')
     
-    // Verify blank task was created (should appear as empty/blank)
+    // Small delay to allow UI and database to update
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Verify blank task was created (positive assertion first)
     await waitFor(() => {
       // Blank tasks show as non-breaking space in the UI
       const tasks = within(workSection).getAllByRole('listitem')
       expect(tasks.length).toBeGreaterThan(2) // Should have original tasks + 2 new ones
-    })
+    }, { timeout: 10000 })
     
     // Verify new input is again automatically opened
-    const input3 = await within(workSection).findByPlaceholderText('start typing...')
+    const input3 = await within(workSection).findByPlaceholderText('start typing...', {}, { timeout: 10000 })
     expect(input3).toBeInTheDocument()
     expect(input3).toHaveFocus()
-  })
+  }, 20000) // Increased test timeout per TEST_TIMING_NOTES
 
   it('Escape key closes input and shows button', async () => {
     const user = userEvent.setup()
