@@ -292,7 +292,11 @@ src/lib/drag/
      - Cross-list drag (2 lists)
      - Keyboard drag support
      - Mobile touch testing capability
-   - Use feature flag or separate route to access prototype
+   - **Use separate route to access prototype** (not feature flag)
+     - Add route like `/prototype/sortablejs` or `/prototype/dnd`
+     - Keep prototype isolated from main app
+     - Use hash-based routing or pathname check (vanilla Svelte, no SvelteKit)
+     - Update `main.js` to conditionally mount prototype or main app based on route
 
 #### 3. **Prototype Library 1: sortablejs**
    - Install `sortablejs` (NOT `svelte-sortablejs` - it's unmaintained)
