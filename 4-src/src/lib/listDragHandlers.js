@@ -3,6 +3,7 @@
  */
 
 import { isPlaceholderItem } from './listDndUtils.js';
+import { updateListOrderWithColumn } from './dataAccess.js';
 
 /**
  * Process the consider event for list dragging
@@ -89,5 +90,53 @@ export function shouldSkipFinalizeUpdate(validItems, columnIndex, sourceLists, c
   }
   
   return false;
+}
+
+/**
+ * Filter out placeholder items from drag event items.
+ * 
+ * @param {Array} items - Items from drag event (may include placeholders)
+ * @returns {Array} Filtered array with only valid list items (no placeholders)
+ */
+export function filterValidListItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items.filter(item => !isPlaceholderItem(item));
+}
+
+/**
+ * Process the finalize event for list dragging.
+ * Filters placeholders, checks if update should be skipped, and updates the database.
+ * 
+ * @param {Array} items - Items from drag event (may include placeholders)
+ * @param {number} columnIndex - The column index where the drop occurred
+ * @param {Array} sourceLists - Source of truth lists (from liveQuery)
+ * @param {Array} currentDraggableLists - Current draggableLists for cross-reference
+ * @returns {Promise<Array>} Promise that resolves to the valid items array, or null if update was skipped
+ */
+export async function processListFinalize(items, columnIndex, sourceLists, currentDraggableLists) {
+  // Filter out placeholders - placeholders should be gone by finalize, but filter just in case
+  const validItems = filterValidListItems(items);
+  const filteredPlaceholders = items.filter(item => isPlaceholderItem(item));
+  
+  if (filteredPlaceholders.length > 0) {
+    console.warn('[DRAG] finalize - WARNING: Placeholders still present in finalize!', filteredPlaceholders.length);
+  }
+  
+  // Check if we should skip the database update (source column that only lost items)
+  if (shouldSkipFinalizeUpdate(validItems, columnIndex, sourceLists, currentDraggableLists)) {
+    return null; // Indicates update was skipped
+  }
+  
+  // Update database with new order and columnIndex values
+  try {
+    await updateListOrderWithColumn(columnIndex, validItems);
+    // Return valid items for potential state update
+    // Note: liveQuery will automatically update the UI after database changes
+    return validItems;
+  } catch (error) {
+    console.error('[DRAG] finalize - ERROR updating list order:', error);
+    // Re-throw so caller can handle error (e.g., revert state)
+    throw error;
+  }
 }
 

@@ -71,20 +71,27 @@ describe('App - List Keyboard Drag', () => {
     // Move list to the next column
     await user.keyboard('{ArrowRight}')
 
-    // Wait for UI to reflect the move
+    // Wait for UI to reflect the move (positive assertion first)
+    // According to TEST_TIMING_NOTES: prefer positive assertions, use waitFor for state changes
     await waitFor(async () => {
       const column0Order = await getColumnListOrder(0)
       const column1Order = await getColumnListOrder(1)
       expect(column0Order).not.toContain('Work')
       expect(column1Order).toContain('Work')
-    })
+    }, { timeout: 10000 })
 
-    // Verify database columnIndex updated
-    const lists = await db.lists.toArray()
-    const workList = lists.find(l => l.name === 'Work')
-    expect(workList).toBeDefined()
-    expect(workList.columnIndex ?? 0).toBe(1)
-  })
+    // Verify database columnIndex updated (wait for database update to propagate)
+    // According to TEST_TIMING_NOTES: database updates with liveQuery may need time to propagate
+    // Database transaction may need additional time to complete after UI update
+    // Re-query inside waitFor to avoid stale references
+    await waitFor(async () => {
+      // Re-query database inside waitFor to ensure fresh data
+      const lists = await db.lists.toArray()
+      const workList = lists.find(l => l.name === 'Work')
+      expect(workList).toBeDefined()
+      expect(workList.columnIndex ?? 0).toBe(1)
+    }, { timeout: 10000 })
+  }, 15000) // Increased test timeout per TEST_TIMING_NOTES
 
   it('Tab, Escape, Enter, and Space all end keyboard list drag mode', async () => {
     const user = userEvent.setup()

@@ -96,11 +96,15 @@ src/lib/drag/
    - ✅ All tests pass (177 passed, 1 skipped)
    - ✅ File size reduced: 1161 → 1080 lines (81 lines removed)
 
-#### 2. **Extract List Drag Handlers**
-   - Review existing `src/lib/listDragHandlers.js` (already extracted)
-   - Ensure all list drag logic is in this file
-   - Move any remaining drag logic from `Board.svelte` or `ListColumn.svelte`
-   - Verify handlers are pure functions
+#### 2. **Extract List Drag Handlers** ✅
+   - ✅ Review existing `src/lib/listDragHandlers.js` (already extracted)
+   - ✅ Ensure all list drag logic is in this file
+   - ✅ Move any remaining drag logic from `Board.svelte` or `ListColumn.svelte`
+     - ✅ Extracted `processListFinalize` function (was inline in `handleListFinalize`)
+     - ✅ Extracted `filterValidListItems` utility function
+   - ✅ Verify handlers are pure functions
+   - ✅ Updated `Board.svelte` to use `processListFinalize`
+   - ✅ Removed unused imports (`isPlaceholderItem`, `updateListOrderWithColumn` from Board.svelte)
 
 #### 3. **Extract Task Keyboard Drag Logic**
    - Create `src/lib/drag/taskKeyboardDrag.js` (mirroring structure of `useKeyboardListDrag.js` for lists)

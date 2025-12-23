@@ -3,9 +3,9 @@
   import { tick } from 'svelte';
   import { dndzone } from 'svelte-dnd-action';
   import { getAllLists, updateListOrderWithColumn } from '../lib/dataAccess.js';
-  import { groupListsIntoColumns, findListPosition, isPlaceholderItem } from '../lib/listDndUtils.js';
+  import { groupListsIntoColumns, findListPosition } from '../lib/listDndUtils.js';
   import { applyListMoveInColumns } from '../lib/listKeyboardDrag.js';
-  import { processListConsider, shouldSkipFinalizeUpdate } from '../lib/listDragHandlers.js';
+  import { processListConsider, processListFinalize } from '../lib/listDragHandlers.js';
   import { setupKeyboardListDragHandler } from '../lib/useKeyboardListDrag.js';
   import { focusListCardForKeyboardDrag, focusElementWithRetry } from '../lib/focusUtils.js';
   import { useListCreation } from '../lib/useListCreation.js';
@@ -316,27 +316,13 @@
   // Handle list drag events - finalize event for database updates
   // columnIndex indicates which column the lists were dropped into
   async function handleListFinalize(event, columnIndex) {
-    // Update draggableLists - placeholders should be gone by finalize, but filter just in case
-    const validItems = (event.detail.items || []).filter(item => !isPlaceholderItem(item));
-    const filteredPlaceholders = (event.detail.items || []).filter(item => isPlaceholderItem(item));
-    
-    if (filteredPlaceholders.length > 0) {
-      console.warn('[DRAG] finalize - WARNING: Placeholders still present in finalize!', filteredPlaceholders.length);
-    }
-    
-    // Check if we should skip the database update (source column that only lost items)
-    if (shouldSkipFinalizeUpdate(validItems, columnIndex, $lists, draggableLists)) {
-      return;
-    }
-    
-    // Update database with new order and columnIndex values
     try {
-      await updateListOrderWithColumn(columnIndex, validItems);
+      // Process finalize event: filter placeholders, check if update should be skipped, update database
+      await processListFinalize(event.detail.items || [], columnIndex, $lists, draggableLists);
       
       // Note: liveQuery will automatically update the UI after database changes
       // The $effect will sync draggableLists from liveQuery
     } catch (error) {
-      console.error('[DRAG] finalize - ERROR updating list order:', error);
       // On error, revert draggableLists to match database state
       // The $effect will sync it back from liveQuery
     }
