@@ -35,9 +35,13 @@ async function simulateDragDrop(dropZone, items) {
  * Gets the ul element (drop zone) for a specific list
  * @param {HTMLElement} listSection - The list section element
  * @returns {HTMLElement|null} The ul element or null if not found
+ * 
+ * Note: We no longer rely on library-specific attributes (use:dndzone).
+ * The adapter (dragAdapter.js) handles drag zone creation, so we just
+ * look for the ul element directly.
  */
 function getDropZone(listSection) {
-  return listSection.querySelector('ul[use\\:dndzone]') || listSection.querySelector('ul')
+  return listSection.querySelector('ul')
 }
 
 describe('App - Drag and Drop Interactions', () => {

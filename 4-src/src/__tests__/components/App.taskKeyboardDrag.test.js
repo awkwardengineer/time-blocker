@@ -10,9 +10,12 @@ import {
 } from '../helpers/appTestHelpers.js'
 
 // This test focuses on focus-management semantics around keyboard-based
-// task dragging and does not rely on the full behavior of svelte-dnd-action.
-// Mock the action to avoid a known keyboard drag bug in the library that can
-// throw when its internal items array temporarily diverges from DOM children.
+// task dragging and does not rely on the full behavior of the drag library.
+// Mock the drag adapter's dependency (svelte-dnd-action) to avoid a known
+// keyboard drag bug in the library that can throw when its internal items
+// array temporarily diverges from DOM children.
+// Note: We mock the library, not the adapter, since the adapter is a thin
+// wrapper and mocking at the library level is more reliable for this test.
 vi.mock('svelte-dnd-action', () => ({
   dndzone: vi.fn(() => ({
     update: () => {},
@@ -47,7 +50,7 @@ describe('App - Task Keyboard Drag', () => {
     await user.keyboard(' ')
     expect(task1ListItem).toHaveFocus()
 
-    // Immediately drop the task with Space (svelte-dnd-action will blur
+    // Immediately drop the task with Space (the drag library will blur
     // the active element as part of its keyboard drop handling).
     await user.keyboard(' ')
 
