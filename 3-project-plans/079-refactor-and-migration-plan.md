@@ -28,10 +28,10 @@ Refactoring first will:
 
 ### Part 1: Refactoring
 - [x] Drag handlers extracted from components into separate modules
-- [ ] Keyboard drag logic extracted (state management, event handlers, Tab resume behavior)
+- [x] Keyboard drag logic extracted (state management, event handlers, Tab resume behavior)
 - [ ] Capture-phase keyboard handlers extracted (prevent library interception)
-- [ ] Cross-list boundary movement logic extracted
-- [ ] Library-specific code abstracted behind adapter/detection utilities
+- [x] Cross-list boundary movement logic extracted
+- [x] Library-specific code abstracted behind adapter/detection utilities
 - [ ] Components are library-agnostic (only adapter knows about `svelte-dnd-action`)
 - [ ] `TaskList.svelte` reduced to <800 lines (target: <600 lines) - Current: 1080 lines (81 lines removed)
 - [ ] Drag-related state management simplified or abstracted
@@ -106,22 +106,24 @@ src/lib/drag/
    - ✅ Updated `Board.svelte` to use `processListFinalize`
    - ✅ Removed unused imports (`isPlaceholderItem`, `updateListOrderWithColumn` from Board.svelte)
 
-#### 3. **Extract Task Keyboard Drag Logic**
-   - Create `src/lib/drag/taskKeyboardDrag.js` (mirroring structure of `useKeyboardListDrag.js` for lists)
-   - Extract keyboard drag state management:
-     - `isKeyboardTaskDragging`, `lastKeyboardDraggedTaskId` (lines 52-53)
-     - `lastBlurredTaskElement`, `shouldRefocusTaskOnNextTab` (lines 47-48)
-   - Extract keyboard drag event handlers:
-     - `handleTaskItemKeydownCapture` (lines 340-416) - capture-phase handler for task items
-     - `handleTaskItemBlur` (lines 424-432) - blur handler for keyboard drag tracking
-     - Document-level keyboard handler (lines 436-601) - Tab/Escape/Arrow key handling
-   - Extract library-specific detection utilities:
-     - Active drag detection (checking for `aria-grabbed`, `svelte-dnd-action-dragged` classes)
-     - Drop zone detection (checking for box-shadow styles on ul elements)
-     - Create `src/lib/drag/dragDetectionUtils.js` for library-specific queries
-   - Extract cross-list boundary movement keyboard handlers (lines 241-293, 550-592)
-   - Separate keyboard drag from mouse drag logic
-   - Ensure keyboard drag works with extracted handlers
+#### 3. **Extract Task Keyboard Drag Logic** ✅
+   - ✅ Create `src/lib/drag/taskKeyboardDrag.js` (mirroring structure of `useKeyboardListDrag.js` for lists)
+   - ✅ Extract keyboard drag state management:
+     - ✅ `isKeyboardTaskDragging`, `lastKeyboardDraggedTaskId` (lines 52-53)
+     - ✅ `lastBlurredTaskElement`, `shouldRefocusTaskOnNextTab` (lines 47-48)
+   - ✅ Extract keyboard drag event handlers:
+     - ✅ `createTaskItemKeydownCaptureHandler` - capture-phase handler for task items
+     - ✅ `createTaskItemBlurHandler` - blur handler for keyboard drag tracking
+     - ✅ `setupTaskKeyboardDragDocumentHandler` - document-level handler for Tab/Escape/Arrow key handling
+   - ✅ Extract library-specific detection utilities (Step 4, done early):
+     - ✅ Created `src/lib/drag/dragDetectionUtils.js` for library-specific queries
+     - ✅ Active drag detection (checking for `aria-grabbed`, `svelte-dnd-action-dragged` classes)
+     - ✅ Drop zone detection (checking for box-shadow styles on ul elements)
+   - ✅ Extract cross-list boundary movement keyboard handlers (lines 241-293, 550-592)
+   - ✅ Separate keyboard drag from mouse drag logic
+   - ✅ Updated `TaskList.svelte` to use extracted handlers
+   - ✅ All tests pass (keyboard drag test passes, fixed flaky test)
+   - ✅ File size reduced: 1080 → 841 lines (239 lines removed)
    - Note: Task keyboard drag is more complex than list keyboard drag due to:
      - Cross-list boundary movement at first/last task
      - Multiple capture-phase handlers to prevent library interception

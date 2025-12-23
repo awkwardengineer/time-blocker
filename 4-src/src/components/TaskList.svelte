@@ -4,6 +4,7 @@
   import { dndzone } from 'svelte-dnd-action';
   import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateListName, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
   import { processTaskConsider, processTaskFinalize, findNeighborListId, moveTaskToNextList, moveTaskToPreviousList } from '../lib/drag/taskDragHandlers.js';
+  import { createTaskItemKeydownCaptureHandler, createTaskItemBlurHandler, setupTaskKeyboardDragDocumentHandler } from '../lib/drag/taskKeyboardDrag.js';
   import TaskEditModal from './TaskEditModal.svelte';
   import ListEditModal from './ListEditModal.svelte';
   import AddTaskInput from './AddTaskInput.svelte';
@@ -255,276 +256,36 @@
     draggableTasks = processTaskConsider(event.detail.items);
   }
   
-  /**
-   * Capture-phase keydown handler for each task list item.
-   *
-   * We don't change the drag behavior provided by svelte-dnd-action;
-   * instead we *observe* when keyboard drag starts/ends so that after
-   * a keyboard drop (Space/Enter/Escape) we can resume focus on the
-   * dragged task when the user presses Tab, instead of jumping to the
-   * next tabbable child (e.g., the checkbox).
-   */
-  function handleTaskItemKeydownCapture(event, taskId) {
-    const key = event.key;
-    const currentTarget = event.currentTarget;
-    const target = event.target;
+  // Create state getters/setters for keyboard drag handlers
+  const keyboardDragState = {
+    getIsKeyboardTaskDragging: () => isKeyboardTaskDragging,
+    setIsKeyboardTaskDragging: (value) => { isKeyboardTaskDragging = value; },
+    getLastKeyboardDraggedTaskId: () => lastKeyboardDraggedTaskId,
+    setLastKeyboardDraggedTaskId: (value) => { lastKeyboardDraggedTaskId = value; },
+    getLastBlurredTaskElement: () => lastBlurredTaskElement,
+    setLastBlurredTaskElement: (value) => { lastBlurredTaskElement = value; },
+    getShouldRefocusTaskOnNextTab: () => shouldRefocusTaskOnNextTab,
+    setShouldRefocusTaskOnNextTab: (value) => { shouldRefocusTaskOnNextTab = value; }
+  };
 
-    // Only track key events that originate on the <li> itself.
-    // Inner controls (checkbox, text span, buttons) have their own
-    // semantics and should not toggle keyboard drag tracking.
-    if (!(currentTarget instanceof HTMLElement) || currentTarget !== target) {
-      return;
-    }
-
-    if (key === 'Enter' || key === ' ') {
-      if (!isKeyboardTaskDragging) {
-        // First Enter/Space while focused on the task item - keyboard drag starts.
-        isKeyboardTaskDragging = true;
-        lastKeyboardDraggedTaskId = taskId;
-      } else {
-        // Second Enter/Space while dragging - keyboard drop.
-        isKeyboardTaskDragging = false;
-        lastKeyboardDraggedTaskId = taskId;
-        // Remember this task item so the *next* Tab can refocus it.
-        lastBlurredTaskElement = currentTarget;
-        shouldRefocusTaskOnNextTab = true;
-      }
-    } else if (key === 'Escape') {
-      const draggedElements = typeof document !== 'undefined' ? document.querySelectorAll('li[aria-grabbed="true"], li.svelte-dnd-action-dragged') : [];
-      // Check if the ulElement (dndzone) has active drop zone styles
-      let hasActiveDropZone = false;
-      if (ulElement && ulElement instanceof HTMLElement) {
-        const style = window.getComputedStyle(ulElement);
-        // Check if box-shadow indicates an active drop zone (the library uses inset shadow)
-        if (style.boxShadow && style.boxShadow !== 'none' && style.boxShadow.includes('inset')) {
-          hasActiveDropZone = true;
-        }
-      }
-      // Also check all ul elements in the document for drop zones (for cross-list drags)
-      let allDropZonesCount = 0;
-      if (typeof document !== 'undefined') {
-        const allUls = document.querySelectorAll('ul');
-        for (const ul of allUls) {
-          if (ul instanceof HTMLElement && ul !== ulElement) {
-            const style = window.getComputedStyle(ul);
-            if (style.boxShadow && style.boxShadow !== 'none' && style.boxShadow.includes('inset')) {
-              allDropZonesCount++;
-            }
-          }
-        }
-      }
-      
-      // Check if there's an active drag by looking for drop zones or dragged elements
-      // This is more reliable than isKeyboardTaskDragging because the blur handler
-      // may have already cleared that flag when svelte-dnd-action blurred the element
-      const hasActiveDrag = draggedElements.length > 0 || hasActiveDropZone || allDropZonesCount > 0;
-      
-      if (isKeyboardTaskDragging || hasActiveDrag) {
-        // Escape also ends keyboard drag; treat it like a drop for
-        // the purposes of Tab-resume focus behavior.
-        // Clear our local state
-        isKeyboardTaskDragging = false;
-        lastKeyboardDraggedTaskId = taskId;
-        lastBlurredTaskElement = currentTarget;
-        shouldRefocusTaskOnNextTab = true;
-        // Don't prevent the event - let it propagate to svelte-dnd-action so it can clear drop zones
-      } else {
-        // Escape when not in drag state - blur the task item
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        lastBlurredTaskElement = currentTarget;
-        shouldRefocusTaskOnNextTab = true;
-        if (currentTarget instanceof HTMLElement) {
-          currentTarget.blur();
-        }
-      }
-    }
-  }
-
-  /**
-   * When a keyboard-dragged task item blurs (svelte-dnd-action calls
-   * `element.blur()` as part of its keyboard drop handling), remember
-   * that element so the *next* Tab can refocus it instead of moving
-   * directly into the checkbox.
-   */
-  function handleTaskItemBlur(event, taskId) {
-    const currentTarget = event.currentTarget;
-
-    if (isKeyboardTaskDragging && lastKeyboardDraggedTaskId === taskId) {
-      isKeyboardTaskDragging = false;
-      lastBlurredTaskElement = currentTarget;
-      shouldRefocusTaskOnNextTab = true;
-    }
-  }
+  // Create keyboard drag handlers using extracted composable
+  // Use getter function to access current ulElement value (avoids closure warning)
+  const handleTaskItemKeydownCapture = createTaskItemKeydownCaptureHandler(keyboardDragState, () => ulElement);
+  const handleTaskItemBlur = createTaskItemBlurHandler(keyboardDragState);
   
-  // Add document-level keyboard listener for cross-list boundary movement
+  // Set up document-level keyboard handler for cross-list boundary movement and Tab resume
   // This runs before svelte-dnd-action handlers
   $effect(() => {
     if (!ulElement) return;
     
-    async function handleDocumentKeydown(e) {
-      const key = e.key;
-
-      // Handle Tab during active drag mode - cancel drag first (similar to Escape)
-      if (key === 'Tab') {
-        const draggedElements = typeof document !== 'undefined' ? document.querySelectorAll('li[aria-grabbed="true"], li.svelte-dnd-action-dragged') : [];
-        // Check if the ulElement (dndzone) has active drop zone styles
-        let hasActiveDropZone = false;
-        if (ulElement && ulElement instanceof HTMLElement) {
-          const style = window.getComputedStyle(ulElement);
-          // Check if box-shadow indicates an active drop zone (the library uses inset shadow)
-          if (style.boxShadow && style.boxShadow !== 'none' && style.boxShadow.includes('inset')) {
-            hasActiveDropZone = true;
-          }
-        }
-        // Also check all ul elements in the document for drop zones (for cross-list drags)
-        let allDropZonesCount = 0;
-        if (typeof document !== 'undefined') {
-          const allUls = document.querySelectorAll('ul');
-          for (const ul of allUls) {
-            if (ul instanceof HTMLElement && ul !== ulElement) {
-              const style = window.getComputedStyle(ul);
-              if (style.boxShadow && style.boxShadow !== 'none' && style.boxShadow.includes('inset')) {
-                allDropZonesCount++;
-              }
-            }
-          }
-        }
-        
-        // Check if there's an active drag by looking for drop zones or dragged elements
-        // This is more reliable than isKeyboardTaskDragging because the blur handler
-        // may have already cleared that flag when svelte-dnd-action blurred the element
-        const hasActiveDrag = draggedElements.length > 0 || hasActiveDropZone || allDropZonesCount > 0;
-        
-        if (hasActiveDrag || isKeyboardTaskDragging) {
-          // Tab should cancel drag mode (like Escape does)
-          // Prevent Tab from navigating - the NEXT Tab will refocus the dropped item
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          e.stopPropagation();
-          
-          // Clear our local state
-          isKeyboardTaskDragging = false;
-          if (typeof document !== 'undefined' && document.activeElement) {
-            const activeElement = document.activeElement;
-            const focusedLi = activeElement.closest('li[data-id]');
-            if (focusedLi && focusedLi instanceof HTMLElement) {
-              const taskIdAttr = focusedLi.getAttribute('data-id');
-              if (taskIdAttr) {
-                const taskId = parseInt(taskIdAttr);
-                lastKeyboardDraggedTaskId = taskId;
-                lastBlurredTaskElement = focusedLi;
-                shouldRefocusTaskOnNextTab = true;
-              }
-            }
-          }
-          // Dispatch Escape event to cancel drag mode in svelte-dnd-action
-          // We need to dispatch it on the ulElement (dndzone) so svelte-dnd-action can handle it
-          if (ulElement && ulElement instanceof HTMLElement) {
-            const escapeEvent = new KeyboardEvent('keydown', {
-              key: 'Escape',
-              code: 'Escape',
-              keyCode: 27,
-              which: 27,
-              bubbles: true,
-              cancelable: true,
-              composed: true
-            });
-            ulElement.dispatchEvent(escapeEvent);
-          }
-          return;
-        }
-      }
-
-      // Handle Tab resume after blur for tasks (mirrors list behavior in App.svelte)
-      if (
-        key === 'Tab' &&
-        shouldRefocusTaskOnNextTab &&
-        lastBlurredTaskElement
-      ) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        e.stopPropagation();
-
-        shouldRefocusTaskOnNextTab = false;
-
-        // Try to refocus the previously blurred task-related element
-        if (typeof document !== 'undefined') {
-          let target = lastBlurredTaskElement;
-          // If stored element is no longer in the DOM, fall back to the Add Task button
-          if (
-            !(target instanceof HTMLElement) ||
-            !document.contains(target)
-          ) {
-            if (addTaskContainerElement) {
-              const addTaskButton = addTaskContainerElement.querySelector(
-                'span[role="button"]'
-              );
-              if (addTaskButton && addTaskButton instanceof HTMLElement) {
-                target = addTaskButton;
-              }
-            }
-          }
-
-          if (target && target instanceof HTMLElement) {
-            target.focus();
-          }
-        }
-        return;
-      }
-
-      // Only handle ArrowUp/ArrowDown for cross-list movement below
-      if (key !== 'ArrowDown' && key !== 'ArrowUp') return;
-      
-      // Check if focus is within this list
-      const activeElement = document.activeElement;
-      if (!activeElement) return;
-      
-      const focusedLi = activeElement.closest('li[data-id]');
-      if (!focusedLi || !ulElement.contains(focusedLi)) return;
-      
-      const taskIdAttr = focusedLi.getAttribute('data-id');
-      if (!taskIdAttr) return;
-      
-      const taskId = parseInt(taskIdAttr);
-      const task = draggableTasks.find(t => t.id === taskId);
-      if (!task) return;
-      
-      const taskIndex = draggableTasks.findIndex(t => t.id === taskId);
-      const isFirst = taskIndex === 0;
-      const isLast = taskIndex === draggableTasks.length - 1;
-      
-      // Check if we're at a boundary and trying to move in that direction
-      if (key === 'ArrowDown' && isLast) {
-        // Move to next list (in visual column order)
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        e.stopPropagation();
-        
-        const nextListId = findNeighborListId(listId, allLists, 'next');
-        if (nextListId != null) {
-          await moveTaskToNextList(taskId, nextListId);
-        }
-      } else if (key === 'ArrowUp' && isFirst) {
-        // Move to previous list (in visual column order)
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        e.stopPropagation();
-        
-        const prevListId = findNeighborListId(listId, allLists, 'prev');
-        if (prevListId != null) {
-          await moveTaskToPreviousList(taskId, prevListId);
-        }
-      }
-    }
-    
-    // Use capture phase to intercept before svelte-dnd-action
-    document.addEventListener('keydown', handleDocumentKeydown, true);
-    
-    return () => {
-      document.removeEventListener('keydown', handleDocumentKeydown, true);
-    };
+    return setupTaskKeyboardDragDocumentHandler(
+      keyboardDragState,
+      ulElement,
+      listId,
+      allLists,
+      draggableTasks,
+      addTaskContainerElement
+    );
   });
   
   // Handle drag events - finalize event for database updates

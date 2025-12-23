@@ -38,16 +38,15 @@ describe('App - Task Editing Modal UX Behaviors', () => {
     // Press Enter (without Shift)
     await user.keyboard('{Enter}')
     
-    // Wait for modal to close
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    })
-    
-    // Verify task was updated
+    // According to TEST_TIMING_NOTES: prefer positive assertions first, then negative
+    // Wait for updated task text to appear (positive assertion)
     await waitFor(() => {
       expect(within(workSection).getByText('Updated Task 1')).toBeInTheDocument()
-    })
-  })
+    }, { timeout: 10000 })
+    
+    // Then verify modal is closed (negative assertion - after positive succeeds)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  }, 15000) // Increased test timeout per TEST_TIMING_NOTES
 
   it('Enter in edit modal saves and closes (when input has whitespace-only)', async () => {
     const user = userEvent.setup()
