@@ -141,6 +141,7 @@
   <div class="max-w-6xl mx-auto">
     <h1 class="text-3xl font-bold mb-4">SortableJS Prototype</h1>
     <p class="mb-6 text-grey-100">Testing SortableJS integration with Svelte 5</p>
+    <p class="mb-4 text-sm text-grey-80">Component loaded successfully!</p>
     
     <div class="grid grid-cols-2 gap-8">
       <!-- List 1 -->
