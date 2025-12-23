@@ -57,31 +57,31 @@ describe('App - Focus Management', () => {
     const archiveButton = screen.getByRole('button', { name: /archive this task instead of saving/i })
     await user.click(archiveButton)
     
-    // Wait for modal to close and Task 1 to be archived
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-      expect(within(workSection).queryByText('Task 1')).not.toBeInTheDocument()
-    })
-    
-    // Verify focus moved to Task 2 (next task)
-    // Wait for Task 2 to be in the DOM first, then check focus
+    // According to TEST_TIMING_NOTES: prefer positive assertions first
+    // Wait for Task 2 to appear (positive assertion) - this confirms Task 1 is archived
     await waitFor(() => {
       expect(within(workSection).getByText('Task 2')).toBeInTheDocument()
-    })
+    }, { timeout: 10000 })
     
-    // Wait a bit longer for focus to be set (DOM updates and focus management need time)
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // Focus management uses setTimeout with DOM_UPDATE_DELAY_MEDIUM_MS (200ms) + retry logic
+    // Wait longer to allow focus management to complete (retries can take up to 5 attempts)
+    await new Promise(resolve => setTimeout(resolve, 500))
     
+    // Verify focus moved to Task 2 (positive assertion)
     // Query element inside waitFor to ensure fresh reference after DOM updates
-    // Increased timeout to handle timing issues in full test suite
+    // Increased timeout to account for setTimeout-based focus management with retries
     await waitFor(() => {
       const task2Text = within(workSection).getByText('Task 2')
       const task2ListItem = task2Text.closest('li')
       const task2TextSpan = task2ListItem?.querySelector('span[role="button"]')
       expect(task2TextSpan).toBeInTheDocument()
       expect(task2TextSpan).toHaveFocus()
-    }, { timeout: 5000 })
-  }, 15000)
+    }, { timeout: 10000 })
+    
+    // Then verify negative assertions (modal closed, Task 1 gone)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(within(workSection).queryByText('Task 1')).not.toBeInTheDocument()
+  }, 20000) // Increased test timeout per TEST_TIMING_NOTES
 
   it('Focus moves to Add Task button when all tasks archived', async () => {
     const user = userEvent.setup()

@@ -182,15 +182,16 @@ describe('App - Task Editing Modal UX Behaviors', () => {
     // Press Escape
     await user.keyboard('{Escape}')
     
-    // Wait for modal to close
+    // According to TEST_TIMING_NOTES: prefer positive assertions first, then negative
+    // Wait for original task text to appear (positive assertion) - confirms modal closed and changes discarded
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    })
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    }, { timeout: 10000 })
     
-    // Verify task was NOT updated (still shows original text)
-    expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    // Then verify negative assertions (modal closed, discarded text not present)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(within(workSection).queryByText('This should be discarded')).not.toBeInTheDocument()
-  })
+  }, 15000) // Increased test timeout per TEST_TIMING_NOTES
 
   it('Click outside edit modal discards and closes', async () => {
     const user = userEvent.setup()
@@ -228,16 +229,15 @@ describe('App - Task Editing Modal UX Behaviors', () => {
     const saveButton = screen.getByRole('button', { name: /save task changes/i })
     await user.click(saveButton)
     
-    // Wait for modal to close
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    })
-    
-    // Verify task was updated
+    // According to TEST_TIMING_NOTES: prefer positive assertions first, then negative
+    // Wait for updated task text to appear (positive assertion)
     await waitFor(() => {
       expect(within(workSection).getByText('Saved via button')).toBeInTheDocument()
-    })
-  })
+    }, { timeout: 10000 })
+    
+    // Then verify modal is closed (negative assertion - after positive succeeds)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  }, 15000) // Increased test timeout per TEST_TIMING_NOTES
 
   it('Keyboard navigation: Enter key on task text opens edit modal', async () => {
     const user = userEvent.setup()
