@@ -246,11 +246,22 @@ src/lib/drag/
 
 ### Part 2: Prototyping and Testing Alternative Libraries
 
-#### 1. **Research and Evaluate Alternatives**
+#### 1. **Research and Evaluate Alternatives** 🔍
    - **Primary candidates:**
-     - `sortablejs` + `svelte-sortablejs` wrapper
-       - Pros: Mature, well-documented, good mobile support, handles nested containers
-       - Cons: Not Svelte-native, may need wrapper work
+     - ✅ **`sortablejs`** (direct integration, no wrapper needed)
+       - **Status**: Actively maintained (as of May 2025)
+       - **Pros**: 
+         - Mature, well-documented
+         - Good mobile/touch support
+         - Framework-agnostic (works with Svelte)
+         - No dependencies (no jQuery)
+         - Handles nested containers
+         - Built on HTML5 drag-and-drop API
+       - **Cons**: 
+         - No official Svelte wrapper (need direct integration)
+         - May need manual Svelte reactivity handling
+         - Need to verify keyboard support
+       - **Note**: `svelte-sortablejs` wrapper is NOT maintained (last release 7 years ago) - use SortableJS directly
      - `@dnd-kit/core` (if Svelte adapter exists)
        - Pros: Modern, well-maintained, good TypeScript support
        - Cons: React-focused, may not have good Svelte support
@@ -261,11 +272,16 @@ src/lib/drag/
      - Svelte 5 compatibility
      - Nested drop zones support (lists in columns, tasks in lists)
      - Mobile/touch support
-     - Keyboard drag support
+     - Keyboard drag support ⚠️ (need to verify)
      - Bundle size
      - Documentation quality
      - Maintenance status
      - Community adoption
+   - **Research findings (Dec 2024)**:
+     - SortableJS can be integrated directly into Svelte using `onMount`
+     - Need to handle Svelte reactivity manually (update state in `onEnd` event)
+     - Community examples available on Stack Overflow
+     - Keyboard support needs verification
 
 #### 2. **Create Minimal Prototype Environment**
    - Create `src/prototypes/dnd-prototype/` directory
@@ -279,18 +295,25 @@ src/lib/drag/
    - Use feature flag or separate route to access prototype
 
 #### 3. **Prototype Library 1: sortablejs**
-   - Install `sortablejs` and `svelte-sortablejs` (if available)
+   - Install `sortablejs` (NOT `svelte-sortablejs` - it's unmaintained)
+   - Integrate directly using `onMount` lifecycle
    - Implement basic drag within list
-   - Implement cross-list drag
+   - Implement cross-list drag (using `group` option)
    - Test nested containers (lists in columns)
-   - Test keyboard support
+   - Test keyboard support (verify if built-in or need custom implementation)
    - Test mobile touch
+   - Handle Svelte reactivity:
+     - Update state in `onEnd` event
+     - Ensure `draggableTasks` updates correctly
+     - Test with liveQuery pattern
    - Document:
      - Setup complexity
-     - API differences from current library
+     - API differences from svelte-dnd-action
+     - How to handle Svelte reactivity
      - Performance observations
      - Any issues encountered
      - Bundle size impact
+     - Keyboard support status
 
 #### 4. **Prototype Library 2: Alternative or Custom**
    - If `sortablejs` doesn't work well, try second option
