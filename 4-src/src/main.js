@@ -12,11 +12,22 @@ import { seedDatabase } from './lib/seed.js'
   // Use hash-based routing for static site compatibility
   const hash = window.location.hash
   const pathname = window.location.pathname
+  const searchParams = new URLSearchParams(window.location.search)
+  
+  // Check for prototype route in hash, pathname, or query param (for easy testing)
   const isPrototypeRoute = hash === '#/prototype/sortablejs' || 
                           hash === '#prototype/sortablejs' ||
-                          pathname.includes('/prototype/sortablejs')
+                          hash.includes('prototype/sortablejs') ||
+                          pathname.includes('/prototype/sortablejs') ||
+                          searchParams.get('prototype') === 'sortablejs'
   
-  console.log('Route check:', { hash, pathname, isPrototypeRoute })
+  console.log('Route check:', { 
+    hash, 
+    pathname, 
+    search: window.location.search,
+    isPrototypeRoute,
+    fullUrl: window.location.href
+  })
   
   const appElement = document.getElementById('app')
   if (!appElement) {
@@ -24,18 +35,28 @@ import { seedDatabase } from './lib/seed.js'
     return
   }
   
+  console.log('App element found:', appElement)
+  
   if (isPrototypeRoute) {
     console.log('Mounting SortableJS Prototype')
-    // Mount prototype component
-    mount(SortableJSPrototype, {
-      target: appElement,
-    })
+    try {
+      mount(SortableJSPrototype, {
+        target: appElement,
+      })
+      console.log('Prototype mounted successfully')
+    } catch (error) {
+      console.error('Error mounting prototype:', error)
+    }
   } else {
     console.log('Mounting main App')
-    // Mount main app
-    mount(App, {
-      target: appElement,
-    })
+    try {
+      mount(App, {
+        target: appElement,
+      })
+      console.log('Main app mounted successfully')
+    } catch (error) {
+      console.error('Error mounting main app:', error)
+    }
   }
   
   // Listen for hash changes (for hash-based routing)
