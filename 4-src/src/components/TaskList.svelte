@@ -4,8 +4,9 @@
   import { createDragZone, handleDragConsider, handleDragFinalize } from '../lib/drag/dragAdapter.js';
   import { syncTasksForDrag } from '../lib/drag/syncDragState.js';
   import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateListName, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
-  import { processTaskConsider, processTaskFinalize, findNeighborListId, moveTaskToNextList, moveTaskToPreviousList } from '../lib/drag/taskDragHandlers.js';
+  import { processTaskConsider, processTaskFinalize } from '../lib/drag/taskDragHandlers.js';
   import { createTaskItemKeydownCaptureHandler, createTaskItemBlurHandler, setupTaskKeyboardDragDocumentHandler } from '../lib/drag/taskKeyboardDrag.js';
+  import { setupListTitleKeydownCapture, setupAddTaskButtonKeydownCapture, setupTaskTextKeydownCapture } from '../lib/drag/capturePhaseHandlers.js';
   import TaskEditModal from './TaskEditModal.svelte';
   import ListEditModal from './ListEditModal.svelte';
   import AddTaskInput from './AddTaskInput.svelte';
@@ -105,150 +106,25 @@
   
   // Add capture-phase keyboard handler to prevent drag library from intercepting Enter/Space on list title
   $effect(() => {
-    if (!listSectionElement) return;
-    
-    function handleListTitleKeydownCapture(e) {
-      const target = e.target;
-      
-      // Handle Enter/Space on list title (h2 element) for editing
-      if ((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.tagName === 'H2' && target.hasAttribute('role') && target.getAttribute('role') === 'button') {
-        // Check if this is our list title (within this list section)
-        const h2Element = listSectionElement?.querySelector('h2[role="button"]');
-        if (h2Element && target === h2Element) {
-          e.preventDefault();
-          e.stopImmediatePropagation(); // Stop ALL handlers including drag library
-          
-          // Open the list edit modal
-          listModal.openModal(target);
-        }
-      }
-    }
-    
-    // Use capture phase to intercept before drag library
-    listSectionElement.addEventListener('keydown', handleListTitleKeydownCapture, true);
-    
-    return () => {
-      if (listSectionElement) {
-        listSectionElement.removeEventListener('keydown', handleListTitleKeydownCapture, true);
-      }
-    };
+    return setupListTitleKeydownCapture(listSectionElement, listModal);
   });
   
   // Add capture-phase keyboard handler to prevent drag library from intercepting Enter/Space on Add Task button
   $effect(() => {
-    if (!addTaskContainerElement) return;
-    
-    function handleAddTaskButtonKeydownCapture(e) {
-      const target = e.target;
-      
-      // Handle Enter/Space on Add Task button (span with role="button")
-      if ((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.hasAttribute('role') && target.getAttribute('role') === 'button') {
-        // Check if this is the Add Task button (within the add task container)
-        const addTaskButton = addTaskContainerElement?.querySelector('span[role="button"]');
-        if (addTaskButton && target === addTaskButton) {
-          e.preventDefault();
-          e.stopImmediatePropagation(); // Stop ALL handlers including drag library
-          
-          // Activate the input (same as clicking)
-          handleAddTaskClick();
-        }
-      }
-    }
-    
-    // Use capture phase to intercept before drag library
-    addTaskContainerElement.addEventListener('keydown', handleAddTaskButtonKeydownCapture, true);
-    
-    return () => {
-      if (addTaskContainerElement) {
-        addTaskContainerElement.removeEventListener('keydown', handleAddTaskButtonKeydownCapture, true);
-      }
-    };
+    return setupAddTaskButtonKeydownCapture(addTaskContainerElement, handleAddTaskClick);
   });
   
   // Add capture-phase keyboard handler to prevent drag library from intercepting Enter on task text
   // Also handles cross-list movement when tasks are at boundaries
   $effect(() => {
-    if (!ulElement) return;
-    
-    async function handleKeydownCapture(e) {
-      const target = e.target;
-      
-      // Handle Enter/Space on task text for editing
-      if ((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.hasAttribute('data-no-drag')) {
-        e.preventDefault();
-        e.stopImmediatePropagation(); // Stop ALL handlers including drag library
-        
-        // Find the task ID from the parent li element
-        const liElement = target.closest('li[data-id]');
-        if (liElement) {
-          const taskId = parseInt(liElement.getAttribute('data-id'));
-          const task = draggableTasks.find(t => t.id === taskId);
-          if (task) {
-            // Open the modal directly
-            editingTaskId = taskId;
-            editingTaskText = task.text;
-            taskModal.openModal(target);
-          }
-        }
-        return;
+    return setupTaskTextKeydownCapture(ulElement, draggableTasks, listId, allLists, {
+      onTaskTextEdit: (taskId, taskText, targetElement) => {
+        // Open the modal directly
+        editingTaskId = taskId;
+        editingTaskText = taskText;
+        taskModal.openModal(targetElement);
       }
-      
-      // Handle cross-list movement at boundaries
-      // svelte-dnd-action uses Space to start dragging, then Arrow keys to move
-      // We need to intercept when at boundaries
-      // Check for any arrow key combination that might be used for navigation
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        // Find the focused task - check if any task element has focus
-        const activeElement = document.activeElement;
-        if (!activeElement) return;
-        
-        // Find the task li element that contains the focused element
-        const focusedLi = activeElement.closest('li[data-id]');
-        if (!focusedLi || !ulElement.contains(focusedLi)) return;
-        
-        const taskIdAttr = focusedLi.getAttribute('data-id');
-        if (!taskIdAttr) return;
-        
-        const taskId = parseInt(taskIdAttr);
-        const task = draggableTasks.find(t => t.id === taskId);
-        if (!task) return;
-        
-        const taskIndex = draggableTasks.findIndex(t => t.id === taskId);
-        const isFirst = taskIndex === 0;
-        const isLast = taskIndex === draggableTasks.length - 1;
-        
-        // Check if we're at a boundary and trying to move in that direction
-        // Only intercept if we're actually at the boundary
-        if (e.key === 'ArrowDown' && isLast) {
-          // Move to next list (in visual column order) - prevent default and handle cross-list movement
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          
-          const nextListId = findNeighborListId(listId, allLists, 'next');
-          if (nextListId != null) {
-            // Move to next list in column order
-            await moveTaskToNextList(taskId, nextListId);
-          }
-        } else if (e.key === 'ArrowUp' && isFirst) {
-          // Move to previous list (in visual column order) - prevent default and handle cross-list movement
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          
-          const prevListId = findNeighborListId(listId, allLists, 'prev');
-          if (prevListId != null) {
-            // Move to previous list in column order
-            await moveTaskToPreviousList(taskId, prevListId);
-          }
-          // If at first list in first column, do nothing (already at top)
-        }
-      }
-    }
-    
-    ulElement.addEventListener('keydown', handleKeydownCapture, true); // true = capture phase
-    
-    return () => {
-      ulElement.removeEventListener('keydown', handleKeydownCapture, true);
-    };
+    });
   });
   
   // Handle drag events - consider event for visual reordering only

@@ -180,15 +180,16 @@ src/lib/drag/
    - ✅ All tests pass (177 passed, 1 skipped)
    - **Conclusion**: Pattern is necessary - drag library needs mutable array, liveQuery must be protected
 
-#### 7. **Extract Capture-Phase Keyboard Handlers**
-   - Create `src/lib/drag/capturePhaseHandlers.js` or integrate into keyboard drag modules
-   - Extract capture-phase handlers that prevent drag library from intercepting keyboard events:
-     - List title keydown handler (lines 148-176) - prevents library from intercepting Enter/Space on list title
-     - Add Task button keydown handler (lines 179-207) - prevents library from intercepting Enter/Space on Add Task button
-     - Task text keydown handler (lines 209-293) - prevents library from intercepting Enter/Space on task text, handles cross-list boundary movement
-   - These handlers use capture phase (`addEventListener(..., true)`) to run before drag library
-   - Abstract library-specific event prevention logic
-   - Update components to use extracted handlers
+#### 7. **Extract Capture-Phase Keyboard Handlers** ✅
+   - ✅ Created `src/lib/drag/capturePhaseHandlers.js` module
+   - ✅ Extracted capture-phase handlers that prevent drag library from intercepting keyboard events:
+     - `setupListTitleKeydownCapture()` - prevents library from intercepting Enter/Space on list title
+     - `setupAddTaskButtonKeydownCapture()` - prevents library from intercepting Enter/Space on Add Task button
+     - `setupTaskTextKeydownCapture()` - prevents library from intercepting Enter/Space on task text, handles cross-list boundary movement
+   - ✅ These handlers use capture phase (`addEventListener(..., true)`) to run before drag library
+   - ✅ Abstracted library-specific event prevention logic into reusable factory functions
+   - ✅ Updated `TaskList.svelte` to use extracted handlers (reduced from ~841 to ~723 lines, ~118 lines removed)
+   - ✅ All tests pass (177 passed, 1 skipped)
 
 #### 8. **Reduce Component Size**
    - Split large components if needed:
