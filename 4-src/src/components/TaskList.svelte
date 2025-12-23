@@ -128,6 +128,20 @@
   });
   
   // Handle drag events - consider event for visual reordering only
+  // 
+  // DRAG FLOW:
+  // 1. User starts drag → drag library detects
+  // 2. consider event fires → handleConsider (this function)
+  //    - Filters out invalid items (placeholders)
+  //    - Updates draggableTasks for visual feedback
+  //    - NO database updates - just visual reordering
+  // 3. User drops → finalize event fires → handleFinalize
+  //    - Filters out invalid items
+  //    - Updates database (updateTaskOrder or updateTaskOrderCrossList)
+  //    - Updates draggableTasks with valid items
+  //    - liveQuery automatically updates → syncs back to draggableTasks
+  //
+  // See src/lib/drag/README.md for full architecture documentation
   function handleConsider(event) {
     // Update local state for visual feedback during drag
     // No database updates here - prevents liveQuery interference
@@ -169,6 +183,14 @@
   });
   
   // Handle drag events - finalize event for database updates
+  //
+  // This is called when the user drops a task. It:
+  // 1. Filters out invalid items (placeholders)
+  // 2. Updates the database (updateTaskOrder or updateTaskOrderCrossList)
+  // 3. Updates draggableTasks with valid items for immediate visual feedback
+  // 4. liveQuery automatically updates → syncs back to draggableTasks
+  //
+  // See src/lib/drag/README.md for full architecture documentation
   async function handleFinalize(event) {
     try {
       // Process finalize event: filter items and update database

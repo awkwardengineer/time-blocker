@@ -230,11 +230,19 @@ src/lib/drag/
    - **Note**: Some unrelated flaky tests exist in other test files (not drag-related)
    - **Future**: Unit tests for extracted modules can be added as needed, but integration tests provide good coverage
 
-#### 11. **Document Refactored Structure**
-   - Update code comments explaining new structure
-   - Document drag flow (consider → finalize → database update)
-   - Document state management pattern
-   - Add README in `src/lib/drag/` explaining architecture
+#### 11. **Document Refactored Structure** ✅
+   - ✅ Created comprehensive README.md in `src/lib/drag/` explaining:
+     - Architecture overview and file structure
+     - Purpose of each module
+     - Drag flow (consider → finalize → database update)
+     - State management pattern (liveQuery → draggableTasks)
+     - Keyboard event handling
+     - Migration guide for future library changes
+   - ✅ Updated code comments in components:
+     - TaskList.svelte: Added drag flow documentation to handleConsider and handleFinalize
+     - Board.svelte: Added drag flow documentation to handleListConsider and handleListFinalize
+     - All comments reference src/lib/drag/README.md for full documentation
+   - ✅ All tests pass (177 passed, 1 skipped)
 
 ### Part 2: Prototyping and Testing Alternative Libraries
 

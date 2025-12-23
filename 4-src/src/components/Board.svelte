@@ -299,6 +299,17 @@
   // Handle list drag events - consider event for visual reordering
   // The drag library REQUIRES the items array to match DOM structure during drag
   // We MUST update draggableLists here to provide visual feedback
+  //
+  // DRAG FLOW:
+  // 1. User starts drag → drag library detects
+  // 2. consider event fires → handleListConsider (this function)
+  //    - Updates draggableLists for visual feedback
+  //    - NO database updates - just visual reordering
+  // 3. User drops → finalize event fires → handleListFinalize
+  //    - Updates database with new list order and column assignments
+  //    - liveQuery automatically updates → syncs back to draggableLists
+  //
+  // See src/lib/drag/README.md for full architecture documentation
   function handleListConsider(event, columnIndex) {
     // Get items for this column (includes placeholders for visual feedback)
     handleDragConsider(event, (newColumnItems) => {
@@ -309,6 +320,13 @@
   
   // Handle list drag events - finalize event for database updates
   // columnIndex indicates which column the lists were dropped into
+  //
+  // This is called when the user drops a list. It:
+  // 1. Filters out invalid items (placeholders)
+  // 2. Updates the database with new list order and column assignments
+  // 3. liveQuery automatically updates → syncs back to draggableLists
+  //
+  // See src/lib/drag/README.md for full architecture documentation
   async function handleListFinalize(event, columnIndex) {
     try {
       // Process finalize event: filter placeholders, check if update should be skipped, update database
