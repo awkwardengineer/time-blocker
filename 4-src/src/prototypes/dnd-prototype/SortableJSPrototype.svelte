@@ -1,6 +1,8 @@
 <script>
   import { onMount } from 'svelte'
   import Sortable from 'sortablejs'
+  
+  console.log('SortableJSPrototype component script running')
 
   // Simple test data - 2 lists with tasks
   let list1Tasks = $state([
@@ -23,7 +25,11 @@
   let sortable2 = $state(null)
 
   onMount(() => {
-    if (!list1Element || !list2Element) return
+    console.log('SortableJSPrototype onMount called', { list1Element, list2Element })
+    if (!list1Element || !list2Element) {
+      console.warn('List elements not ready yet')
+      return
+    }
 
     // Initialize SortableJS for list 1
     sortable1 = new Sortable(list1Element, {
