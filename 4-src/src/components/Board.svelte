@@ -1,7 +1,7 @@
 <script>
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
-  import { dndzone } from 'svelte-dnd-action';
+  import { handleDragConsider, handleDragFinalize } from '../lib/drag/dragAdapter.js';
   import { getAllLists, updateListOrderWithColumn } from '../lib/dataAccess.js';
   import { groupListsIntoColumns, findListPosition } from '../lib/listDndUtils.js';
   import { applyListMoveInColumns } from '../lib/listKeyboardDrag.js';
@@ -307,10 +307,10 @@
   // We MUST update draggableLists here to provide visual feedback
   function handleListConsider(event, columnIndex) {
     // Get items for this column (includes placeholders for visual feedback)
-    const newColumnItems = event.detail.items || [];
-    
-    // Update draggableLists using extracted utility function
-    draggableLists = processListConsider(newColumnItems, columnIndex, draggableLists);
+    handleDragConsider(event, (newColumnItems) => {
+      // Update draggableLists using extracted utility function
+      draggableLists = processListConsider(newColumnItems, columnIndex, draggableLists);
+    });
   }
   
   // Handle list drag events - finalize event for database updates
@@ -318,10 +318,12 @@
   async function handleListFinalize(event, columnIndex) {
     try {
       // Process finalize event: filter placeholders, check if update should be skipped, update database
-      await processListFinalize(event.detail.items || [], columnIndex, $lists, draggableLists);
-      
-      // Note: liveQuery will automatically update the UI after database changes
-      // The $effect will sync draggableLists from liveQuery
+      handleDragFinalize(event, async (items) => {
+        await processListFinalize(items || [], columnIndex, $lists, draggableLists);
+        
+        // Note: liveQuery will automatically update the UI after database changes
+        // The $effect will sync draggableLists from liveQuery
+      });
     } catch (error) {
       // On error, revert draggableLists to match database state
       // The $effect will sync it back from liveQuery

@@ -1,7 +1,7 @@
 <script>
   import { liveQuery } from 'dexie';
   import { tick } from 'svelte';
-  import { dndzone } from 'svelte-dnd-action';
+  import { createDragZone, handleDragConsider, handleDragFinalize } from '../lib/drag/dragAdapter.js';
   import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateListName, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
   import { processTaskConsider, processTaskFinalize, findNeighborListId, moveTaskToNextList, moveTaskToPreviousList } from '../lib/drag/taskDragHandlers.js';
   import { createTaskItemKeydownCaptureHandler, createTaskItemBlurHandler, setupTaskKeyboardDragDocumentHandler } from '../lib/drag/taskKeyboardDrag.js';
@@ -253,7 +253,9 @@
   function handleConsider(event) {
     // Update local state for visual feedback during drag
     // No database updates here - prevents liveQuery interference
-    draggableTasks = processTaskConsider(event.detail.items);
+    handleDragConsider(event, (items) => {
+      draggableTasks = processTaskConsider(items);
+    });
   }
   
   // Create state getters/setters for keyboard drag handlers
@@ -292,11 +294,13 @@
   async function handleFinalize(event) {
     try {
       // Process finalize event: filter items and update database
-      const validItems = await processTaskFinalize(event.detail.items, listId);
-      
-      // Update local state for immediate visual feedback
-      draggableTasks = validItems;
-      // liveQuery will automatically update the UI after database changes
+      handleDragFinalize(event, async (items) => {
+        const validItems = await processTaskFinalize(items, listId);
+        
+        // Update local state for immediate visual feedback
+        draggableTasks = validItems;
+        // liveQuery will automatically update the UI after database changes
+      });
     } catch (error) {
       // On error, revert draggableTasks to match database state
       // The $effect will sync it back from liveQuery
@@ -684,7 +688,7 @@
     <div class="task-list-wrapper m-0 p-0">
       <ul 
         bind:this={ulElement}
-        use:dndzone={{ 
+        use:createDragZone={{ 
           items: draggableTasks,
           type: 'task', // Shared type for all lists - enables cross-list dragging
           zoneTabIndex: -1, // Prevent entire task list <ul> from being focusable

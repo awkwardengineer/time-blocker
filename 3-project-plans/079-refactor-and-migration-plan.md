@@ -32,7 +32,7 @@ Refactoring first will:
 - [ ] Capture-phase keyboard handlers extracted (prevent library interception)
 - [x] Cross-list boundary movement logic extracted
 - [x] Library-specific code abstracted behind adapter/detection utilities
-- [ ] Components are library-agnostic (only adapter knows about `svelte-dnd-action`)
+- [x] Components are library-agnostic (only adapter knows about `svelte-dnd-action`)
 - [ ] `TaskList.svelte` reduced to <800 lines (target: <600 lines) - Current: 1080 lines (81 lines removed)
 - [ ] Drag-related state management simplified or abstracted
 - [x] All existing tests pass after refactoring
@@ -129,65 +129,43 @@ src/lib/drag/
      - Multiple capture-phase handlers to prevent library interception
      - Tab resume behavior after keyboard drop
 
-#### 4. **Create Library Detection Utilities**
-   - Create `src/lib/drag/dragDetectionUtils.js` (extract BEFORE adapter, needed by keyboard drag)
-   - Abstract library-specific DOM queries:
-     - `isDragActive()` - detect if drag is currently active (library-agnostic interface)
+#### 4. **Create Library Detection Utilities** ✅ (Done early, needed by step 3)
+   - ✅ Create `src/lib/drag/dragDetectionUtils.js` (extract BEFORE adapter, needed by keyboard drag)
+   - ✅ Abstract library-specific DOM queries:
+     - ✅ `isDragActive()` - detect if drag is currently active (library-agnostic interface)
        - Currently checks for `li[aria-grabbed="true"]`, `li.svelte-dnd-action-dragged`
        - Checks for active drop zones via box-shadow detection
-     - `getDraggedElements()` - get currently dragged elements
-     - `hasActiveDropZone(element)` - check if element has active drop zone styling
+     - ✅ `getDraggedElements()` - get currently dragged elements
+     - ✅ `hasActiveDropZone(element)` - check if element has active drop zone styling
        - Currently checks for `boxShadow` with `inset` keyword
-     - `getAllActiveDropZones()` - get all active drop zones (for cross-list drags)
-   - These utilities abstract away library-specific DOM queries
-   - All library-specific class names, attributes, and style detection go here
-   - When migrating to new library, only this file needs updating for detection logic
+     - ✅ `getAllActiveDropZones()` - get all active drop zones (for cross-list drags)
+   - ✅ These utilities abstract away library-specific DOM queries
+   - ✅ All library-specific class names, attributes, and style detection go here
+   - ✅ When migrating to new library, only this file needs updating for detection logic
 
-#### 5. **Create Drag Adapter/Abstraction Layer**
-   - Create `src/lib/drag/dragAdapter.js`
-   - Abstract `svelte-dnd-action` API behind a consistent interface
-   - Define standard drag events/handlers that any library could implement
-   - This makes switching libraries easier later
-   - Extract library-specific code:
-     - `dndzone` action wrapper (currently `use:dndzone` in components)
+#### 5. **Create Drag Adapter/Abstraction Layer** ✅
+   - ✅ Create `src/lib/drag/dragAdapter.js`
+   - ✅ Abstract `svelte-dnd-action` API behind a consistent interface
+   - ✅ Define standard drag events/handlers that any library could implement
+   - ✅ This makes switching libraries easier later
+   - ✅ Extract library-specific code:
+     - ✅ `createDragZone` action wrapper (replaces `use:dndzone` in components)
        - Wraps `dndzone` from `svelte-dnd-action`
        - Standardizes configuration options
-     - Event naming (`onconsider`, `onfinalize` → standardized names)
-       - Components use `onDragConsider`, `onDragFinalize`
-       - Adapter maps to library's event names
-     - Configuration options (`dropTargetStyle`, `zoneTabIndex`, `type`)
-       - Standardize config interface, map to library-specific options
-   - Example interface:
-     ```javascript
-     // dragAdapter.js
-     import { dndzone } from 'svelte-dnd-action';
-     
-     export function createDragZone(config) {
-       // Returns standardized drag zone configuration
-       // Wraps svelte-dnd-action's dndzone
-       return dndzone({
-         items: config.items,
-         type: config.type,
-         zoneTabIndex: config.zoneTabIndex ?? -1,
-         dropTargetStyle: config.dropTargetStyle
-       });
-     }
-     
-     export function handleDragConsider(event, handler) {
-       // Standardized consider handler
-       // Extracts items from event.detail.items (svelte-dnd-action format)
-       handler(event.detail.items);
-     }
-     
-     export function handleDragFinalize(event, handler) {
-       // Standardized finalize handler
-       // Extracts items from event.detail.items (svelte-dnd-action format)
-       handler(event.detail.items);
-     }
-     ```
-   - Move all library-specific code (DOM queries, class names, attributes) into adapter/detection utils
-   - Components should only use adapter interface, never directly reference `svelte-dnd-action`
-   - When migrating to new library, only adapter needs updating (components unchanged)
+       - Handles Svelte action signature (node, params)
+     - ✅ Event handlers (`handleDragConsider`, `handleDragFinalize`)
+       - Components use adapter handlers instead of accessing `event.detail.items` directly
+       - Adapter extracts items from library-specific event format
+       - Supports async handlers for finalize events
+     - ✅ Configuration options (`dropTargetStyle`, `zoneTabIndex`, `type`)
+       - Standardized config interface, maps to library-specific options
+   - ✅ Updated all components to use adapter:
+     - ✅ `TaskList.svelte` - uses `createDragZone`, `handleDragConsider`, `handleDragFinalize`
+     - ✅ `ListColumn.svelte` - uses `createDragZone`
+     - ✅ `Board.svelte` - uses `handleDragConsider`, `handleDragFinalize`
+   - ✅ Components no longer directly reference `svelte-dnd-action`
+   - ✅ When migrating to new library, only adapter needs updating (components unchanged)
+   - ✅ All tests pass (177 passed, 1 skipped)
 
 #### 6. **Simplify State Management**
    - Review `draggableTasks`/`draggableLists` pattern

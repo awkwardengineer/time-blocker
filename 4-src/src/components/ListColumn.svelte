@@ -1,5 +1,5 @@
 <script>
-  import { dndzone } from 'svelte-dnd-action';
+  import { createDragZone } from '../lib/drag/dragAdapter.js';
   import TaskList from './TaskList.svelte';
   import Button from './Button.svelte';
   import { isPlaceholderItem } from '../lib/listDndUtils.js';
@@ -74,7 +74,7 @@
 <div class="flex flex-col pt-0 min-w-0 px-2 {columnIndex < 4 ? 'border-r border-grey-50' : ''}" data-column-index={columnIndex}>
   <div
     bind:this={dndzoneElement}
-    use:dndzone={{
+    use:createDragZone={{
       items: columnLists,
       type: 'list', // Shared type enables cross-column dragging
       zoneTabIndex: -1, // Prevent entire column container from being focusable
