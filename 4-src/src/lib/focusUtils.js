@@ -91,20 +91,19 @@ export async function focusListCardForKeyboardDrag(listId) {
 
   await tick();
 
-  // Find all elements with this data-id and pick the list card wrapper
-  const candidates = Array.from(document.querySelectorAll(`[data-id="${listId}"]`));
-  let card = candidates.find(
-    (el) => el instanceof HTMLElement && el.getAttribute('role') === 'group'
-  );
-  if (!card) {
-    // Fallback: first DIV with this data-id (lists use div[data-id], tasks use li[data-id])
-    card = candidates.find(
-      (el) => el instanceof HTMLElement && el.tagName === 'DIV'
-    );
-  }
+  // Find the list card wrapper - must be a DIV with role="group" and data-id
+  // Tasks use li[data-id] with role="group", so we must filter to DIVs only
+  const card = document.querySelector(`div[data-id="${listId}"][role="group"]`);
   if (card instanceof HTMLElement) {
     card.focus();
     return card;
+  }
+  
+  // Fallback: any DIV with this data-id (lists use div[data-id], tasks use li[data-id])
+  const fallbackCard = document.querySelector(`div[data-id="${listId}"]`);
+  if (fallbackCard instanceof HTMLElement) {
+    fallbackCard.focus();
+    return fallbackCard;
   }
   
   return null;
