@@ -62,6 +62,9 @@
   // SortableJS instance for task dragging
   let taskSortable = $state(null);
   
+  // Track if a drag just occurred to prevent click handlers from firing
+  let dragJustEnded = $state(false);
+  
   // Extract items from DOM order (like prototype)
   // For cross-list drags, tasks from other lists may not be in draggableTasks yet,
   // so we create minimal objects with just the id - the database update function will fetch full data
@@ -185,6 +188,7 @@
       emptyInsertThreshold: 50, // Allow dropping into empty lists (distance in pixels from edge)
       onStart: (evt) => {
         // Show drop zones on all task lists
+        dragJustEnded = false;
         applyDropZonesToAllTaskLists();
       },
       onMove: (evt) => {
@@ -200,6 +204,13 @@
       onEnd: (evt) => {
         // Remove drop zones from all task lists
         removeDropZonesFromAllTaskLists();
+        
+        // Mark that a drag just ended to prevent click handlers
+        dragJustEnded = true;
+        // Reset flag after a short delay to allow normal clicks again
+        setTimeout(() => {
+          dragJustEnded = false;
+        }, 100);
         
         // Handle drag end
         handleTaskDragEnd(evt);
@@ -605,6 +616,10 @@
   }
   
   function handleTaskTextClick(taskId, taskText, event) {
+    // Don't open modal if a drag just ended (prevents accidental modal opening after drag)
+    if (dragJustEnded) {
+      return;
+    }
     const clickedElement = event?.currentTarget || event?.target;
     editingTaskId = taskId;
     editingTaskText = taskText;
@@ -782,7 +797,6 @@
               role="button"
               tabindex="0"
               contenteditable="false"
-              data-no-drag="true"
               aria-label={`Edit task: ${task.text || 'blank task'}`}
               onkeydown={(e) => handleTaskTextKeydown(task.id, task.text, e)}
             >
