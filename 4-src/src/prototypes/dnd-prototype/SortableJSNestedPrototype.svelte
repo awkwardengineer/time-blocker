@@ -115,6 +115,7 @@
       animation: 150,
       ghostClass: 'sortable-ghost',
       group: 'tasks', // Enable cross-list task dragging
+      draggable: 'li[data-task-id]', // Only drag task items
       onEnd: (evt) => {
         handleTaskDragEnd(evt, listId)
       }
