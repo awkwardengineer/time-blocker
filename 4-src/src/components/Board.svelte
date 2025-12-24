@@ -1,15 +1,17 @@
 <script>
   import { liveQuery } from 'dexie';
-  import { tick } from 'svelte';
-  import { handleDragConsider, handleDragFinalize } from '../lib/drag/dragAdapter.js';
-  import { syncListsForDrag } from '../lib/drag/syncDragState.js';
+  import { tick, onMount, onDestroy } from 'svelte';
+  import Sortable from 'sortablejs';
+  import { dragStateManager } from '../lib/drag/dragStateManager.js';
   import { getAllLists, updateListOrderWithColumn } from '../lib/dataAccess.js';
   import { groupListsIntoColumns, findListPosition } from '../lib/listDndUtils.js';
   import { applyListMoveInColumns } from '../lib/listKeyboardDrag.js';
-  import { processListConsider, processListFinalize } from '../lib/listDragHandlers.js';
+  import { filterValidListItems } from '../lib/listDragHandlers.js';
+  import { applyDropZoneStyles, removeDropZoneStyles } from '../lib/drag/dropZoneUtils.js';
   import { setupKeyboardListDragHandler } from '../lib/useKeyboardListDrag.js';
   import { focusListCardForKeyboardDrag, focusElementWithRetry } from '../lib/focusUtils.js';
   import { useListCreation } from '../lib/useListCreation.js';
+  import { FOCUS_RETRY_ATTEMPTS, FOCUS_RETRY_INTERVAL } from '../lib/constants.js';
   import TaskList from './TaskList.svelte';
   import ListColumn from './ListColumn.svelte';
 
@@ -20,7 +22,7 @@
   // Used for rendering TaskList components to prevent remounting during drag
   let stableLists = $derived($lists || []);
   
-  // Local state for drag-and-drop lists - synced from liveQuery
+  // Local state for drag-and-drop lists - synced from dragStateManager (event-driven)
   // Used only by drag library for drag operations
   let draggableLists = $state([]);
   
@@ -38,6 +40,304 @@
     listId: null,
     lastDraggedId: null,
     shouldRefocusOnNextTab: false
+  });
+  
+  // SortableJS instances for list columns
+  let columnSortables = $state(new Map()); // Map<columnIndex, Sortable>
+  
+  // Extract items from DOM order for lists
+  // Uses state manager's current state to ensure we get the latest data
+  // CRITICAL: Sets columnIndex to target column for all extracted items (fixes cross-column drags)
+  function extractListItemsFromDOM(container, columnIndex) {
+    if (!container) return [];
+    const children = Array.from(container.children);
+    const seenIds = new Set();
+    const items = [];
+    
+    // Get current state from state manager (not draggableLists which might be stale)
+    const currentState = dragStateManager.getState();
+    const currentLists = currentState.lists;
+    
+    for (const child of children) {
+      const idAttr = child.getAttribute('data-id');
+      if (!idAttr) continue;
+      const id = parseInt(idAttr, 10);
+      
+      // Skip duplicates - if we've already seen this ID, skip it
+      if (seenIds.has(id)) {
+        continue;
+      }
+      
+      seenIds.add(id);
+      // Look up in state manager's current state (not draggableLists)
+      const list = currentLists.find(l => l.id === id);
+      if (list) {
+        // CRITICAL FIX: Set columnIndex to target column (not the old one from state)
+        // This ensures cross-column drags work correctly
+        items.push({
+          ...list,
+          columnIndex: columnIndex
+        });
+      } else {
+        // Fallback: if not in state manager, try draggableLists (shouldn't happen but safety)
+        const fallbackList = draggableLists.find(l => l.id === id);
+        if (fallbackList) {
+          items.push({
+            ...fallbackList,
+            columnIndex: columnIndex
+          });
+        }
+      }
+    }
+    
+    return items;
+  }
+  
+  // Get column index from a container element by traversing up the DOM
+  function getColumnIndexFromContainer(container) {
+    if (!container) return null;
+    let element = container;
+    // Traverse up to find parent with data-column-index
+    while (element && element !== document.body) {
+      if (element instanceof HTMLElement) {
+        const columnIndexAttr = element.getAttribute('data-column-index');
+        if (columnIndexAttr !== null) {
+          return parseInt(columnIndexAttr, 10);
+        }
+      }
+      element = element.parentElement;
+    }
+    return null;
+  }
+  
+  
+  // Handle list drag end with optimistic updates via state manager
+  async function handleListDragEnd(evt, columnIndex) {
+    const { to } = evt;
+    const targetContainer = to;
+    
+    // Determine target column index from DOM (not source columnIndex)
+    const targetColumnIndex = getColumnIndexFromContainer(targetContainer);
+    if (targetColumnIndex === null) {
+      console.error('[LIST DRAG] Could not determine target column index');
+      return;
+    }
+    
+    const isCrossColumn = targetColumnIndex !== columnIndex;
+    
+    // Wait for any pending DOM updates before extracting
+    await tick();
+    
+    // CRITICAL FIX: Clean up duplicate DOM elements BEFORE extraction
+    // SortableJS may leave moved elements in DOM that Svelte also renders
+    // This causes duplicates when extracting. Clean them up first.
+    if (isCrossColumn) {
+      // Find and remove duplicate elements across all columns
+      const allColumns = document.querySelectorAll('[data-column-index]');
+      const seenIds = new Map(); // Map<id, firstElement>
+      
+      allColumns.forEach(column => {
+        const columnIndexAttr = column.getAttribute('data-column-index');
+        if (columnIndexAttr === null) return;
+        
+        // Get first direct child div (querySelector doesn't support > combinator)
+        const columnContainer = column.firstElementChild;
+        if (!columnContainer || !(columnContainer instanceof HTMLElement)) return;
+        
+        const children = Array.from(columnContainer.children);
+        
+        children.forEach((child) => {
+          const idAttr = child.getAttribute('data-id');
+          if (!idAttr) return;
+          const id = parseInt(idAttr, 10);
+          
+          if (seenIds.has(id)) {
+            // Duplicate found - remove this one (keep the first one we saw)
+            child.remove();
+          } else {
+            seenIds.set(id, child);
+          }
+        });
+      });
+      
+      // Wait for DOM cleanup to complete
+      await tick();
+    }
+    
+    // Extract items from target container (now clean of duplicates)
+    const newOrder = extractListItemsFromDOM(targetContainer, targetColumnIndex);
+    const validItems = filterValidListItems(newOrder);
+    
+    // Deduplicate validItems by ID (in case DOM extraction found duplicates)
+    const seenIds = new Set();
+    const finalValidItems = validItems.filter(item => {
+      if (seenIds.has(item.id)) {
+        return false;
+      }
+      seenIds.add(item.id);
+      return true;
+    });
+    
+    if (finalValidItems.length === 0) {
+      return;
+    }
+    
+    // Start drag operation in state manager (prevents liveQuery from overwriting)
+    dragStateManager.startDrag();
+    
+    // Update state manager with optimistic update
+    dragStateManager.updateDragState(targetColumnIndex, finalValidItems);
+    
+    // Wait for Svelte to update DOM after state change
+    await tick();
+    await tick();
+    
+    // For cross-column drags, check for duplicates after Svelte re-render and recreate SortableJS instances
+    if (isCrossColumn) {
+      // Check DOM for duplicates after Svelte re-render
+      const allColumnsAfterRender = document.querySelectorAll('[data-column-index]');
+      const seenIdsAfterRender = new Map();
+      
+      allColumnsAfterRender.forEach(column => {
+        const columnIndexAttr = column.getAttribute('data-column-index');
+        if (columnIndexAttr === null) return;
+        
+        const columnContainer = column.firstElementChild;
+        if (!columnContainer || !(columnContainer instanceof HTMLElement)) return;
+        
+        const children = Array.from(columnContainer.children);
+        
+        children.forEach((child) => {
+          const idAttr = child.getAttribute('data-id');
+          if (!idAttr) return;
+          const id = parseInt(idAttr, 10);
+          
+          if (seenIdsAfterRender.has(id)) {
+            // Duplicate found after render - remove it
+            child.remove();
+          } else {
+            seenIdsAfterRender.set(id, child);
+          }
+        });
+      });
+      // Wait for Svelte to fully re-render
+      await tick();
+      await tick();
+      
+      // Destroy SortableJS instances for both source and target columns
+      const sourceSortable = columnSortables.get(columnIndex);
+      const targetSortable = columnSortables.get(targetColumnIndex);
+      
+      if (sourceSortable) {
+        sourceSortable.destroy();
+        columnSortables.delete(columnIndex);
+      }
+      if (targetSortable) {
+        targetSortable.destroy();
+        columnSortables.delete(targetColumnIndex);
+      }
+      
+      // Wait for DOM cleanup to complete
+      await tick();
+      
+      // Re-initialize SortableJS for both columns
+      const sourceColumnElement = document.querySelector(`[data-column-index="${columnIndex}"] > div:first-child`);
+      const targetColumnElement = document.querySelector(`[data-column-index="${targetColumnIndex}"] > div:first-child`);
+      
+      if (sourceColumnElement) {
+        setTimeout(() => {
+          initializeColumnSortable(sourceColumnElement, columnIndex);
+        }, 10);
+      }
+      if (targetColumnElement) {
+        setTimeout(() => {
+          initializeColumnSortable(targetColumnElement, targetColumnIndex);
+        }, 10);
+      }
+    }
+    
+    // Persist to database
+    try {
+      await updateListOrderWithColumn(targetColumnIndex, finalValidItems);
+      // Success: state manager will allow liveQuery to sync back
+      dragStateManager.completeDrag(true);
+    } catch (error) {
+      console.error('[LIST DRAG] Failed to save list order:', error);
+      // Error: state manager will allow liveQuery to restore previous state
+      dragStateManager.completeDrag(false);
+      // TODO: Show user notification about the error
+    }
+  }
+  
+  // Apply drop zones to all columns
+  function applyDropZonesToAllColumns() {
+    if (typeof document === 'undefined') return;
+    const allColumns = document.querySelectorAll('[data-column-index] > div:first-child');
+    allColumns.forEach(col => {
+      if (col instanceof HTMLElement) {
+        applyDropZoneStyles(col);
+      }
+    });
+  }
+  
+  // Remove drop zones from all columns
+  function removeDropZonesFromAllColumns() {
+    if (typeof document === 'undefined') return;
+    const allColumns = document.querySelectorAll('[data-column-index] > div:first-child');
+    allColumns.forEach(col => {
+      if (col instanceof HTMLElement) {
+        removeDropZoneStyles(col);
+      }
+    });
+  }
+  
+  // Initialize SortableJS for a column
+  function initializeColumnSortable(columnElement, columnIndex) {
+    if (!columnElement || columnSortables.has(columnIndex)) return;
+    
+    const sortable = new Sortable(columnElement, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      group: 'lists', // Enable cross-column list dragging
+      draggable: '[data-id]', // Only drag list containers
+      filter: 'ul, li', // Prevent dragging tasks
+      preventOnFilter: false,
+      forceFallback: true, // Use clone instead of moving element - prevents DOM manipulation conflicts with Svelte
+      fallbackOnBody: true, // Clone appears at cursor position
+      onStart: () => {
+        // Show drop zones on all columns
+        applyDropZonesToAllColumns();
+      },
+      onMove: (evt) => {
+        // Apply drop zone to target column when hovering over it
+        if (evt.to && evt.to instanceof HTMLElement) {
+          applyDropZoneStyles(evt.to);
+        }
+        // Also ensure source column has drop zone
+        if (evt.from && evt.from instanceof HTMLElement) {
+          applyDropZoneStyles(evt.from);
+        }
+      },
+      onEnd: (evt) => {
+        // Remove drop zones from all columns
+        removeDropZonesFromAllColumns();
+        
+        // Handle drag end (with optimistic updates)
+        handleListDragEnd(evt, columnIndex);
+      }
+    });
+    
+    columnSortables.set(columnIndex, sortable);
+  }
+  
+  // Cleanup SortableJS instances
+  onDestroy(() => {
+    columnSortables.forEach((sortable) => {
+      if (sortable) {
+        sortable.destroy();
+      }
+    });
+    columnSortables.clear();
   });
   
   // Initialize inputs when lists first load (only once)
@@ -71,16 +371,24 @@
     }
   });
   
-  // Sync draggableLists from liveQuery
-  // Uses utility function to protect liveQuery from mutation by drag library
-  // See syncDragState.js for explanation of why this pattern exists
-  // Note: Only syncs when query is ready - preserves draggableLists during loading/drag
+  // Sync draggableLists from dragStateManager (event-driven, not reactive)
+  // This subscribes to state manager changes and updates Svelte state
+  $effect(() => {
+    const unsubscribe = dragStateManager.subscribe((state) => {
+      draggableLists = state.lists;
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  });
+  
+  // Sync liveQuery → dragStateManager (one-way, only when not dragging)
+  // The state manager prevents overwriting during drag operations
   $effect(() => {
     if ($lists && Array.isArray($lists)) {
-      draggableLists = syncListsForDrag($lists);
+      dragStateManager.initializeFromQuery($lists);
     }
-    // If query is undefined/null (loading), don't update draggableLists
-    // This preserves the current state during drag operations
   });
 
   // Organize lists by column with overflow handling
@@ -95,7 +403,7 @@
 
   /**
    * Apply a keyboard-driven move for a list (up/down/left/right).
-   * This updates local draggableLists for immediate feedback and
+   * This updates dragStateManager for immediate feedback and
    * persists the change via updateListOrderWithColumn.
    */
   async function moveListWithKeyboard(listId, direction) {
@@ -109,15 +417,27 @@
       return;
     }
 
-    const { updatedDraggableLists, targetColumnIndex, targetColumnItems } = result;
+    const updatedDraggableLists = result.updatedDraggableLists;
+    // TypeScript may not see these properties, but they exist at runtime
+    const targetColumnIndex = ('targetColumnIndex' in result && result.targetColumnIndex !== undefined) ? Number(result.targetColumnIndex) : 0;
+    const targetColumnItems = ('targetColumnItems' in result && result.targetColumnItems !== undefined && Array.isArray(result.targetColumnItems)) ? result.targetColumnItems : [];
 
-    draggableLists = updatedDraggableLists;
+    if (targetColumnItems.length === 0) {
+      return;
+    }
+
+    // Update state manager (optimistic update)
+    dragStateManager.startDrag();
+    dragStateManager.updateDragState(targetColumnIndex, targetColumnItems);
 
     // Persist changes for the affected column using existing helper
     try {
-      await updateListOrderWithColumn(targetColumnIndex, targetColumnItems);
+      const itemsToUpdate = Array.isArray(targetColumnItems) ? targetColumnItems : [];
+      await updateListOrderWithColumn(targetColumnIndex, itemsToUpdate);
+      dragStateManager.completeDrag(true);
     } catch (error) {
       console.error('[KEYBOARD DRAG] Error moving list via keyboard:', error);
+      dragStateManager.completeDrag(false);
     }
 
     // After updating state and DB, ensure the list card regains focus for visible keyboard feedback
@@ -262,7 +582,7 @@
         }
         return null;
       },
-      { waitForTick: true }
+      { waitForTick: true, maxAttempts: FOCUS_RETRY_ATTEMPTS, retryInterval: FOCUS_RETRY_INTERVAL }
     );
   }
   
@@ -296,51 +616,6 @@
     return setupFocusEffect();
   });
   
-  // Handle list drag events - consider event for visual reordering
-  // The drag library REQUIRES the items array to match DOM structure during drag
-  // We MUST update draggableLists here to provide visual feedback
-  //
-  // DRAG FLOW:
-  // 1. User starts drag → drag library detects
-  // 2. consider event fires → handleListConsider (this function)
-  //    - Updates draggableLists for visual feedback
-  //    - NO database updates - just visual reordering
-  // 3. User drops → finalize event fires → handleListFinalize
-  //    - Updates database with new list order and column assignments
-  //    - liveQuery automatically updates → syncs back to draggableLists
-  //
-  // See src/lib/drag/README.md for full architecture documentation
-  function handleListConsider(event, columnIndex) {
-    // Get items for this column (includes placeholders for visual feedback)
-    handleDragConsider(event, (newColumnItems) => {
-      // Update draggableLists using extracted utility function
-      draggableLists = processListConsider(newColumnItems, columnIndex, draggableLists);
-    });
-  }
-  
-  // Handle list drag events - finalize event for database updates
-  // columnIndex indicates which column the lists were dropped into
-  //
-  // This is called when the user drops a list. It:
-  // 1. Filters out invalid items (placeholders)
-  // 2. Updates the database with new list order and column assignments
-  // 3. liveQuery automatically updates → syncs back to draggableLists
-  //
-  // See src/lib/drag/README.md for full architecture documentation
-  async function handleListFinalize(event, columnIndex) {
-    try {
-      // Process finalize event: filter placeholders, check if update should be skipped, update database
-      handleDragFinalize(event, async (items) => {
-        await processListFinalize(items || [], columnIndex, $lists, draggableLists);
-        
-        // Note: liveQuery will automatically update the UI after database changes
-        // The $effect will sync draggableLists from liveQuery
-      });
-    } catch (error) {
-      // On error, revert draggableLists to match database state
-      // The $effect will sync it back from liveQuery
-    }
-  }
 </script>
 
 <div class="w-full h-full overflow-auto">
@@ -359,13 +634,19 @@
           keyboardListDrag={{ active: keyboardDrag.active, listId: keyboardDrag.listId }}
           onInputChange={handleInputChange}
           onListKeyboardKeydown={handleListKeyboardKeydown}
-          onListConsider={(e) => handleListConsider(e, columnIndex)}
-          onListFinalize={(e) => handleListFinalize(e, columnIndex)}
           onCreateListClick={handleCreateListClick}
           onCreateListKeydown={handleCreateListKeydown}
           onCreateListInputEscape={handleCreateListInputEscape}
           onCreateList={handleCreateList}
           onCreateListOnTab={handleCreateListOnTab}
+          onColumnElementReady={(element, colIndex) => {
+            // Initialize SortableJS when column element is ready
+            if (element) {
+              setTimeout(() => {
+                initializeColumnSortable(element, colIndex);
+              }, 10);
+            }
+          }}
           bind:createListInput
           bind:createListInputElement
           allLists={$lists}

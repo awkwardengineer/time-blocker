@@ -1,6 +1,6 @@
 /**
  * Library-specific drag detection utilities
- * Abstracts away svelte-dnd-action-specific DOM queries and detection logic
+ * Abstracts away SortableJS-specific DOM queries and detection logic
  * 
  * When migrating to a new drag library, only this file needs updating for detection logic
  */
@@ -14,9 +14,9 @@
 export function hasDraggedElements() {
   if (typeof document === 'undefined') return false;
   
-  // svelte-dnd-action uses aria-grabbed="true" and .svelte-dnd-action-dragged class
+  // SortableJS uses .sortable-ghost class for dragged elements
   const draggedElements = document.querySelectorAll(
-    'li[aria-grabbed="true"], li.svelte-dnd-action-dragged'
+    '.sortable-ghost, [aria-grabbed="true"]'
   );
   return draggedElements.length > 0;
 }
@@ -30,7 +30,7 @@ export function getDraggedElements() {
   if (typeof document === 'undefined') return [];
   
   return document.querySelectorAll(
-    'li[aria-grabbed="true"], li.svelte-dnd-action-dragged'
+    '.sortable-ghost, [aria-grabbed="true"]'
   );
 }
 

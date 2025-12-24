@@ -1,5 +1,5 @@
 <script>
-  import { createDragZone } from '../lib/drag/dragAdapter.js';
+  import { onMount } from 'svelte';
   import TaskList from './TaskList.svelte';
   import Button from './Button.svelte';
   import { isPlaceholderItem } from '../lib/listDndUtils.js';
@@ -17,76 +17,50 @@
     allLists,
     onInputChange,
     onListKeyboardKeydown,
-    onListConsider,
-    onListFinalize,
     onCreateListClick,
     onCreateListKeydown,
     onCreateListInputEscape,
     onCreateList,
-    onCreateListOnTab
+    onCreateListOnTab,
+    onColumnElementReady = () => {}
   } = $props();
 
-  let dndzoneElement = $state(null);
+  let columnElement = $state(null);
   let emptyDropZoneElement = $state(null);
   let createListButtonElement = $state(null);
-
-  // Force empty drop zone to have tabindex="-1" after dndzone initializes
-  // The dndzone library sets tabindex="0" on empty drop zones, so we override it
+  
+  // Notify parent when column element is ready
   $effect(() => {
-    if (typeof document === 'undefined') return;
-    if (columnLists.length !== 0) return;
-    if (!emptyDropZoneElement) return;
-    
-    // Use a small delay to ensure dndzone has finished initializing
-    const timeoutId = setTimeout(() => {
-      if (emptyDropZoneElement && emptyDropZoneElement.getAttribute('tabindex') !== '-1') {
-        emptyDropZoneElement.setAttribute('tabindex', '-1');
-      }
-    }, DOM_UPDATE_DELAY_SHORT_MS);
-    
-    return () => {
-      clearTimeout(timeoutId);
-    };
+    if (columnElement && onColumnElementReady) {
+      onColumnElementReady(columnElement, columnIndex);
+    }
   });
 
   // Apply drop zone styling during keyboard drag
   // When keyboard drag is active, show drop zones on all columns (including source column)
   $effect(() => {
-    if (!dndzoneElement || !(dndzoneElement instanceof HTMLElement)) return;
+    if (!columnElement || !(columnElement instanceof HTMLElement)) return;
     
     const isKeyboardDragActive = keyboardListDrag?.active === true;
     
     // Apply drop zone styling if keyboard drag is active
     if (isKeyboardDragActive) {
       // Apply the same styles as dropTargetStyle
-      dndzoneElement.style.outline = 'none';
-      dndzoneElement.style.boxShadow = 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)';
-      dndzoneElement.style.borderRadius = '4px';
+      columnElement.style.outline = 'none';
+      columnElement.style.boxShadow = 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)';
+      columnElement.style.borderRadius = '4px';
     } else {
       // Remove drop zone styling
-      dndzoneElement.style.outline = '';
-      dndzoneElement.style.boxShadow = '';
-      dndzoneElement.style.borderRadius = '';
+      columnElement.style.outline = '';
+      columnElement.style.boxShadow = '';
+      columnElement.style.borderRadius = '';
     }
   });
 </script>
 
 <div class="flex flex-col pt-0 min-w-0 px-2 {columnIndex < 4 ? 'border-r border-grey-50' : ''}" data-column-index={columnIndex}>
   <div
-    bind:this={dndzoneElement}
-    use:createDragZone={{
-      items: columnLists,
-      type: 'list', // Shared type enables cross-column dragging
-      zoneTabIndex: -1, // Prevent entire column container from being focusable
-      dropTargetStyle: {
-        outline: 'none',
-        boxShadow: 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)', // blue-500 with 40% opacity - inset shadow acts like border without affecting layout
-        // Removed backgroundColor to prevent layout recalculation during drag
-        borderRadius: '4px'
-      }
-    }}
-    onconsider={onListConsider}
-    onfinalize={onListFinalize}
+    bind:this={columnElement}
     class="flex flex-col pt-0"
   >
     <!-- Render lists in this column -->

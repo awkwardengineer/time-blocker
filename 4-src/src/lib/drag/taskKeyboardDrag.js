@@ -6,8 +6,11 @@
  * State management remains in the component.
  */
 
+import { tick } from 'svelte';
 import { isDragActive, hasActiveDropZone } from './dragDetectionUtils.js';
 import { findNeighborListId, moveTaskToNextList, moveTaskToPreviousList } from './taskDragHandlers.js';
+import { getTasksForList, updateTaskOrderCrossList } from '../dataAccess.js';
+import { groupListsIntoColumns } from '../listDndUtils.js';
 
 /**
  * Create a capture-phase keydown handler for task list items.
@@ -139,7 +142,8 @@ export function createTaskItemBlurHandler(state) {
  * @param {HTMLElement} ulElement - The ul element (dndzone) for this list
  * @param {number} listId - The current list ID
  * @param {Array} allLists - All lists for finding neighbors
- * @param {Array} draggableTasks - Current draggable tasks for boundary detection
+ * @param {Function} getDraggableTasks - Getter function for current draggable tasks
+ * @param {Function} setDraggableTasks - Setter function to update draggable tasks
  * @param {HTMLElement} addTaskContainerElement - Add task container for fallback focus
  * @returns {() => void} Cleanup function to be returned from $effect
  */
@@ -148,7 +152,8 @@ export function setupTaskKeyboardDragDocumentHandler(
   ulElement,
   listId,
   allLists,
-  draggableTasks,
+  getDraggableTasks,
+  setDraggableTasks,
   addTaskContainerElement
 ) {
   const {
@@ -191,20 +196,8 @@ export function setupTaskKeyboardDragDocumentHandler(
             }
           }
         }
-        // Dispatch Escape event to cancel drag mode in svelte-dnd-action
-        // We need to dispatch it on the ulElement (dndzone) so svelte-dnd-action can handle it
-        if (ulElement && ulElement instanceof HTMLElement) {
-          const escapeEvent = new KeyboardEvent('keydown', {
-            key: 'Escape',
-            code: 'Escape',
-            keyCode: 27,
-            which: 27,
-            bubbles: true,
-            cancelable: true,
-            composed: true
-          });
-          ulElement.dispatchEvent(escapeEvent);
-        }
+        // With SortableJS, keyboard drag is handled entirely by our custom code
+        // No need to dispatch events to cancel library drag mode
         return;
       }
 
@@ -245,8 +238,9 @@ export function setupTaskKeyboardDragDocumentHandler(
       }
     }
 
-    // Only handle ArrowUp/ArrowDown for cross-list movement below
-    if (key !== 'ArrowDown' && key !== 'ArrowUp') return;
+    // Only handle Arrow keys when keyboard dragging is active
+    if (!isKeyboardTaskDragging) return;
+    if (key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'ArrowLeft' && key !== 'ArrowRight') return;
     
     // Check if focus is within this list
     const activeElement = document.activeElement;
@@ -259,33 +253,132 @@ export function setupTaskKeyboardDragDocumentHandler(
     if (!taskIdAttr) return;
     
     const taskId = parseInt(taskIdAttr);
+    const draggableTasks = getDraggableTasks();
     const task = draggableTasks.find(t => t.id === taskId);
     if (!task) return;
     
     const taskIndex = draggableTasks.findIndex(t => t.id === taskId);
+    if (taskIndex === -1) return; // Should not happen if task was found
+    
     const isFirst = taskIndex === 0;
     const isLast = taskIndex === draggableTasks.length - 1;
     
-    // Check if we're at a boundary and trying to move in that direction
-    if (key === 'ArrowDown' && isLast) {
-      // Move to next list (in visual column order)
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      e.stopPropagation();
-      
-      const nextListId = findNeighborListId(listId, allLists, 'next');
-      if (nextListId != null) {
-        await moveTaskToNextList(taskId, nextListId);
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    e.stopPropagation();
+    
+    // Handle ArrowUp/ArrowDown for same-list movement or cross-list boundaries
+    if (key === 'ArrowDown') {
+      if (isLast) {
+        // At end of list - move to next list (in visual column order)
+        const nextListId = findNeighborListId(listId, allLists, 'next');
+        if (nextListId != null) {
+          await moveTaskToNextList(taskId, nextListId);
+          // Wait for DOM update and refocus the moved task
+          await tick();
+          const movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
+          if (movedTaskElement instanceof HTMLElement) {
+            movedTaskElement.focus();
+          }
+        }
+      } else {
+        // Move down within same list
+        // Make sure we're not at the last index (should be handled by isLast check, but double-check)
+        if (taskIndex >= draggableTasks.length - 1) {
+          // This shouldn't happen if isLast check is correct, but handle it anyway
+          const nextListId = findNeighborListId(listId, allLists, 'next');
+          if (nextListId != null) {
+            await moveTaskToNextList(taskId, nextListId);
+            await tick();
+            const movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
+            if (movedTaskElement instanceof HTMLElement) {
+              movedTaskElement.focus();
+            }
+          }
+          return;
+        }
+        
+        const newTasks = [...draggableTasks];
+        const [movedTask] = newTasks.splice(taskIndex, 1);
+        newTasks.splice(taskIndex + 1, 0, movedTask);
+        setDraggableTasks(newTasks);
+        // Update database
+        await updateTaskOrderCrossList(listId, newTasks);
+        // Wait for DOM update and refocus the moved task
+        await tick();
+        // Try to find the task in the current list's ul first
+        let movedTaskElement = ulElement.querySelector(`li[data-id="${taskId}"]`);
+        // If not found, search globally (for cross-list moves)
+        if (!movedTaskElement) {
+          movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
+        }
+        if (movedTaskElement instanceof HTMLElement) {
+          movedTaskElement.focus();
+        }
       }
-    } else if (key === 'ArrowUp' && isFirst) {
-      // Move to previous list (in visual column order)
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      e.stopPropagation();
+    } else if (key === 'ArrowUp') {
+      if (isFirst) {
+        // At start of list - move to previous list (in visual column order)
+        const prevListId = findNeighborListId(listId, allLists, 'prev');
+        if (prevListId != null) {
+          await moveTaskToPreviousList(taskId, prevListId);
+          // Wait for DOM update and refocus the moved task
+          await tick();
+          const movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
+          if (movedTaskElement instanceof HTMLElement) {
+            movedTaskElement.focus();
+          }
+        }
+      } else {
+        // Move up within same list
+        const newTasks = [...draggableTasks];
+        const [movedTask] = newTasks.splice(taskIndex, 1);
+        newTasks.splice(taskIndex - 1, 0, movedTask);
+        setDraggableTasks(newTasks);
+        // Update database
+        await updateTaskOrderCrossList(listId, newTasks);
+        // Wait for DOM update and refocus the moved task
+        await tick();
+        // Try to find the task in the current list's ul first
+        let movedTaskElement = ulElement.querySelector(`li[data-id="${taskId}"]`);
+        // If not found, search globally (for cross-list moves)
+        if (!movedTaskElement) {
+          movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
+        }
+        if (movedTaskElement instanceof HTMLElement) {
+          movedTaskElement.focus();
+        }
+      }
+    } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
+      // Cross-column movement - find list in adjacent column at same position
+      const currentList = allLists.find(l => l.id === listId);
+      if (!currentList) return;
       
-      const prevListId = findNeighborListId(listId, allLists, 'prev');
-      if (prevListId != null) {
-        await moveTaskToPreviousList(taskId, prevListId);
+      const currentColumnIndex = currentList.columnIndex ?? 0;
+      const targetColumnIndex = key === 'ArrowLeft' ? currentColumnIndex - 1 : currentColumnIndex + 1;
+      
+      // Check if target column is valid (0-4)
+      if (targetColumnIndex < 0 || targetColumnIndex >= 5) return;
+      
+      // Group lists into columns and find target list
+      const columns = groupListsIntoColumns(allLists, 5);
+      const targetColumn = columns[targetColumnIndex] || [];
+      
+      // Find list at same position in target column, or use first/last list
+      let targetListId = null;
+      if (targetColumn.length > 0) {
+        // Use list at same position, or closest position
+        const targetPosition = Math.min(taskIndex, targetColumn.length - 1);
+        targetListId = targetColumn[targetPosition]?.id;
+      }
+      
+      if (targetListId != null) {
+        // Move to same position in target list, or end if position doesn't exist
+        const targetListTasks = await getTasksForList(targetListId);
+        const targetIndex = Math.min(taskIndex, targetListTasks.length);
+        const newTasks = [...targetListTasks];
+        newTasks.splice(targetIndex, 0, task);
+        await updateTaskOrderCrossList(targetListId, newTasks);
       }
     }
   }

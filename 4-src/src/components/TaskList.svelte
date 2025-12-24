@@ -1,10 +1,11 @@
 <script>
   import { liveQuery } from 'dexie';
-  import { tick } from 'svelte';
-  import { createDragZone, handleDragConsider, handleDragFinalize } from '../lib/drag/dragAdapter.js';
-  import { syncTasksForDrag } from '../lib/drag/syncDragState.js';
-  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateListName, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
-  import { processTaskConsider, processTaskFinalize } from '../lib/drag/taskDragHandlers.js';
+  import { tick, onMount, onDestroy } from 'svelte';
+  import Sortable from 'sortablejs';
+  import { taskDragStateManager } from '../lib/drag/taskDragStateManager.js';
+  import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateTaskOrderCrossList, updateListName, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
+  import { filterValidTaskItems } from '../lib/drag/taskDragHandlers.js';
+  import { applyDropZoneStyles, removeDropZoneStyles } from '../lib/drag/dropZoneUtils.js';
   import { createTaskItemKeydownCaptureHandler, createTaskItemBlurHandler, setupTaskKeyboardDragDocumentHandler } from '../lib/drag/taskKeyboardDrag.js';
   import { setupListTitleKeydownCapture, setupAddTaskButtonKeydownCapture, setupTaskTextKeydownCapture } from '../lib/drag/capturePhaseHandlers.js';
   import TaskEditModal from './TaskEditModal.svelte';
@@ -58,6 +59,185 @@
   
   let previousListId = $state(null);
   
+  // SortableJS instance for task dragging
+  let taskSortable = $state(null);
+  
+  // Extract items from DOM order (like prototype)
+  // For cross-list drags, tasks from other lists may not be in draggableTasks yet,
+  // so we create minimal objects with just the id - the database update function will fetch full data
+  function extractItemsFromDOM(container, targetListId = null) {
+    if (!container) return [];
+    const children = Array.from(container.children);
+    
+    // Determine which list's state to check (target list if provided, otherwise current list)
+    const checkListId = targetListId || listId;
+    const currentState = taskDragStateManager.getState(checkListId);
+    const currentTasks = currentState.tasks;
+    
+    // Also check current list's state for cross-list drags
+    const sourceState = listId !== checkListId ? taskDragStateManager.getState(listId) : null;
+    const sourceTasks = sourceState ? sourceState.tasks : [];
+    
+    return children
+      .map(child => {
+        const idAttr = child.getAttribute('data-id');
+        if (!idAttr) return null;
+        const id = parseInt(idAttr, 10);
+        // Try to find in target list's state manager state first
+        let task = currentTasks.find(t => t.id === id);
+        // If not found and cross-list, try source list's state
+        if (!task && sourceTasks.length > 0) {
+          task = sourceTasks.find(t => t.id === id);
+        }
+        // Fallback to draggableTasks if not in state manager
+        if (!task) {
+          task = draggableTasks.find(t => t.id === id);
+        }
+        // If still not found (cross-list drag), create minimal object with just id
+        // The database update function will fetch full task data via bulkGet
+        return task || { id };
+      })
+      .filter(Boolean);
+  }
+  
+  // Handle task drag end with optimistic updates via state manager
+  async function handleTaskDragEnd(evt) {
+    const { oldIndex, newIndex, from, to } = evt;
+    
+    // Determine source and target lists
+    const sourceListId = listId; // Current list is source
+    const targetListId = to?.dataset?.listId ? parseInt(to.dataset.listId) : listId;
+    
+    // Extract items from target container
+    // Use a small delay to ensure DOM has fully updated after SortableJS move
+    await tick();
+    const targetContainer = to || ulElement;
+    const newOrder = extractItemsFromDOM(targetContainer, targetListId);
+    const validItems = filterValidTaskItems(newOrder);
+    
+    if (validItems.length === 0) {
+      return;
+    }
+    
+    // Start drag operation in state manager (prevents liveQuery from overwriting)
+    taskDragStateManager.startDrag(sourceListId, targetListId);
+    
+    // Update state manager with optimistic update for target list
+    taskDragStateManager.updateDragState(targetListId, validItems);
+    
+    // If cross-list drag, also update source list (remove moved task)
+    if (sourceListId !== targetListId) {
+      const sourceState = taskDragStateManager.getState(sourceListId);
+      const sourceTasks = sourceState.tasks.filter(t => 
+        !validItems.some(v => v.id === t.id)
+      );
+      taskDragStateManager.updateDragState(sourceListId, sourceTasks);
+    }
+    
+    // Wait for Svelte to update DOM after state change
+    await tick();
+    
+    // Persist to database
+    try {
+      await updateTaskOrderCrossList(targetListId, validItems);
+      // Success: state manager will allow liveQuery to sync back
+      taskDragStateManager.completeDrag(sourceListId, targetListId, true);
+    } catch (error) {
+      console.error('[TASK DRAG] Failed to save task order:', error);
+      // Error: state manager will allow liveQuery to restore previous state
+      taskDragStateManager.completeDrag(sourceListId, targetListId, false);
+    }
+  }
+  
+  // Apply drop zones to all task lists
+  function applyDropZonesToAllTaskLists() {
+    if (typeof document === 'undefined') return;
+    const allTaskLists = document.querySelectorAll('ul[data-list-id]');
+    allTaskLists.forEach(ul => {
+      if (ul instanceof HTMLElement) {
+        applyDropZoneStyles(ul);
+      }
+    });
+  }
+  
+  // Remove drop zones from all task lists
+  function removeDropZonesFromAllTaskLists() {
+    if (typeof document === 'undefined') return;
+    const allTaskLists = document.querySelectorAll('ul[data-list-id]');
+    allTaskLists.forEach(ul => {
+      if (ul instanceof HTMLElement) {
+        removeDropZoneStyles(ul);
+      }
+    });
+  }
+  
+  // Initialize SortableJS for tasks
+  function initializeTaskSortable() {
+    if (!ulElement || taskSortable) return;
+    
+    taskSortable = new Sortable(ulElement, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      group: 'tasks', // Enable cross-list task dragging
+      draggable: 'li[data-id]', // Only drag task items
+      filter: '[data-no-drag]', // Prevent dragging from elements with data-no-drag
+      preventOnFilter: false, // Allow normal interaction with filtered elements
+      emptyInsertThreshold: 50, // Allow dropping into empty lists (distance in pixels from edge)
+      onStart: (evt) => {
+        // Show drop zones on all task lists
+        applyDropZonesToAllTaskLists();
+      },
+      onMove: (evt) => {
+        // Apply drop zone to target list when hovering over it
+        if (evt.to && evt.to instanceof HTMLElement) {
+          applyDropZoneStyles(evt.to);
+        }
+        // Also ensure source list has drop zone
+        if (evt.from && evt.from instanceof HTMLElement) {
+          applyDropZoneStyles(evt.from);
+        }
+      },
+      onEnd: (evt) => {
+        // Remove drop zones from all task lists
+        removeDropZonesFromAllTaskLists();
+        
+        // Handle drag end
+        handleTaskDragEnd(evt);
+      }
+    });
+  }
+  
+  // Initialize SortableJS when ulElement is ready or listId changes
+  // Initialize even when list is empty so empty lists can accept drops
+  $effect(() => {
+    // Destroy existing instance if listId changed
+    if (taskSortable && previousListId !== null && previousListId !== listId) {
+      taskSortable.destroy();
+      taskSortable = null;
+    }
+    
+    // Initialize SortableJS even for empty lists (so they can accept drops)
+    if (ulElement && !taskSortable) {
+      // Small delay to ensure DOM is ready
+      const timeoutId = setTimeout(() => {
+        if (!taskSortable && ulElement) {
+          initializeTaskSortable();
+        }
+      }, 10);
+      
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }
+  });
+  
+  // Cleanup SortableJS on destroy
+  onDestroy(() => {
+    if (taskSortable) {
+      taskSortable.destroy();
+      taskSortable = null;
+    }
+  });
   
   $effect(() => {
     // Validate that listId exists in stableLists before creating query
@@ -82,16 +262,28 @@
     }
   });
   
-  // Sync liveQuery results to draggableTasks for drag-and-drop
-  // Uses utility function to protect liveQuery from mutation by drag library
-  // See syncDragState.js for explanation of why this pattern exists
-  // Note: Only syncs when query is ready - preserves draggableTasks during loading/drag
+  // Sync draggableTasks from taskDragStateManager (event-driven, not reactive)
+  // This subscribes to state manager changes and updates Svelte state
   $effect(() => {
+    if (!listId) return;
+    
+    const unsubscribe = taskDragStateManager.subscribe(listId, (state) => {
+      draggableTasks = state.tasks;
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  });
+  
+  // Sync liveQuery → taskDragStateManager (one-way, only when not dragging)
+  // The state manager prevents overwriting during drag operations
+  $effect(() => {
+    if (!listId) return;
+    
     if ($tasksQuery && Array.isArray($tasksQuery)) {
-      draggableTasks = syncTasksForDrag($tasksQuery);
+      taskDragStateManager.initializeFromQuery(listId, $tasksQuery);
     }
-    // If query is undefined/null (loading), don't update draggableTasks
-    // This preserves the current state during drag operations
   });
 
   // Optimistic state: show content if listId is valid (even if query hasn't resolved yet)
@@ -127,29 +319,6 @@
     });
   });
   
-  // Handle drag events - consider event for visual reordering only
-  // 
-  // DRAG FLOW:
-  // 1. User starts drag → drag library detects
-  // 2. consider event fires → handleConsider (this function)
-  //    - Filters out invalid items (placeholders)
-  //    - Updates draggableTasks for visual feedback
-  //    - NO database updates - just visual reordering
-  // 3. User drops → finalize event fires → handleFinalize
-  //    - Filters out invalid items
-  //    - Updates database (updateTaskOrder or updateTaskOrderCrossList)
-  //    - Updates draggableTasks with valid items
-  //    - liveQuery automatically updates → syncs back to draggableTasks
-  //
-  // See src/lib/drag/README.md for full architecture documentation
-  function handleConsider(event) {
-    // Update local state for visual feedback during drag
-    // No database updates here - prevents liveQuery interference
-    handleDragConsider(event, (items) => {
-      draggableTasks = processTaskConsider(items);
-    });
-  }
-  
   // Create state getters/setters for keyboard drag handlers
   const keyboardDragState = {
     getIsKeyboardTaskDragging: () => isKeyboardTaskDragging,
@@ -177,35 +346,12 @@
       ulElement,
       listId,
       allLists,
-      draggableTasks,
+      () => draggableTasks, // Getter function
+      (newTasks) => { draggableTasks = newTasks; }, // Setter function
       addTaskContainerElement
     );
   });
   
-  // Handle drag events - finalize event for database updates
-  //
-  // This is called when the user drops a task. It:
-  // 1. Filters out invalid items (placeholders)
-  // 2. Updates the database (updateTaskOrder or updateTaskOrderCrossList)
-  // 3. Updates draggableTasks with valid items for immediate visual feedback
-  // 4. liveQuery automatically updates → syncs back to draggableTasks
-  //
-  // See src/lib/drag/README.md for full architecture documentation
-  async function handleFinalize(event) {
-    try {
-      // Process finalize event: filter items and update database
-      handleDragFinalize(event, async (items) => {
-        const validItems = await processTaskFinalize(items, listId);
-        
-        // Update local state for immediate visual feedback
-        draggableTasks = validItems;
-        // liveQuery will automatically update the UI after database changes
-      });
-    } catch (error) {
-      // On error, revert draggableTasks to match database state
-      // The $effect will sync it back from liveQuery
-    }
-  }
   
   function handleAddTaskClick() {
     isInputActive = true;
@@ -588,25 +734,16 @@
     <div class="task-list-wrapper m-0 p-0">
       <ul 
         bind:this={ulElement}
-        use:createDragZone={{ 
-          items: draggableTasks,
-          type: 'task', // Shared type for all lists - enables cross-list dragging
-          zoneTabIndex: -1, // Prevent entire task list <ul> from being focusable
-          dropTargetStyle: {
-            outline: 'none',
-            boxShadow: 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)', // blue-500 with 40% opacity - inset shadow acts like border without affecting layout
-            backgroundColor: 'rgba(107, 143, 217, 0.04)', // blue-500 with 4% opacity
-            borderRadius: '4px'
-          }
-        }}
-        onconsider={handleConsider}
-        onfinalize={handleFinalize}
+        data-list-id={listId}
         class="space-y-0 m-0 p-0 list-none w-full {draggableTasks.length === 0 ? 'empty-drop-zone min-h-[24px]' : ''}"
       >
         {#each draggableTasks as task (task.id)}
           <li
             data-id={task.id}
-            class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full m-0 list-none"
+            tabindex="0"
+            role="group"
+            aria-label={`Task: ${task.text || 'blank task'}`}
+            class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full m-0 list-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             onkeydowncapture={(e) => handleTaskItemKeydownCapture(e, task.id)}
             onblur={(e) => handleTaskItemBlur(e, task.id)}
           >
