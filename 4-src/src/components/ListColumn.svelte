@@ -77,7 +77,7 @@
 
 <div 
   bind:this={columnContainerElement}
-  class="flex flex-col pt-0 min-w-0 px-2 h-full {columnIndex < 4 ? 'border-r border-grey-50' : ''}" 
+  class="flex flex-col pt-0 min-w-0 px-2 h-full gap-y-6 {columnIndex < 4 ? 'border-r border-grey-50' : ''}" 
   data-column-index={columnIndex}
 >
   <!-- Create List button/input - always outside sortable container -->
