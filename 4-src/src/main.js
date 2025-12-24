@@ -2,6 +2,7 @@ import { mount } from 'svelte'
 import './app.css'
 import App from './App.svelte'
 import SortableJSPrototype from './prototypes/dnd-prototype/SortableJSPrototype.svelte'
+import SortableJSNestedPrototype from './prototypes/dnd-prototype/SortableJSNestedPrototype.svelte'
 import { seedDatabase } from './lib/seed.js'
 
 // Seed database with mock data on app initialization, then mount app
@@ -15,11 +16,20 @@ import { seedDatabase } from './lib/seed.js'
   const searchParams = new URLSearchParams(window.location.search)
   
   // Check for prototype route in hash, pathname, or query param (for easy testing)
+  const prototypeType = searchParams.get('prototype') || 
+                       (hash.includes('nested') ? 'nested' : 
+                        hash.includes('sortablejs') ? 'sortablejs' : null)
+  
   const isPrototypeRoute = hash === '#/prototype/sortablejs' || 
                           hash === '#prototype/sortablejs' ||
+                          hash === '#/prototype/nested' ||
+                          hash === '#prototype/nested' ||
                           hash.includes('prototype/sortablejs') ||
+                          hash.includes('prototype/nested') ||
                           pathname.includes('/prototype/sortablejs') ||
-                          searchParams.get('prototype') === 'sortablejs'
+                          pathname.includes('/prototype/nested') ||
+                          prototypeType === 'sortablejs' ||
+                          prototypeType === 'nested'
   
   console.log('Route check:', { 
     hash, 
@@ -38,9 +48,10 @@ import { seedDatabase } from './lib/seed.js'
   console.log('App element found:', appElement)
   
   if (isPrototypeRoute) {
-    console.log('Mounting SortableJS Prototype')
+    const Component = prototypeType === 'nested' ? SortableJSNestedPrototype : SortableJSPrototype
+    console.log(`Mounting SortableJS Prototype (${prototypeType || 'basic'})`)
     try {
-      mount(SortableJSPrototype, {
+      mount(Component, {
         target: appElement,
       })
       console.log('Prototype mounted successfully')
