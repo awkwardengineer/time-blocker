@@ -122,13 +122,128 @@ await new Promise(resolve => setTimeout(resolve, 100)) // Wait for actions
 2. ✅ You prefer automatic reactivity handling
 3. ✅ Current bugs are manageable
 
+## Keyboard Support Specification
+
+### Overview
+Since SortableJS has no built-in keyboard support, we need to implement custom keyboard handlers. This spec outlines the required functionality, taking guidance from the existing `svelte-dnd-action` implementation but simplified for SortableJS.
+
+### Core Requirements
+
+#### 1. **Start Keyboard Drag**
+- **Trigger**: `Enter` or `Space` key when focused on a draggable item (task `<li>` or list container)
+- **Behavior**:
+  - Set keyboard drag state to active
+  - Store the dragged item ID
+  - Show visual indicator (e.g., highlight, border, or ghost)
+  - Show available drop zones (highlight potential drop targets)
+  - Focus remains on the dragged item
+
+#### 2. **Move During Drag**
+- **Arrow Keys** (`ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`):
+  - Move the dragged item within the current container
+  - At boundaries, move to adjacent container (next/previous list or column)
+  - Update visual feedback to show new position
+  - Update drop zone highlighting
+
+#### 3. **Drop and End Drag**
+- **Triggers**:
+  - `Enter` or `Space` - Drop at current position
+  - `Escape` - Cancel drag, revert to original position
+  - `Tab` - Drop and blur (for Tab resume behavior)
+- **Behavior**:
+  - Execute the drop operation (update state)
+  - Clear keyboard drag state
+  - Remove visual indicators
+  - Hide drop zones
+  - For `Tab`: Store element for resume, then blur
+
+#### 4. **Tab Resume Behavior**
+- **After drop with Tab**: Store the dropped item element
+- **Next Tab press**: Refocus the stored element (instead of normal Tab navigation)
+- **After resume**: Clear stored element, Tab behaves normally again
+
+#### 5. **Visual Feedback**
+- **During drag**:
+  - Highlight the dragged item (e.g., border, background color)
+  - Show available drop zones (e.g., highlight list containers or task lists)
+  - Show insertion indicator at current position
+- **Drop zones**:
+  - Highlight valid drop targets
+  - Show invalid drop targets (if any restrictions)
+  - Update as Arrow keys move the item
+
+### Implementation Approach
+
+#### Option 1: Simulate SortableJS Operations
+- Use SortableJS API to programmatically move items
+- Call `sortable.toArray()` to get current order
+- Use `sortable.sort()` or manipulate DOM directly
+- Trigger `onEnd` callback to update state
+
+#### Option 2: Direct State Manipulation
+- Skip SortableJS for keyboard operations
+- Directly update state arrays
+- Manually update DOM order
+- Reinitialize Sortable instances after state change
+
+**Recommendation**: Option 1 (simulate operations) - More consistent with mouse drag behavior
+
+### State Management
+
+```javascript
+let keyboardDragState = {
+  active: false,           // Is keyboard drag active?
+  draggedItemId: null,     // ID of item being dragged
+  draggedItemType: null,   // 'task' or 'list'
+  lastBlurredElement: null, // Element to refocus on next Tab
+  shouldRefocusOnNextTab: false // Should next Tab refocus?
+}
+```
+
+### Key Handlers Needed
+
+1. **Item-level handler** (on task `<li>` or list container):
+   - `Enter`/`Space` - Start/stop drag
+   - `Escape` - Cancel drag
+
+2. **Document-level handler** (during drag):
+   - `ArrowUp`/`ArrowDown`/`ArrowLeft`/`ArrowRight` - Move item
+   - `Tab` - Drop and blur
+   - `Escape` - Cancel drag
+
+3. **Tab resume handler**:
+   - Intercept `Tab` after drop
+   - Refocus stored element
+
+### Edge Cases
+
+- **Empty lists**: Can still be drop targets
+- **Boundaries**: At first/last item, Arrow keys move to adjacent container
+- **Nested containers**: Arrow keys navigate within current level first
+- **Focus management**: Ensure focus doesn't get lost during drag
+- **Multiple rapid key presses**: Debounce or queue operations
+
+### Testing Checklist
+
+- [ ] Enter/Space starts drag on task
+- [ ] Enter/Space starts drag on list
+- [ ] Arrow keys move within container
+- [ ] Arrow keys move between containers at boundaries
+- [ ] Enter drops at current position
+- [ ] Escape cancels drag
+- [ ] Tab drops and blurs
+- [ ] Tab resume works after Tab drop
+- [ ] Visual feedback shows during drag
+- [ ] Drop zones highlight correctly
+- [ ] Works with nested containers (columns → lists → tasks)
+
 ## Next Steps
 
-1. **Test keyboard support** - Try to implement basic keyboard drag in prototype
-2. **Measure bundle size impact** - Compare before/after
-3. **Test edge cases** - Empty lists, rapid drags, etc.
+1. **Implement keyboard support prototype** - Build according to spec above
+2. **Test all edge cases** - Verify behavior matches spec
+3. **Measure bundle size impact** - Compare before/after
 4. **Performance comparison** - Measure drag smoothness, memory usage
-5. **Decision point** - Based on keyboard support feasibility
+5. **Decision point** - Based on keyboard support feasibility and complexity
 
 ## Code Patterns Discovered
 
