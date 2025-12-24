@@ -30,3 +30,23 @@
 div[data-id][aria-grabbed="true"] {
   flex-shrink: 0;
 }
+
+/* SortableJS ghost classes - separate for lists and tasks to prevent conflicts */
+.sortable-ghost-task {
+  opacity: 0.4;
+  background-color: #f0f0f0;
+}
+
+.sortable-ghost-list {
+  opacity: 0.4;
+  background-color: #c8ebfb;
+}
+
+/* Disable hover states on task items during drag operations */
+body.task-dragging-active li[data-id]:hover {
+  background-color: transparent !important;
+}
+
+body.task-dragging-active li[data-id] span:hover {
+  text-decoration: none !important;
+}

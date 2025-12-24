@@ -297,7 +297,7 @@
     
     const sortable = new Sortable(columnElement, {
       animation: 150,
-      ghostClass: 'sortable-ghost',
+      ghostClass: 'sortable-ghost-list',
       group: 'lists', // Enable cross-column list dragging
       draggable: '[data-id]', // Only drag list containers
       filter: 'ul, li', // Prevent dragging tasks
