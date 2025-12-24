@@ -26,6 +26,7 @@
   } = $props();
 
   let columnElement = $state(null);
+  let columnContainerElement = $state(null);
   let emptyDropZoneElement = $state(null);
   let createListButtonElement = $state(null);
   
@@ -38,27 +39,47 @@
 
   // Apply drop zone styling during keyboard drag
   // When keyboard drag is active, show drop zones on all columns (including source column)
+  // Apply to the outer column container so it includes the button area
   $effect(() => {
-    if (!columnElement || !(columnElement instanceof HTMLElement)) return;
+    if (!columnContainerElement || !(columnContainerElement instanceof HTMLElement)) return;
     
     const isKeyboardDragActive = keyboardListDrag?.active === true;
     
     // Apply drop zone styling if keyboard drag is active
     if (isKeyboardDragActive) {
       // Apply the same styles as dropTargetStyle
-      columnElement.style.outline = 'none';
-      columnElement.style.boxShadow = 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)';
-      columnElement.style.borderRadius = '4px';
+      columnContainerElement.style.outline = 'none';
+      columnContainerElement.style.boxShadow = 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)';
+      columnContainerElement.style.borderRadius = '4px';
     } else {
       // Remove drop zone styling
-      columnElement.style.outline = '';
-      columnElement.style.boxShadow = '';
-      columnElement.style.borderRadius = '';
+      columnContainerElement.style.outline = '';
+      columnContainerElement.style.boxShadow = '';
+      columnContainerElement.style.borderRadius = '';
+    }
+  });
+  
+  // Make sortable container expand to fill column during keyboard drag
+  $effect(() => {
+    if (!columnElement || !(columnElement instanceof HTMLElement)) return;
+    
+    const isKeyboardDragActive = keyboardListDrag?.active === true;
+    
+    if (isKeyboardDragActive) {
+      columnElement.style.flex = '1 1 auto';
+      columnElement.style.minHeight = '0';
+    } else {
+      columnElement.style.flex = '';
+      columnElement.style.minHeight = '';
     }
   });
 </script>
 
-<div class="flex flex-col pt-0 min-w-0 px-2 h-full {columnIndex < 4 ? 'border-r border-grey-50' : ''}" data-column-index={columnIndex}>
+<div 
+  bind:this={columnContainerElement}
+  class="flex flex-col pt-0 min-w-0 px-2 h-full {columnIndex < 4 ? 'border-r border-grey-50' : ''}" 
+  data-column-index={columnIndex}
+>
   <!-- Create List button/input - always outside sortable container -->
   {#if columnLists.length === 0}
     <!-- For empty columns: button at top -->

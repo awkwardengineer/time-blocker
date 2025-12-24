@@ -51,13 +51,16 @@ body.task-dragging-active li[data-id] span:hover {
   text-decoration: none !important;
 }
 
-/* Hide create list buttons during list drag operations */
-body.list-dragging-active .create-list-container {
+/* Hide create list buttons during list drag operations (mouse and keyboard) */
+body.list-dragging-active .create-list-container,
+body.keyboard-list-dragging-active .create-list-container {
   display: none !important;
 }
 
-/* Hide empty drop zone during drag to prevent whitespace */
-body.list-dragging-active .empty-drop-zone {
+/* Hide empty drop zone during drag to prevent whitespace (mouse and keyboard) */
+/* Only hide column-level empty drop zones, not task list empty drop zones */
+body.list-dragging-active .sortable-column-container > .empty-drop-zone,
+body.keyboard-list-dragging-active .sortable-column-container > .empty-drop-zone {
   display: none !important;
 }
 
@@ -71,7 +74,20 @@ body.list-dragging-active .empty-drop-zone {
   min-height: 96px;
 }
 
-body.list-dragging-active .sortable-column-container {
+body.list-dragging-active .sortable-column-container,
+body.keyboard-list-dragging-active .sortable-column-container {
   flex: 1 1 auto !important; /* Fill available space during drag */
   min-height: 0 !important;
+}
+
+/* Prevent list wrappers and add task buttons from stretching during keyboard drag */
+body.keyboard-list-dragging-active .sortable-column-container > [data-id] {
+  flex-shrink: 0 !important;
+  align-self: flex-start !important;
+  width: 100% !important;
+}
+
+body.keyboard-list-dragging-active .add-task-container,
+body.keyboard-list-dragging-active .add-task-button {
+  flex-shrink: 0 !important;
 }

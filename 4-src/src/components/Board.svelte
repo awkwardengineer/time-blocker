@@ -485,6 +485,7 @@
       listId,
       shouldRefocusOnNextTab: false
     };
+    // Body class is managed reactively by $effect
   }
 
   function stopKeyboardListDrag() {
@@ -504,6 +505,7 @@
         listId: null
       };
     }
+    // Body class is managed reactively by $effect
   }
 
   function blurActiveElement() {
@@ -556,6 +558,17 @@
       return;
     }
   }
+
+  // Keep body class in sync with keyboard drag state
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+    
+    if (keyboardDrag.active) {
+      document.body.classList.add('keyboard-list-dragging-active');
+    } else {
+      document.body.classList.remove('keyboard-list-dragging-active');
+    }
+  });
 
   // Document-level handler for all keydown events during list keyboard drag
   $effect(() => {
