@@ -241,8 +241,8 @@
       await tick();
       
       // Re-initialize SortableJS for both columns
-      const sourceColumnElement = document.querySelector(`[data-column-index="${columnIndex}"] > div:first-child`);
-      const targetColumnElement = document.querySelector(`[data-column-index="${targetColumnIndex}"] > div:first-child`);
+      const sourceColumnElement = document.querySelector(`[data-column-index="${columnIndex}"] .sortable-column-container`);
+      const targetColumnElement = document.querySelector(`[data-column-index="${targetColumnIndex}"] .sortable-column-container`);
       
       if (sourceColumnElement) {
         setTimeout(() => {
@@ -261,6 +261,20 @@
       await updateListOrderWithColumn(targetColumnIndex, finalValidItems);
       // Success: state manager will allow liveQuery to sync back
       dragStateManager.completeDrag(true);
+      
+      // If target column became empty, reinitialize SortableJS to ensure it can accept drops
+      if (finalValidItems.length === 0) {
+        const targetColumnElement = document.querySelector(`[data-column-index="${targetColumnIndex}"] .sortable-column-container`);
+        if (targetColumnElement) {
+          const existingSortable = columnSortables.get(targetColumnIndex);
+          if (existingSortable) {
+            existingSortable.destroy();
+            columnSortables.delete(targetColumnIndex);
+          }
+          await tick();
+          initializeColumnSortable(targetColumnElement, targetColumnIndex);
+        }
+      }
     } catch (error) {
       console.error('[LIST DRAG] Failed to save list order:', error);
       // Error: state manager will allow liveQuery to restore previous state
@@ -272,7 +286,7 @@
   // Apply drop zones to all columns
   function applyDropZonesToAllColumns() {
     if (typeof document === 'undefined') return;
-    const allColumns = document.querySelectorAll('[data-column-index] > div:first-child');
+    const allColumns = document.querySelectorAll('.sortable-column-container');
     allColumns.forEach(col => {
       if (col instanceof HTMLElement) {
         applyDropZoneStyles(col);
@@ -283,7 +297,7 @@
   // Remove drop zones from all columns
   function removeDropZonesFromAllColumns() {
     if (typeof document === 'undefined') return;
-    const allColumns = document.querySelectorAll('[data-column-index] > div:first-child');
+    const allColumns = document.querySelectorAll('.sortable-column-container');
     allColumns.forEach(col => {
       if (col instanceof HTMLElement) {
         removeDropZoneStyles(col);
@@ -300,11 +314,19 @@
       ghostClass: 'sortable-ghost-list',
       group: 'lists', // Enable cross-column list dragging
       draggable: '[data-id]', // Only drag list containers
-      filter: 'ul, li', // Prevent dragging tasks
+      filter: 'ul, li, .create-list-container, .empty-drop-zone', // Prevent dragging tasks, button, and empty drop zone
       preventOnFilter: false,
+      emptyInsertThreshold: 50, // Allow dropping into empty columns (distance in pixels from edge)
       forceFallback: true, // Use clone instead of moving element - prevents DOM manipulation conflicts with Svelte
       fallbackOnBody: true, // Clone appears at cursor position
+      scroll: true, // Enable auto-scrolling when dragging near edges
+      scrollSensitivity: 30, // Distance from edge to trigger scroll
+      scrollSpeed: 10, // Scroll speed
       onStart: () => {
+        // Hide create list buttons during drag
+        if (typeof document !== 'undefined') {
+          document.body.classList.add('list-dragging-active');
+        }
         // Show drop zones on all columns
         applyDropZonesToAllColumns();
       },
@@ -319,6 +341,10 @@
         }
       },
       onEnd: (evt) => {
+        // Re-show create list buttons after drag
+        if (typeof document !== 'undefined') {
+          document.body.classList.remove('list-dragging-active');
+        }
         // Remove drop zones from all columns
         removeDropZonesFromAllColumns();
         
@@ -618,12 +644,12 @@
   
 </script>
 
-<div class="w-full h-full overflow-auto">
+<div class="w-full h-full overflow-hidden">
   {#if $lists === undefined || $lists === null}
     <p>Loading...</p>
   {:else if Array.isArray($lists)}
     <!-- 5-column grid layout with column containers -->
-    <div class="grid grid-cols-5 w-full py-4 px-1">
+    <div class="grid grid-cols-5 w-full h-full py-4 px-1">
       {#each listsByColumn as columnLists, columnIndex}
         <ListColumn
           {columnIndex}

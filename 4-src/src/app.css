@@ -50,3 +50,28 @@ body.task-dragging-active li[data-id]:hover {
 body.task-dragging-active li[data-id] span:hover {
   text-decoration: none !important;
 }
+
+/* Hide create list buttons during list drag operations */
+body.list-dragging-active .create-list-container {
+  display: none !important;
+}
+
+/* Hide empty drop zone during drag to prevent whitespace */
+body.list-dragging-active .empty-drop-zone {
+  display: none !important;
+}
+
+/* Make sortable container fill column during drag, shrink to fit when not dragging */
+.sortable-column-container {
+  flex: 0 1 auto; /* Shrink to fit content by default */
+}
+
+/* Ensure empty columns have minimum height to accept drops */
+.sortable-column-container:has(.empty-drop-zone) {
+  min-height: 96px;
+}
+
+body.list-dragging-active .sortable-column-container {
+  flex: 1 1 auto !important; /* Fill available space during drag */
+  min-height: 0 !important;
+}

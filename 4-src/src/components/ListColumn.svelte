@@ -58,10 +58,56 @@
   });
 </script>
 
-<div class="flex flex-col pt-0 min-w-0 px-2 {columnIndex < 4 ? 'border-r border-grey-50' : ''}" data-column-index={columnIndex}>
+<div class="flex flex-col pt-0 min-w-0 px-2 h-full {columnIndex < 4 ? 'border-r border-grey-50' : ''}" data-column-index={columnIndex}>
+  <!-- Create List button/input - always outside sortable container -->
+  {#if columnLists.length === 0}
+    <!-- For empty columns: button at top -->
+    <div class="create-list-container flex flex-col w-full print:hidden create-list-empty-column">
+      {#if createListColumnIndex === columnIndex}
+        <div class="flex items-center">
+          <div class="create-list-input-wrapper border-2 border-transparent focus-within:border-blue-500 focus-within:rounded box-border -mx-0.5">
+            <input
+              bind:this={createListInputElement}
+              bind:value={createListInput}
+              type="text"
+              class="create-list-input cursor-pointer hover:underline font-gilda text-[24px] text-grey-60 placeholder:italic w-full m-0 px-2 py-2 leading-none rounded -my-1"
+              style="padding-bottom: 6px;"
+              placeholder="start typing..."
+              onkeydown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  onCreateList(columnIndex);
+                } else if (e.key === 'Escape') {
+                  onCreateListInputEscape(e, columnIndex, true);
+                } else if (e.key === 'Tab') {
+                  onCreateListOnTab(columnIndex);
+                }
+              }}
+              aria-label="Enter list name"
+            />
+          </div>
+        </div>
+      {:else}
+        <div class="flex items-center">
+          <h2 
+            bind:this={createListButtonElement}
+            onclick={() => onCreateListClick(columnIndex)}
+            onkeydown={(e) => onCreateListKeydown(e, columnIndex)}
+            role="button"
+            tabindex="0"
+            class="cursor-pointer hover:underline m-0 px-2 py-2 leading-none text-grey-60 font-gilda text-[24px] rounded -my-1"
+            aria-label="Create new list"
+          >
+            Create new list
+          </h2>
+        </div>
+      {/if}
+    </div>
+  {/if}
+  
   <div
     bind:this={columnElement}
-    class="flex flex-col pt-0 gap-y-6"
+    class="sortable-column-container flex flex-col pt-0 gap-y-6 min-h-0 overflow-y-auto"
   >
     <!-- Render lists in this column -->
     {#each columnLists as dragItem, index (dragItem.id)}
@@ -96,7 +142,7 @@
       {/if}
     {/each}
     
-    <!-- Empty drop zone for empty columns -->
+    <!-- Empty drop zone for empty columns - positioned at top -->
     {#if columnLists.length === 0}
       <div 
         bind:this={emptyDropZoneElement}
@@ -106,49 +152,50 @@
     {/if}
   </div>
   
-  <!-- Create List button/input - per column, appears in all columns (outside dndzone) -->
-  <div class="flex flex-col w-full print:hidden {columnLists.length === 0 ? 'create-list-empty-column' : ''}">
-    {#if createListColumnIndex === columnIndex}
-      <div class="flex items-center">
-        <div class="create-list-input-wrapper border-2 border-transparent focus-within:border-blue-500 focus-within:rounded box-border -mx-0.5">
-          <input
-            bind:this={createListInputElement}
-            bind:value={createListInput}
-            type="text"
-            class="create-list-input cursor-pointer hover:underline font-gilda text-[24px] text-grey-60 placeholder:italic w-full m-0 px-2 py-2 leading-none rounded -my-1"
-            style="padding-bottom: 6px;"
-            placeholder="start typing..."
-            onkeydown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                onCreateList(columnIndex);
-              } else if (e.key === 'Escape') {
-                onCreateListInputEscape(e, columnIndex, columnLists.length === 0);
-              } else if (e.key === 'Tab') {
-                // Create list if there's whitespace or text, then close input
-                onCreateListOnTab(columnIndex);
-              }
-            }}
-            aria-label="Enter list name"
-          />
+  <!-- Create List button/input for columns with lists - appears outside sortable container after it -->
+  {#if columnLists.length > 0}
+    <div class="create-list-container flex flex-col w-full print:hidden">
+      {#if createListColumnIndex === columnIndex}
+        <div class="flex items-center">
+          <div class="create-list-input-wrapper border-2 border-transparent focus-within:border-blue-500 focus-within:rounded box-border -mx-0.5">
+            <input
+              bind:this={createListInputElement}
+              bind:value={createListInput}
+              type="text"
+              class="create-list-input cursor-pointer hover:underline font-gilda text-[24px] text-grey-60 placeholder:italic w-full m-0 px-2 py-2 leading-none rounded -my-1"
+              style="padding-bottom: 6px;"
+              placeholder="start typing..."
+              onkeydown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  onCreateList(columnIndex);
+                } else if (e.key === 'Escape') {
+                  onCreateListInputEscape(e, columnIndex, false);
+                } else if (e.key === 'Tab') {
+                  onCreateListOnTab(columnIndex);
+                }
+              }}
+              aria-label="Enter list name"
+            />
+          </div>
         </div>
-      </div>
-    {:else}
-      <div class="flex items-center">
-        <h2 
-          bind:this={createListButtonElement}
-          onclick={() => onCreateListClick(columnIndex)}
-          onkeydown={(e) => onCreateListKeydown(e, columnIndex)}
-          role="button"
-          tabindex="0"
-          class="cursor-pointer hover:underline m-0 px-2 py-2 leading-none text-grey-60 font-gilda text-[24px] rounded -my-1"
-          aria-label="Create new list"
-        >
-          Create new list
-        </h2>
-      </div>
-    {/if}
-  </div>
+      {:else}
+        <div class="flex items-center">
+          <h2 
+            bind:this={createListButtonElement}
+            onclick={() => onCreateListClick(columnIndex)}
+            onkeydown={(e) => onCreateListKeydown(e, columnIndex)}
+            role="button"
+            tabindex="0"
+            class="cursor-pointer hover:underline m-0 px-2 py-2 leading-none text-grey-60 font-gilda text-[24px] rounded -my-1"
+            aria-label="Create new list"
+          >
+            Create new list
+          </h2>
+        </div>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -198,11 +245,6 @@
   /* Explicitly reset h2 margins for "Create new list" in columns */
   [data-column-index] h2 {
     margin: 0;
-  }
-  
-  /* Position "Create new list" to cover empty drop zone space (only for empty columns) */
-  [data-column-index] .create-list-empty-column {
-    margin-top: -96px; /* Shift up to cover min-h-[96px] from empty drop zone */
   }
 </style>
 
