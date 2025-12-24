@@ -2,6 +2,13 @@
   import { onMount, tick } from 'svelte'
   import Sortable from 'sortablejs'
 
+  // Constants
+  const ANIMATION_DURATION = 150
+  const INIT_DELAY_MS = 100
+  const BINDING_DELAY_MS = 100
+  const RETRY_DELAY_MS = 200
+  const ACTION_INIT_DELAY_MS = 10
+
   // Nested structure: Columns -> Lists -> Tasks
   // Column 1
   let column1Lists = $state([
@@ -70,17 +77,21 @@
   let columnSortables = $state(new Map()) // Map<columnElement, Sortable>
   let taskSortables = $state(new Map()) // Map<listId, Sortable>
   
+  // Helper to get all lists from both columns
+  function getAllLists() {
+    return [...column1Lists, ...column2Lists]
+  }
+
   // Svelte action to bind task list elements
   function bindTaskListElement(node, listId) {
     if (node) {
       taskListElements.set(listId, node)
-      console.log(`Task list element bound for list ${listId}`)
       // Try to initialize sortable for this list if not already done
       setTimeout(() => {
         if (!taskSortables.has(listId) && taskListElements.has(listId)) {
           initializeTaskSortableForList(listId)
         }
-      }, 10)
+      }, ACTION_INIT_DELAY_MS)
     }
     return {
       update(newListId) {
@@ -112,7 +123,7 @@
     }
     
     const taskSortable = new Sortable(taskListElement, {
-      animation: 150,
+      animation: ANIMATION_DURATION,
       ghostClass: 'sortable-ghost',
       group: 'tasks', // Enable cross-list task dragging
       draggable: 'li[data-task-id]', // Only drag task items
@@ -122,57 +133,45 @@
     })
     
     taskSortables.set(listId, taskSortable)
-    console.log(`Task sortable initialized for list ${listId}`)
+  }
+
+  // Create column sortable configuration
+  function createColumnSortableConfig(onEndHandler) {
+    return {
+      animation: ANIMATION_DURATION,
+      ghostClass: 'sortable-ghost',
+      group: 'lists', // Enable cross-column list dragging
+      draggable: '.list-container', // Only drag list containers
+      filter: 'ul, li', // Prevent dragging tasks (ul and li elements)
+      preventOnFilter: false, // Allow default behavior for filtered elements
+      onEnd: onEndHandler
+    }
   }
 
   onMount(() => {
-    console.log('SortableJSNestedPrototype onMount called')
-    
     // Initialize column-level dragging (lists between columns)
     if (column1Element && column2Element) {
-      // Column 1 - lists can be dragged
-      const col1Sortable = new Sortable(column1Element, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        group: 'lists', // Enable cross-column list dragging
-        draggable: '.list-container', // Only drag list containers
-        filter: 'ul, li', // Prevent dragging tasks (ul and li elements)
-        preventOnFilter: false, // Allow default behavior for filtered elements
-        onEnd: (evt) => {
-          handleListDragEnd(evt, 1, 2)
-        }
-      })
+      const col1Sortable = new Sortable(column1Element, createColumnSortableConfig((evt) => {
+        handleListDragEnd(evt, 1, 2)
+      }))
       columnSortables.set(column1Element, col1Sortable)
 
-      // Column 2 - lists can be dragged
-      const col2Sortable = new Sortable(column2Element, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        group: 'lists', // Enable cross-column list dragging
-        draggable: '.list-container', // Only drag list containers
-        filter: 'ul, li', // Prevent dragging tasks (ul and li elements)
-        preventOnFilter: false, // Allow default behavior for filtered elements
-        onEnd: (evt) => {
-          handleListDragEnd(evt, 2, 1)
-        }
-      })
+      const col2Sortable = new Sortable(column2Element, createColumnSortableConfig((evt) => {
+        handleListDragEnd(evt, 2, 1)
+      }))
       columnSortables.set(column2Element, col2Sortable)
-
-      console.log('Column sortables initialized')
     }
 
-    // Initialize task-level dragging (tasks within and between lists)
-    // We'll do this in a $effect or after a small delay to ensure DOM is ready
+    // Initialize task-level dragging after DOM is ready
     setTimeout(() => {
       initializeTaskSortables()
-    }, 100)
+    }, INIT_DELAY_MS)
   })
 
   function initializeTaskSortables() {
-    // Get all lists from both columns
-    const allLists = [...column1Lists, ...column2Lists]
+    const allLists = getAllLists()
     
-    // Clear existing sortables for lists that no longer exist
+    // Clean up sortables for lists that no longer exist
     const existingListIds = new Set(allLists.map(l => l.id))
     taskSortables.forEach((sortable, listId) => {
       if (!existingListIds.has(listId)) {
@@ -181,46 +180,76 @@
       }
     })
     
-    // Initialize sortables for all lists that have bound elements
+    // Initialize sortables for all lists
     allLists.forEach(list => {
       initializeTaskSortableForList(list.id)
     })
   }
 
+  // Reinitialize task sortables after list moves
+  async function reinitializeTaskSortablesAfterListMove() {
+    // Destroy all task sortables first
+    taskSortables.forEach(sortable => sortable.destroy())
+    taskSortables.clear()
+    
+    // Wait for Svelte to update DOM
+    await tick()
+    await tick()
+    
+    // Wait for action bindings to complete
+    await new Promise(resolve => setTimeout(resolve, BINDING_DELAY_MS))
+    
+    // Reinitialize
+    initializeTaskSortables()
+    
+    // Retry for any missing sortables
+    setTimeout(() => {
+      const allLists = getAllLists()
+      allLists.forEach(list => {
+        if (!taskSortables.has(list.id)) {
+          initializeTaskSortableForList(list.id)
+        }
+      })
+    }, RETRY_DELAY_MS)
+  }
+
+  // Reorder lists within the same column
+  function reorderListsInColumn(columnElement, columnLists) {
+    const items = Array.from(columnElement.children)
+    return items.map(item => {
+      const listId = parseInt(item.dataset.listId)
+      return columnLists.find(l => l.id === listId)
+    }).filter(Boolean)
+  }
+
+  // Move list between columns
+  function moveListBetweenColumns(fromLists, toLists, oldIndex, newIndex) {
+    const movedList = fromLists[oldIndex]
+    const newFromLists = fromLists.filter((_, i) => i !== oldIndex)
+    const newToLists = [
+      ...toLists.slice(0, newIndex),
+      movedList,
+      ...toLists.slice(newIndex)
+    ]
+    return { newFromLists, newToLists }
+  }
+
   function handleListDragEnd(evt, fromColumn, toColumn) {
     const { oldIndex, newIndex, from, to } = evt
-    
-    console.log('List drag ended:', { oldIndex, newIndex, fromColumn, toColumn, from: from.id, to: to.id })
     
     if (from === to) {
       // Same column reordering
       if (fromColumn === 1) {
-        const items = Array.from(column1Element.children)
-        const reordered = items.map(item => {
-          const listId = parseInt(item.dataset.listId)
-          return column1Lists.find(l => l.id === listId)
-        }).filter(Boolean)
-        column1Lists = reordered
+        column1Lists = reorderListsInColumn(column1Element, column1Lists)
       } else {
-        const items = Array.from(column2Element.children)
-        const reordered = items.map(item => {
-          const listId = parseInt(item.dataset.listId)
-          return column2Lists.find(l => l.id === listId)
-        }).filter(Boolean)
-        column2Lists = reordered
+        column2Lists = reorderListsInColumn(column2Element, column2Lists)
       }
     } else {
       // Cross-column movement
       const fromLists = fromColumn === 1 ? column1Lists : column2Lists
       const toLists = toColumn === 1 ? column1Lists : column2Lists
       
-      const movedList = fromLists[oldIndex]
-      const newFromLists = fromLists.filter((_, i) => i !== oldIndex)
-      const newToLists = [
-        ...toLists.slice(0, newIndex),
-        movedList,
-        ...toLists.slice(newIndex)
-      ]
+      const { newFromLists, newToLists } = moveListBetweenColumns(fromLists, toLists, oldIndex, newIndex)
       
       if (fromColumn === 1) {
         column1Lists = newFromLists
@@ -230,61 +259,44 @@
         column1Lists = newToLists
       }
       
-      // Reinitialize task sortables after list move (DOM structure changed)
-      // Wait for Svelte to finish re-rendering and action bindings to complete
-      (async () => {
-        // Destroy all task sortables first
-        taskSortables.forEach(sortable => sortable.destroy())
-        taskSortables.clear()
-        
-        // Wait for Svelte to update DOM
-        await tick()
-        await tick()
-        
-        // Wait for action bindings to complete (bindTaskListElement actions)
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
-        // Reinitialize - the bindTaskListElement actions should have re-bound elements
-        initializeTaskSortables()
-        
-        // If some are still missing, try one more time after a delay
-        setTimeout(() => {
-          const allLists = [...column1Lists, ...column2Lists]
-          allLists.forEach(list => {
-            if (!taskSortables.has(list.id)) {
-              console.log(`Retrying initialization for list ${list.id}`)
-              initializeTaskSortableForList(list.id)
-            }
-          })
-        }, 200)
-      })()
+      // Reinitialize task sortables after list move
+      reinitializeTaskSortablesAfterListMove()
+    }
+  }
+
+  // Reorder tasks within the same list
+  function reorderTasksInList(listElement, tasks) {
+    const items = Array.from(listElement.children)
+    return items.map(item => {
+      const taskId = parseInt(item.dataset.taskId)
+      return tasks.find(t => t.id === taskId)
+    }).filter(Boolean)
+  }
+
+  // Update column state to trigger reactivity
+  function updateColumnState(listId) {
+    if (column1Lists.find(l => l.id === listId)) {
+      column1Lists = [...column1Lists]
+    } else {
+      column2Lists = [...column2Lists]
     }
   }
 
   function handleTaskDragEnd(evt, sourceListId) {
     const { oldIndex, newIndex, from, to } = evt
     
-    console.log('Task drag ended:', { oldIndex, newIndex, sourceListId, from: from.id, to: to.id })
-    
-    // Find which list the task came from and which it went to
     const targetListId = parseInt(to.dataset.listId)
-    const allLists = [...column1Lists, ...column2Lists]
+    const allLists = getAllLists()
     const sourceList = allLists.find(l => l.id === sourceListId)
     const targetList = allLists.find(l => l.id === targetListId)
     
     if (!sourceList || !targetList) {
-      console.error('Could not find source or target list')
       return
     }
     
     if (sourceListId === targetListId) {
       // Same list reordering
-      const items = Array.from(to.children)
-      const reordered = items.map(item => {
-        const taskId = parseInt(item.dataset.taskId)
-        return sourceList.tasks.find(t => t.id === taskId)
-      }).filter(Boolean)
-      sourceList.tasks = reordered
+      sourceList.tasks = reorderTasksInList(to, sourceList.tasks)
     } else {
       // Cross-list movement
       const movedTask = sourceList.tasks[oldIndex]
@@ -296,17 +308,10 @@
       ]
     }
     
-    // Update state (trigger reactivity)
-    if (column1Lists.find(l => l.id === sourceListId)) {
-      column1Lists = [...column1Lists]
-    } else {
-      column2Lists = [...column2Lists]
-    }
-    
-    if (column1Lists.find(l => l.id === targetListId)) {
-      column1Lists = [...column1Lists]
-    } else {
-      column2Lists = [...column2Lists]
+    // Update state to trigger reactivity
+    updateColumnState(sourceListId)
+    if (sourceListId !== targetListId) {
+      updateColumnState(targetListId)
     }
   }
 
