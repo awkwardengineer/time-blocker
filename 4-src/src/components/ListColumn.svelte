@@ -61,7 +61,7 @@
 <div class="flex flex-col pt-0 min-w-0 px-2 {columnIndex < 4 ? 'border-r border-grey-50' : ''}" data-column-index={columnIndex}>
   <div
     bind:this={columnElement}
-    class="flex flex-col pt-0"
+    class="flex flex-col pt-0 gap-y-6"
   >
     <!-- Render lists in this column -->
     {#each columnLists as dragItem, index (dragItem.id)}
@@ -72,7 +72,7 @@
       {#if listToRender}
         <div
           data-id={dragItem.id}
-          class="flex flex-col mb-6"
+          class="flex flex-col"
           tabindex="0"
           role="group"
           aria-label={`List: ${listToRender.name ?? 'Unnamed list'}`}
@@ -90,7 +90,7 @@
           />
         </div>
       {:else}
-        <div data-id={dragItem.id} class="flex flex-col mb-6">
+        <div data-id={dragItem.id} class="flex flex-col">
           <!-- Placeholder item for drag feedback - not focusable for keyboard drag -->
         </div>
       {/if}
@@ -107,7 +107,7 @@
   </div>
   
   <!-- Create List button/input - per column, appears in all columns (outside dndzone) -->
-  <div class="flex flex-col mb-6 w-full print:hidden {columnLists.length === 0 ? 'create-list-empty-column' : ''}">
+  <div class="flex flex-col w-full print:hidden {columnLists.length === 0 ? 'create-list-empty-column' : ''}">
     {#if createListColumnIndex === columnIndex}
       <div class="flex items-center">
         <div class="create-list-input-wrapper border-2 border-transparent focus-within:border-blue-500 focus-within:rounded box-border -mx-0.5">
@@ -203,11 +203,6 @@
   /* Position "Create new list" to cover empty drop zone space (only for empty columns) */
   [data-column-index] .create-list-empty-column {
     margin-top: -96px; /* Shift up to cover min-h-[96px] from empty drop zone */
-  }
-  
-  /* Ensure list wrapper margins are applied even with dndzone inline styles */
-  [data-column-index] [data-id] {
-    margin-bottom: 1.5rem !important;
   }
 </style>
 

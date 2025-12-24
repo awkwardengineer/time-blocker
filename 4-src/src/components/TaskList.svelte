@@ -702,7 +702,7 @@
   }
 </script>
 
-<div bind:this={listSectionElement} data-list-id={listId} class="flex flex-col mb-6 w-full">
+<div bind:this={listSectionElement} data-list-id={listId} class="flex flex-col w-full">
   <!-- 
     Outer wrapper for focus ring - always square/rectangular
     The focus border must be on this outer container to avoid tracing child element shapes.
