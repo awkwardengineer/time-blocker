@@ -287,3 +287,112 @@ sourceList.tasks = reordered
 column1Lists = [...column1Lists] // Trigger reactivity
 ```
 
+## Lessons Learned from Prototype Implementation
+
+### Keyboard Support Implementation
+
+#### 1. **State Management for Keyboard Drag**
+- **Separate state tracking needed**: Keyboard drag requires its own state (`isKeyboardDragging`, `draggedItemId`, `draggedItemType`) separate from mouse drag
+- **Element references**: Must store `draggedItemElement` reference for blur/focus operations, but save it before clearing state
+- **Tab resume pattern**: Store `lastBlurredElement` and `shouldRefocusOnNextTab` flag for Tab resume behavior
+
+#### 2. **Event Handler Architecture**
+- **Capture phase is critical**: Use `addEventListener(..., true)` for document-level handlers to intercept before other handlers
+- **Stop immediate propagation**: Use `stopImmediatePropagation()` to prevent item-level handlers from running when document handler handles the event
+- **Handler separation**: Item-level handlers for Enter/Space/Escape on items, document-level handlers for Arrow keys and Tab during drag
+
+#### 3. **Visual Feedback Challenges**
+- **Layout shift prevention**: Use `box-shadow: inset` instead of `border` for drop zones to avoid layout shifts
+- **Inline styles as fallback**: CSS classes may be overridden by Tailwind, so apply inline styles as backup
+- **Focus management**: Grabbed items must maintain focus to keep focus ring visible - call `element.focus()` after applying styles
+
+#### 4. **Cross-List/Cross-Column Movement**
+- **Boundary detection**: ArrowUp/Down at list boundaries must move to adjacent lists in same column
+- **ArrowLeft/Right**: Moves between columns (different semantic than ArrowUp/Down)
+- **State updates**: Must update both source and target lists/columns when moving between containers
+- **Element tracking**: After move, must find new element location and update `draggedItemElement` reference
+
+#### 5. **Mouse + Keyboard Drag Coordination**
+- **Separate state**: `isMouseDragging` and `isKeyboardDragging` must be tracked separately
+- **Shared drop zone logic**: Extract `applyDropZoneStyles()` and `removeDropZoneStyles()` helpers for reuse
+- **Cleanup coordination**: Don't clear drop zones if mouse drag is active when keyboard drag ends
+
+### Critical Implementation Notes
+
+#### Drop Zone Styling
+```javascript
+// ❌ DON'T: Causes layout shift
+element.style.border = '2px dashed rgba(107, 143, 217, 0.6)'
+
+// ✅ DO: No layout shift
+element.style.boxShadow = 'inset 0 0 0 2px rgba(107, 143, 217, 0.4)'
+element.style.backgroundColor = 'rgba(107, 143, 217, 0.04)'
+```
+
+#### Event Handler Pattern
+```javascript
+// Document handler (capture phase)
+function handleDocumentKeydown(event) {
+  if (key === 'Escape' && isKeyboardDragging) {
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation() // Critical!
+    
+    // Save reference BEFORE clearing state
+    const elementToBlur = draggedItemElement
+    
+    // Clear state
+    isKeyboardDragging = false
+    draggedItemId = null
+    // ...
+    
+    // Blur using saved reference
+    if (elementToBlur instanceof HTMLElement) {
+      elementToBlur.blur()
+    }
+  }
+}
+```
+
+#### Focus Management
+```javascript
+// After applying grabbed state, ensure focus is maintained
+if (draggedElement) {
+  draggedElement.classList.add('keyboard-drag-active')
+  if (document.activeElement !== draggedElement) {
+    draggedElement.focus() // Keep focus ring visible
+  }
+}
+```
+
+#### State Update After Move
+```javascript
+// After moving item with keyboard, update element reference
+tick().then(() => {
+  const newElement = findTaskElement(draggedItemId)
+  if (newElement) {
+    draggedItemElement = newElement // Update reference
+  }
+  updateVisualFeedback() // Refresh visual state
+})
+```
+
+### Gotchas and Pitfalls
+
+1. **Clearing state before blurring**: Always save element references before clearing state variables
+2. **Timing issues**: Use `tick()` and `setTimeout` when DOM updates are needed before reinitialization
+3. **Event propagation**: Must use `stopImmediatePropagation()` to prevent both handlers from running
+4. **Tailwind overrides**: CSS classes may not work due to Tailwind specificity - inline styles are more reliable
+5. **Focus loss**: Grabbed items lose focus ring if focus isn't explicitly maintained
+6. **Layout shifts**: Borders cause layout shifts - use inset box-shadow instead
+
+### Recommendations for Production Implementation
+
+1. **Extract keyboard handlers**: Create reusable keyboard drag handlers similar to `taskKeyboardDrag.js`
+2. **Unified drop zone system**: Create a shared drop zone manager that works for both mouse and keyboard drag
+3. **State management pattern**: Use a single state object for drag state (keyboard + mouse) with clear separation
+4. **Visual feedback utilities**: Extract `applyDropZoneStyles()` and related functions into a shared utility
+5. **Testing strategy**: Test keyboard drag separately from mouse drag, but also test interactions between them
+6. **Accessibility**: Ensure ARIA attributes (`aria-grabbed`) are properly set for screen readers
+7. **Performance**: Consider debouncing rapid Arrow key presses if performance becomes an issue
+

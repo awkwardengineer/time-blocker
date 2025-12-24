@@ -283,58 +283,59 @@ src/lib/drag/
      - Community examples available on Stack Overflow
      - Keyboard support needs verification
 
-#### 2. **Create Minimal Prototype Environment**
-   - Create `src/prototypes/dnd-prototype/` directory
-   - Set up isolated prototype with minimal dependencies
-   - Create simple test page with:
-     - One list with 5-10 tasks
-     - Basic drag within list
-     - Cross-list drag (2 lists)
-     - Keyboard drag support
-     - Mobile touch testing capability
-   - **Use separate route to access prototype** (not feature flag)
-     - Add route like `/prototype/sortablejs` or `/prototype/dnd`
-     - Keep prototype isolated from main app
-     - Use hash-based routing or pathname check (vanilla Svelte, no SvelteKit)
-     - Update `main.js` to conditionally mount prototype or main app based on route
+#### 2. **Create Minimal Prototype Environment** ✅
+   - ✅ Create `src/prototypes/dnd-prototype/` directory
+   - ✅ Set up isolated prototype with minimal dependencies
+   - ✅ Create simple test page with:
+     - ✅ One list with 5-10 tasks (SortableJSPrototype has 2 lists with tasks)
+     - ✅ Basic drag within list
+     - ✅ Cross-list drag (2 lists)
+     - ✅ Keyboard drag support (implemented in SortableJSNestedPrototype)
+     - ⚠️ Mobile touch testing capability (SortableJS supports it natively, but not explicitly tested)
+   - ✅ **Use separate route to access prototype** (not feature flag)
+     - ✅ Add route like `/prototype/sortablejs` or `/prototype/dnd`
+     - ✅ Keep prototype isolated from main app
+     - ✅ Use hash-based routing or pathname check (vanilla Svelte, no SvelteKit)
+     - ✅ Update `main.js` to conditionally mount prototype or main app based on route
 
-#### 3. **Prototype Library 1: sortablejs**
-   - Install `sortablejs` (NOT `svelte-sortablejs` - it's unmaintained)
-   - Integrate directly using `onMount` lifecycle
-   - Implement basic drag within list
-   - Implement cross-list drag (using `group` option)
-   - Test nested containers (lists in columns)
-   - Test keyboard support (verify if built-in or need custom implementation)
-   - Test mobile touch
-   - Handle Svelte reactivity:
-     - Update state in `onEnd` event
-     - Ensure `draggableTasks` updates correctly
-     - Test with liveQuery pattern
-   - Document:
-     - Setup complexity
-     - API differences from svelte-dnd-action
-     - How to handle Svelte reactivity
-     - Performance observations
-     - Any issues encountered
-     - Bundle size impact
-     - Keyboard support status
+#### 3. **Prototype Library 1: sortablejs** ✅
+   - ✅ Install `sortablejs` (NOT `svelte-sortablejs` - it's unmaintained)
+   - ✅ Integrate directly using `onMount` lifecycle
+   - ✅ Implement basic drag within list
+   - ✅ Implement cross-list drag (using `group` option)
+   - ✅ Test nested containers (lists in columns)
+   - ✅ Test keyboard support (custom implementation required - see SORTABLEJS_FINDINGS.md)
+   - ⚠️ Test mobile touch (SortableJS supports it natively, but not explicitly tested)
+   - ✅ Handle Svelte reactivity:
+     - ✅ Update state in `onEnd` event
+     - ✅ Ensure `draggableTasks` updates correctly
+     - ✅ Test with liveQuery pattern (prototype uses $state, pattern documented)
+   - ✅ Document:
+     - ✅ Setup complexity (documented in SORTABLEJS_FINDINGS.md)
+     - ✅ API differences from svelte-dnd-action (documented in SORTABLEJS_FINDINGS.md)
+     - ✅ How to handle Svelte reactivity (documented in SORTABLEJS_FINDINGS.md)
+     - ⚠️ Performance observations (not formally measured, but no issues observed)
+     - ✅ Any issues encountered (documented in SORTABLEJS_FINDINGS.md)
+     - ⚠️ Bundle size impact (not measured)
+     - ✅ Keyboard support status (documented in SORTABLEJS_FINDINGS.md - custom implementation required)
 
-#### 4. **Prototype Library 2: Alternative or Custom**
-   - If `sortablejs` doesn't work well, try second option
-   - Or prototype custom Pointer Events implementation
-   - Same testing as Library 1
-   - Document findings
+#### 4. **Prototype Library 2: Alternative or Custom** ❌ SKIPPED
+   - ~~If `sortablejs` doesn't work well, try second option~~
+   - ~~Or prototype custom Pointer Events implementation~~
+   - ~~Same testing as Library 1~~
+   - ~~Document findings~~
+   - **Decision**: SortableJS works well, no need for alternative library
 
-#### 5. **Test Edge Cases from Milestone 078**
-   - Test resize bug scenario (does it occur with new library?)
-   - Test sliding/offset issue (does it occur with new library?)
-   - Test rapid drag operations
-   - Test drag with many items
-   - Test drag with empty lists
-   - Test drag across columns
-   - Document results for each library
+#### 5. **Test Edge Cases from Milestone 078** ✅
+   - ✅ Test resize bug scenario (does it occur with new library?) - Not observed in prototype
+   - ✅ Test sliding/offset issue (does it occur with new library?) - Not observed in prototype
+   - ✅ Test rapid drag operations - Works correctly
+   - ✅ Test drag with many items - Works correctly
+   - ✅ Test drag with empty lists - Works correctly (empty drop zones implemented)
+   - ✅ Test drag across columns - Works correctly (nested prototype tested)
+   - ✅ Document results - Documented in SORTABLEJS_FINDINGS.md
 
-#### 6. **Performance Comparison**
+#### 6. **Performance Comparison** ⚠️ OPTIONAL
    - Measure drag performance:
      - Time to start drag
      - Smoothness during drag (FPS)
@@ -343,137 +344,219 @@ src/lib/drag/
    - Compare old library vs prototypes
    - Test on mobile device if possible
    - Document findings
+   - **Note**: Not formally measured, but no performance issues observed during prototype testing. Can be done later if needed.
 
-#### 7. **Migration Decision**
-   - Review all prototype findings
-   - Compare against current implementation
-   - Consider:
-     - Will new library solve current issues?
-     - Migration effort required
-     - Risk vs benefit
-     - Maintenance burden
-   - Document decision with rationale
-   - If migration approved: proceed to migration planning
-   - If migration not approved: document why and what improvements can be made to current library
+#### 7. **Migration Decision** ✅
+   - ✅ Review all prototype findings
+   - ✅ Compare against current implementation
+   - ✅ Consider:
+     - ✅ Will new library solve current issues? - Yes, no weird issues observed in prototype
+     - ✅ Migration effort required - Low to medium (most code can be reused)
+     - ✅ Risk vs benefit - Low risk, high benefit (faster implementation, no weird bugs)
+     - ✅ Maintenance burden - SortableJS is actively maintained
+   - ✅ **Decision**: **APPROVED** - SortableJS works well in prototype, no weird issues, faster to implement than expected
+   - ✅ Proceed to migration planning (Part 3)
 
-#### 8. **Prepare Feature Flag (If Migration Approved)**
-   - Create feature flag: `USE_NEW_DND_LIBRARY`
-   - Implement adapter pattern to support both libraries
-   - Ensure both implementations can coexist
-   - Set up parallel testing capability
-   - Document how to switch between implementations
+#### 8. **Prepare Feature Flag (If Migration Approved)** ❌ SKIPPED
+   - ~~Create feature flag: `USE_NEW_DND_LIBRARY`~~
+   - ~~Implement adapter pattern to support both libraries~~
+   - ~~Ensure both implementations can coexist~~
+   - ~~Set up parallel testing capability~~
+   - ~~Document how to switch between implementations~~
+   - **Decision**: Adapter pattern already exists in `dragAdapter.js`. No feature flag needed - just update the adapter implementation directly. Can use simple config switch if needed for testing.
 
 ### Part 3: Cutover (If Migration Approved)
 
-#### 1. **Implement New Library via Adapter**
-   - Update `src/lib/drag/dragAdapter.js` to support new library
-   - Implement adapter methods for new library API
-   - Ensure adapter provides same interface as old implementation
-   - Test adapter in isolation
-   - Verify adapter handles all drag scenarios:
-     - Within-list drag
-     - Cross-list drag
-     - Cross-column drag
-     - Keyboard drag
-     - Mobile touch drag
+#### 1. **Update Adapter to Use SortableJS**
+   - Update `src/lib/drag/dragAdapter.js` to use SortableJS instead of `svelte-dnd-action`
+   - Implement SortableJS initialization in `createDragZone()`:
+     - Use `onMount` pattern (or Svelte action lifecycle)
+     - Create Sortable instances with proper configuration
+     - Handle `onStart` and `onEnd` callbacks
+     - Map SortableJS events to existing adapter interface
+   - Update `handleDragConsider()` to work with SortableJS (if needed for visual feedback)
+   - Update `handleDragFinalize()` to extract data from SortableJS `onEnd` event
+   - **Note**: Components already use adapter interface - they won't need changes
+   - Test adapter in isolation with simple test cases
 
-#### 2. **Migrate Task Drag Implementation**
-   - Update `TaskList.svelte` to use new library via adapter
-   - Update `taskDragHandlers.js` if needed for new library
+#### 2. **Create Drop Zone Utilities**
+   - Extract `applyDropZoneStyles()` and `removeDropZoneStyles()` from prototype
+   - Create `src/lib/drag/dropZoneUtils.js`:
+     - `applyDropZoneStyles(element)` - Apply drop zone visual feedback
+     - `removeDropZoneStyles(element)` - Remove drop zone visual feedback
+     - `updateDropZonesForDrag(dragType, draggedItemId)` - Show appropriate drop zones
+   - Use `box-shadow: inset` instead of `border` to avoid layout shifts
+   - Apply inline styles as fallback (Tailwind may override CSS classes)
+   - Test drop zone utilities in isolation
+
+#### 3. **Create Visual Feedback Utilities**
+   - Extract visual feedback helpers from prototype
+   - Create `src/lib/drag/visualFeedbackUtils.js`:
+     - `applyGrabbedState(element)` - Apply grabbed item styling
+     - `removeGrabbedState(element)` - Remove grabbed item styling
+     - `maintainFocus(element)` - Ensure element maintains focus for focus ring
+   - Ensure grabbed items maintain focus (call `element.focus()` after applying styles)
+   - Test visual feedback utilities
+
+#### 4. **Update Drag Detection Utilities**
+   - Update `src/lib/drag/dragDetectionUtils.js` for SortableJS:
+     - `isDragActive()` - Detect SortableJS drag state (check for dragged elements)
+     - `getDraggedElements()` - Find elements being dragged (SortableJS uses different classes/attributes)
+     - `hasActiveDropZone(element)` - Check for active drop zones (may need different detection)
+   - Keep same interface - only implementation changes
+   - Test detection utilities work correctly
+
+#### 5. **Update Task Drag Implementation**
+   - **Components**: `TaskList.svelte` already uses adapter - no changes needed
+   - **Handlers**: `taskDragHandlers.js` should work as-is (pure functions)
+   - **State sync**: `syncDragState.js` pattern still applies (liveQuery → draggableTasks)
+   - **SortableJS setup**: Add SortableJS initialization in `TaskList.svelte`:
+     - Initialize Sortable instance for task list in `onMount`
+     - Handle `onStart` to show drop zones (call `updateDropZonesForDrag()`)
+     - Handle `onEnd` to update state (call existing `handleDragFinalize` → `processTaskFinalize`)
+     - Manage Sortable instance lifecycle (destroy on component destroy)
    - Test task drag within list
-   - Test task drag between lists
-   - Test task drag between columns
+   - Test task drag between lists (cross-list)
+   - Test task drag between columns (cross-column)
    - Verify all edge cases work
-   - Ensure placeholder handling works correctly
 
-#### 3. **Migrate List Drag Implementation**
-   - Update `ListColumn.svelte` to use new library via adapter
-   - Update `Board.svelte` if needed
-   - Update `listDragHandlers.js` if needed for new library
+#### 6. **Update List Drag Implementation**
+   - **Components**: `ListColumn.svelte` and `Board.svelte` already use adapter - minimal changes
+   - **Handlers**: `listDragHandlers.js` should work as-is
+   - **SortableJS setup**: Add SortableJS initialization:
+     - Initialize Sortable instances for columns in `Board.svelte`
+     - Handle `onStart` to show drop zones
+     - Handle `onEnd` to update state
+     - Handle reinitialization after list moves (destroy/recreate task sortables)
+   - **Reinitialization pattern**: Use prototype pattern:
+     ```javascript
+     await tick() // Wait for Svelte DOM updates
+     await tick() // Extra tick for bindings
+     await new Promise(r => setTimeout(r, 100)) // Wait for actions
+     // Then reinitialize task sortables
+     ```
    - Test list drag within column
    - Test list drag between columns
-   - Verify all edge cases work
-   - Ensure placeholder handling works correctly
+   - Verify task sortables reinitialize correctly after list moves
 
-#### 4. **Migrate Keyboard Drag Support**
-   - Update keyboard drag handlers for new library
+#### 7. **Adapt Keyboard Drag Handlers**
+   - **Existing handlers**: `taskKeyboardDrag.js` already has the right architecture
+   - **Adapt for SortableJS**:
+     - Update to work with SortableJS state updates instead of `svelte-dnd-action` events
+     - Use direct state manipulation (Option 2 from spec) - simpler than simulating SortableJS
+     - Update `moveTaskWithKeyboard()` to directly update state arrays
+     - Ensure `draggedItemElement` reference is updated after moves (use `tick()`)
+   - **State management**: Add mouse drag state tracking:
+     - Track `isMouseDragging` separately from `isKeyboardDragging`
+     - Coordinate drop zone cleanup (don't clear if mouse drag is active)
+   - **Focus management**: Ensure grabbed items maintain focus (from lessons learned)
+   - **Event handling**: Use capture phase and `stopImmediatePropagation()` (already in place)
    - Test keyboard drag for tasks
    - Test keyboard drag for lists
-   - Verify keyboard navigation still works
    - Test keyboard drag across lists/columns
-   - Ensure focus management works correctly
+   - Test Tab resume behavior
+   - Test Escape to cancel/blur
 
-#### 5. **Parallel Testing with Feature Flag**
-   - Enable feature flag for internal testing
-   - Test both implementations side-by-side
-   - Compare behavior between old and new
-   - Document any differences (should be minimal)
-   - Fix any issues found in new implementation
-   - Verify performance is acceptable
-
-#### 6. **Update Tests**
-   - Update test helpers to work with new library
-   - Update drag simulation functions if needed
+#### 8. **Update Tests**
+   - Update test helpers in test files:
+     - Update drag simulation functions to work with SortableJS
+     - Update selectors (no longer `use:dndzone`, use generic selectors)
+     - Mock SortableJS if needed for unit tests
+   - **Test strategy** (from recommendations):
+     - Test keyboard drag separately from mouse drag
+     - Test interactions between mouse and keyboard drag
+     - Test drop zone utilities in isolation
+     - Test visual feedback utilities
    - Ensure all existing tests pass with new library
-   - Add tests for any new library-specific behavior
+   - Add tests for SortableJS-specific behavior:
+     - Reinitialization after list moves
+     - Multiple Sortable instance management
+     - Drop zone coordination between mouse and keyboard
    - Verify test coverage maintained or improved
    - Run full test suite: `npm test`
 
-#### 7. **Comprehensive Manual Testing**
+#### 9. **Comprehensive Manual Testing**
    - Test all drag scenarios manually:
-     - Task drag within list
-     - Task drag between lists
-     - Task drag between columns
-     - List drag within column
-     - List drag between columns
-     - Keyboard drag (tasks and lists)
+     - Task drag within list (mouse)
+     - Task drag between lists (mouse)
+     - Task drag between columns (mouse)
+     - List drag within column (mouse)
+     - List drag between columns (mouse)
+     - Keyboard drag for tasks (all scenarios from prototype)
+     - Keyboard drag for lists
      - Mobile touch drag
+   - **Test keyboard drag thoroughly** (from lessons learned):
+     - Enter/Space to start drag
+     - Arrow keys to move (within list, between lists, between columns)
+     - Enter/Space/Escape/Tab to drop
+     - Tab resume behavior
+     - Focus management (focus ring stays visible)
+     - Visual feedback (grabbed state, drop zones)
    - Test edge cases:
      - Drag with empty lists
      - Drag with many items
      - Rapid drag operations
-     - Drag with resizing (verify no resize bug)
-     - Drag with offset (verify no sliding bug)
+     - Drag with resizing (verify no resize bug - should be fixed)
+     - Drag with offset (verify no sliding bug - should be fixed)
+     - Reinitialization after list moves
+   - **Test drop zone behavior**:
+     - Drop zones appear during mouse drag
+     - Drop zones appear during keyboard drag
+     - No layout shifts (use `box-shadow: inset`)
+     - Drop zones clear correctly
    - Test on multiple browsers (Chrome, Firefox, Safari, Edge)
    - Test on mobile devices (iOS and Android)
 
-#### 8. **Performance Validation**
+#### 10. **Performance Validation**
    - Measure drag performance with new library
-   - Compare to old library benchmarks
+   - Compare to old library (if benchmarks exist)
    - Verify no performance regression
    - Test with large datasets (many lists, many tasks)
    - Profile memory usage during drag
+   - **Consider debouncing** rapid Arrow key presses if performance becomes an issue (from recommendations)
    - Document performance findings
 
-#### 9. **Remove Old Library**
+#### 11. **Accessibility Validation**
+   - Ensure ARIA attributes (`aria-grabbed`) are properly set for screen readers
+   - Test with screen reader (NVDA, JAWS, VoiceOver)
+   - Verify keyboard navigation still works correctly
+   - Verify focus management works (focus ring visible, Tab resume works)
+   - Test keyboard drag with screen reader
+
+#### 12. **Remove Old Library**
    - Remove `svelte-dnd-action` from `package.json`
-   - Remove old library imports
-   - Remove old library-specific code/workarounds
-   - Remove dimension locking workarounds (if no longer needed)
-   - Clean up any old library-specific CSS
-   - Remove prototype code if no longer needed
+   - Remove old library imports (only in `dragAdapter.js` and `dragDetectionUtils.js`)
+   - Remove old library-specific code/workarounds:
+     - Dimension locking workarounds (should no longer be needed)
+     - Old library-specific CSS (if any)
+   - Clean up `dragDetectionUtils.js` - remove `svelte-dnd-action`-specific detection
+   - Remove prototype code if no longer needed (or keep for reference)
 
-#### 10. **Remove Feature Flag**
-   - Remove `USE_NEW_DND_LIBRARY` feature flag
-   - Remove conditional logic for old/new implementations
-   - Simplify adapter if it was only needed for migration
-   - Clean up any migration-specific code
-   - Ensure codebase only uses new library
-
-#### 11. **Update Documentation**
+#### 13. **Update Documentation**
+   - Update `src/lib/drag/README.md`:
+     - Document SortableJS-specific patterns
+     - Update architecture diagram if needed
+     - Document reinitialization pattern
+     - Document drop zone utilities
+     - Document visual feedback utilities
+   - Update code comments in:
+     - `dragAdapter.js` - SortableJS implementation details
+     - `dragDetectionUtils.js` - SortableJS detection methods
+     - Component files - any SortableJS-specific setup
+   - Document any API differences or gotchas (from lessons learned)
    - Update `technical-architecture.md` with new library choice
-   - Update drag-related code comments
-   - Update README in `src/lib/drag/` if needed
-   - Document any API differences or gotchas
-   - Update any user-facing documentation if applicable
 
-#### 12. **Final Validation**
+#### 14. **Final Validation**
    - Run full test suite: `npm test`
-   - Run E2E tests: `npm run test:e2e`
-   - Manual smoke test of all drag functionality
+   - Run E2E tests: `npm run test:e2e` (if applicable)
+   - Manual smoke test of all drag functionality:
+     - Mouse drag (all scenarios)
+     - Keyboard drag (all scenarios)
+     - Mobile touch drag
    - Verify no console errors
    - Verify no performance issues
-   - Check bundle size impact
+   - Check bundle size impact (SortableJS vs svelte-dnd-action)
+   - Verify no layout shifts (drop zones use `box-shadow: inset`)
    - Final code review
 
 ## Quick Notes
@@ -504,12 +587,23 @@ src/lib/drag/
 - **Cutover**: New library fully integrated, old library removed, all tests pass, no regressions
 
 ### Cutover Considerations
-- **Incremental migration**: Migrate tasks first, then lists, then keyboard support
-- **Feature flag safety**: Keep old implementation available until fully validated
-- **Rollback plan**: Be able to revert to old library if critical issues found
-- **Testing rigor**: Comprehensive testing before removing feature flag
+- **Incremental migration**: 
+  - Update adapter first (isolated change)
+  - Add drop zone and visual feedback utilities
+  - Update task drag, then list drag, then keyboard support
+- **Adapter pattern**: Components already use adapter - minimal component changes needed
+- **Rollback plan**: Git revert is sufficient (adapter pattern makes rollback easy)
+- **Testing rigor**: 
+  - Test each piece incrementally
+  - Comprehensive testing before removing old library
+  - Test keyboard drag separately from mouse drag (from recommendations)
 - **User impact**: Migration should be invisible (no functionality changes)
 - **Performance**: Must meet or exceed old implementation
+- **Lessons learned**: 
+  - Use `box-shadow: inset` for drop zones (no layout shifts)
+  - Maintain focus on grabbed items (focus ring visibility)
+  - Save element references before clearing state (for blur operations)
+  - Coordinate mouse and keyboard drag state separately
 
 ### Benefits of Refactoring for Future Migration
 
