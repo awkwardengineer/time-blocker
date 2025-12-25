@@ -11,6 +11,7 @@ import { isDragActive, hasActiveDropZone } from './dragDetectionUtils.js';
 import { findNeighborListId, moveTaskToNextList, moveTaskToPreviousList } from './taskDragHandlers.js';
 import { getTasksForList, updateTaskOrderCrossList } from '../dataAccess.js';
 import { groupListsIntoColumns } from '../listDndUtils.js';
+import { taskDragStateManager } from './taskDragStateManager.js';
 
 /**
  * Create a capture-phase keydown handler for task list items.
@@ -61,6 +62,17 @@ export function createTaskItemKeydownCaptureHandler(state, getUlElement) {
         // Remember this task item so the *next* Tab can refocus it.
         setLastBlurredTaskElement(currentTarget);
         setShouldRefocusTaskOnNextTab(true);
+        // Complete drag in state manager to allow liveQuery to sync
+        const ulElement = getUlElement();
+        if (ulElement) {
+          const listIdAttr = ulElement.getAttribute('data-list-id');
+          if (listIdAttr) {
+            const listId = parseInt(listIdAttr);
+            if (taskDragStateManager.globalDragActive) {
+              taskDragStateManager.completeDrag(listId, listId, true);
+            }
+          }
+        }
       }
     } else if (key === 'Escape') {
       const isKeyboardTaskDragging = getIsKeyboardTaskDragging();
@@ -75,7 +87,24 @@ export function createTaskItemKeydownCaptureHandler(state, getUlElement) {
         setLastKeyboardDraggedTaskId(taskId);
         setLastBlurredTaskElement(currentTarget);
         setShouldRefocusTaskOnNextTab(true);
-        // Don't prevent the event - let it propagate to svelte-dnd-action so it can clear drop zones
+        // Complete drag in state manager to allow liveQuery to sync
+        const ulElement = getUlElement();
+        if (ulElement) {
+          const listIdAttr = ulElement.getAttribute('data-list-id');
+          if (listIdAttr) {
+            const listId = parseInt(listIdAttr);
+            if (taskDragStateManager.globalDragActive) {
+              taskDragStateManager.completeDrag(listId, listId, false); // false = cancel
+            }
+          }
+        }
+        // Blur the element immediately after completing drag
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        if (currentTarget instanceof HTMLElement) {
+          currentTarget.blur();
+        }
       } else {
         // Escape when not in drag state - blur the task item
         event.preventDefault();
@@ -118,7 +147,13 @@ export function createTaskItemBlurHandler(state) {
     const lastKeyboardDraggedTaskId = getLastKeyboardDraggedTaskId();
 
     if (isKeyboardTaskDragging && lastKeyboardDraggedTaskId === taskId) {
-      setIsKeyboardTaskDragging(false);
+      // DON'T reset isKeyboardTaskDragging on blur - it will be reset when:
+      // 1. User presses Enter/Space again (drop)
+      // 2. User presses Escape (cancel)
+      // 3. User presses Tab (move focus away)
+      // Blur can happen during DOM updates after database operations, so we shouldn't
+      // reset the drag state here - it would prevent subsequent arrow key presses
+      // setIsKeyboardTaskDragging(false);
       setLastBlurredTaskElement(currentTarget);
       setShouldRefocusTaskOnNextTab(true);
     }
@@ -167,10 +202,20 @@ export function setupTaskKeyboardDragDocumentHandler(
     setShouldRefocusTaskOnNextTab
   } = state;
 
+  // Lock to prevent concurrent keypress handling
+  let isProcessing = false;
+  
   async function handleDocumentKeydown(e) {
     const key = e.key;
     const isKeyboardTaskDragging = getIsKeyboardTaskDragging();
     const hasActiveDrag = isDragActive();
+    
+    // Prevent concurrent processing of arrow keys
+    if ((key === 'ArrowDown' || key === 'ArrowUp' || key === 'ArrowLeft' || key === 'ArrowRight') && isProcessing) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
 
     // Handle Tab during active drag mode - cancel drag first (similar to Escape)
     if (key === 'Tab') {
@@ -193,6 +238,17 @@ export function setupTaskKeyboardDragDocumentHandler(
               setLastKeyboardDraggedTaskId(taskId);
               setLastBlurredTaskElement(focusedLi);
               setShouldRefocusTaskOnNextTab(true);
+            }
+            // Complete drag in state manager to allow liveQuery to sync
+            const taskUl = focusedLi.closest('ul[data-list-id]');
+            if (taskUl) {
+              const listIdAttr = taskUl.getAttribute('data-list-id');
+              if (listIdAttr) {
+                const listId = parseInt(listIdAttr);
+                if (taskDragStateManager.globalDragActive) {
+                  taskDragStateManager.completeDrag(listId, listId, true);
+                }
+              }
             }
           }
         }
@@ -239,41 +295,115 @@ export function setupTaskKeyboardDragDocumentHandler(
     }
 
     // Only handle Arrow keys when keyboard dragging is active
-    if (!isKeyboardTaskDragging) return;
+    if (!isKeyboardTaskDragging) {
+      return;
+    }
     if (key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'ArrowLeft' && key !== 'ArrowRight') return;
     
-    // Check if focus is within this list
+    // Check if focus is on a task element (can be in any list after cross-list moves)
     const activeElement = document.activeElement;
-    if (!activeElement) return;
+    if (!activeElement) {
+      return;
+    }
     
     const focusedLi = activeElement.closest('li[data-id]');
-    if (!focusedLi || !ulElement.contains(focusedLi)) return;
+    if (!focusedLi) {
+      return;
+    }
     
     const taskIdAttr = focusedLi.getAttribute('data-id');
-    if (!taskIdAttr) return;
+    if (!taskIdAttr) {
+      return;
+    }
     
     const taskId = parseInt(taskIdAttr);
-    const draggableTasks = getDraggableTasks();
+    
+    // Find which list this task belongs to by checking which ul contains it
+    const taskUl = focusedLi.closest('ul[data-list-id]');
+    if (!taskUl) {
+      return;
+    }
+    
+    const taskListIdAttr = taskUl.getAttribute('data-list-id');
+    if (!taskListIdAttr) {
+      return;
+    }
+    const taskListId = parseInt(taskListIdAttr);
+    
+    // After cross-list moves, the task may be in a different list
+    // Use the task's current listId to read from the correct state
+    const actualListId = taskListId; // Use the list where the task actually is
+    
+    // Read from state manager directly to get the latest state (not stale component state)
+    // Use the task's current listId, not the handler's bound listId
+    const stateManagerState = taskDragStateManager.getState(actualListId);
+    const draggableTasks = stateManagerState.tasks;
+    
     const task = draggableTasks.find(t => t.id === taskId);
-    if (!task) return;
+    if (!task) {
+      return;
+    }
     
-    const taskIndex = draggableTasks.findIndex(t => t.id === taskId);
-    if (taskIndex === -1) return; // Should not happen if task was found
+        const taskIndex = draggableTasks.findIndex(t => t.id === taskId);
+        if (taskIndex === -1) {
+          return; // Should not happen if task was found
+        }
+        
+        const isFirst = taskIndex === 0;
+        const isLast = taskIndex === draggableTasks.length - 1;
     
-    const isFirst = taskIndex === 0;
-    const isLast = taskIndex === draggableTasks.length - 1;
-    
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    e.stopPropagation();
-    
-    // Handle ArrowUp/ArrowDown for same-list movement or cross-list boundaries
-    if (key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+        
+        // Set processing lock
+        isProcessing = true;
+        
+        try {
+          // Handle ArrowUp/ArrowDown for same-list movement or cross-list boundaries
+          if (key === 'ArrowDown') {
       if (isLast) {
         // At end of list - move to next list (in visual column order)
-        const nextListId = findNeighborListId(listId, allLists, 'next');
+        const nextListId = findNeighborListId(actualListId, allLists, 'next');
         if (nextListId != null) {
+          // Start drag if not already active
+          if (!taskDragStateManager.globalDragActive) {
+            taskDragStateManager.startDrag(actualListId, nextListId);
+          }
+          
+          // Get the full task object from source list before moving
+          const taskToMove = draggableTasks.find(t => t.id === taskId);
+          if (!taskToMove) {
+            return;
+          }
+          
+          // Update state manager: remove from source list, add to target list
+          const sourceTasks = draggableTasks.filter(t => t.id !== taskId);
+          taskDragStateManager.updateDragState(actualListId, sourceTasks);
+          
+          // Get target list's current state from state manager (not DB - DB might be stale)
+          // If state manager doesn't have state for this list yet, initialize it from DB
+          let nextListState = taskDragStateManager.getState(nextListId);
+          let nextListTasks = nextListState?.tasks || [];
+          // Check if state manager actually has this list initialized (version > 0 means it was initialized)
+          if (nextListTasks.length === 0 && nextListState.version === 0 && !taskDragStateManager.state.has(nextListId)) {
+            // State manager doesn't have this list - fetch from DB and initialize
+            const dbTasks = await getTasksForList(nextListId);
+            const activeTasks = dbTasks.filter(task => 
+              task.status === 'unchecked' || task.status === 'checked'
+            );
+            taskDragStateManager.initializeFromQuery(nextListId, activeTasks);
+            nextListState = taskDragStateManager.getState(nextListId);
+            nextListTasks = nextListState?.tasks || [];
+          }
+          // Use full task object, but update listId to the new list
+          const taskToMoveWithNewListId = { ...taskToMove, listId: nextListId };
+          const targetTasks = [taskToMoveWithNewListId, ...nextListTasks];
+          taskDragStateManager.updateDragState(nextListId, targetTasks);
+          
+          // Update database
           await moveTaskToNextList(taskId, nextListId);
+          
           // Wait for DOM update and refocus the moved task
           await tick();
           const movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
@@ -283,64 +413,175 @@ export function setupTaskKeyboardDragDocumentHandler(
         }
       } else {
         // Move down within same list
-        // Make sure we're not at the last index (should be handled by isLast check, but double-check)
-        if (taskIndex >= draggableTasks.length - 1) {
-          // This shouldn't happen if isLast check is correct, but handle it anyway
-          const nextListId = findNeighborListId(listId, allLists, 'next');
-          if (nextListId != null) {
-            await moveTaskToNextList(taskId, nextListId);
-            await tick();
-            const movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
-            if (movedTaskElement instanceof HTMLElement) {
-              movedTaskElement.focus();
-            }
-          }
-          return;
-        }
-        
         const newTasks = [...draggableTasks];
         const [movedTask] = newTasks.splice(taskIndex, 1);
         newTasks.splice(taskIndex + 1, 0, movedTask);
-        setDraggableTasks(newTasks);
+        
+        // Use state manager to prevent liveQuery from overwriting
+        // Start drag if not already active (for first move in keyboard drag session)
+        // Use actualListId, not the bound listId (task may have moved to different list)
+        if (!taskDragStateManager.globalDragActive) {
+          taskDragStateManager.startDrag(actualListId, actualListId);
+        }
+        taskDragStateManager.updateDragState(actualListId, newTasks);
+        
         // Update database
-        await updateTaskOrderCrossList(listId, newTasks);
+        await updateTaskOrderCrossList(actualListId, newTasks);
+        
+        // Don't complete drag here - keep it active during keyboard drag session
+        // It will be completed when keyboard drag ends (Enter/Space/Escape/Tab)
         // Wait for DOM update and refocus the moved task
         await tick();
+        
         // Try to find the task in the current list's ul first
-        let movedTaskElement = ulElement.querySelector(`li[data-id="${taskId}"]`);
+        let movedTaskElement = ulElement?.querySelector(`li[data-id="${taskId}"]`);
         // If not found, search globally (for cross-list moves)
         if (!movedTaskElement) {
           movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
         }
         if (movedTaskElement instanceof HTMLElement) {
           movedTaskElement.focus();
+          
+          // Wait a bit longer for any liveQuery updates to complete, then verify focus is still there
+          await tick();
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          // If focus was lost, try to refocus again
+          const activeElementAfterDelay = document.activeElement;
+          if (activeElementAfterDelay !== movedTaskElement) {
+            const refoundElement = document.querySelector(`li[data-id="${taskId}"]`);
+            if (refoundElement instanceof HTMLElement) {
+              refoundElement.focus();
+            }
+          }
         }
       }
     } else if (key === 'ArrowUp') {
-      if (isFirst) {
-        // At start of list - move to previous list (in visual column order)
-        const prevListId = findNeighborListId(listId, allLists, 'prev');
-        if (prevListId != null) {
+          if (isFirst) {
+            // At start of list - check if we should move to previous list
+            const prevListId = findNeighborListId(actualListId, allLists, 'prev');
+            if (prevListId != null) {
+              // Check if prevListId is in a different column (cross-column move)
+              const currentList = allLists.find(l => l.id === actualListId);
+              const prevList = allLists.find(l => l.id === prevListId);
+              const isCrossColumn = currentList && prevList && (currentList.columnIndex ?? 0) !== (prevList.columnIndex ?? 0);
+              if (isCrossColumn) {
+                // Cross-column move: move to bottom of previous column
+          // Start drag if not already active
+          if (!taskDragStateManager.globalDragActive) {
+            taskDragStateManager.startDrag(actualListId, prevListId);
+          }
+          
+          // Get the full task object from source list before moving
+          const taskToMove = draggableTasks.find(t => t.id === taskId);
+          if (!taskToMove) {
+            return;
+          }
+          
+          // Update state manager: remove from source list, add to target list
+          const sourceTasks = draggableTasks.filter(t => t.id !== taskId);
+          taskDragStateManager.updateDragState(actualListId, sourceTasks);
+          
+          // Get target list's current state from state manager (not DB - DB might be stale)
+          // If state manager doesn't have state for this list yet, initialize it from DB
+          let prevListState = taskDragStateManager.getState(prevListId);
+          let prevListTasks = prevListState?.tasks || [];
+          // Check if state manager actually has this list initialized (version > 0 means it was initialized)
+          if (prevListTasks.length === 0 && prevListState.version === 0 && !taskDragStateManager.state.has(prevListId)) {
+            // State manager doesn't have this list - fetch from DB and initialize
+            const dbTasks = await getTasksForList(prevListId);
+            const activeTasks = dbTasks.filter(task => 
+              task.status === 'unchecked' || task.status === 'checked'
+            );
+            taskDragStateManager.initializeFromQuery(prevListId, activeTasks);
+            prevListState = taskDragStateManager.getState(prevListId);
+            prevListTasks = prevListState?.tasks || [];
+          }
+          // Use full task object, but update listId to the new list
+          const taskToMoveWithNewListId = { ...taskToMove, listId: prevListId };
+          const targetTasks = [...prevListTasks, taskToMoveWithNewListId];
+          taskDragStateManager.updateDragState(prevListId, targetTasks);
+          
+          // Update database
           await moveTaskToPreviousList(taskId, prevListId);
+          
           // Wait for DOM update and refocus the moved task
           await tick();
           const movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
           if (movedTaskElement instanceof HTMLElement) {
             movedTaskElement.focus();
           }
-        }
-      } else {
+              } else {
+                // Same column move: prevListId is the previous list in the same column
+                // Start drag if not already active
+                if (!taskDragStateManager.globalDragActive) {
+                  taskDragStateManager.startDrag(actualListId, prevListId);
+                }
+                
+                // Get the full task object from source list before moving
+                const taskToMove = draggableTasks.find(t => t.id === taskId);
+                if (!taskToMove) {
+                  return;
+                }
+                
+                // Update state manager: remove from source list, add to target list
+                const sourceTasks = draggableTasks.filter(t => t.id !== taskId);
+                taskDragStateManager.updateDragState(actualListId, sourceTasks);
+                
+                // Get target list's current state from state manager
+                let prevListState = taskDragStateManager.getState(prevListId);
+                let prevListTasks = prevListState?.tasks || [];
+                if (prevListTasks.length === 0 && prevListState.version === 0 && !taskDragStateManager.state.has(prevListId)) {
+                  const dbTasks = await getTasksForList(prevListId);
+                  const activeTasks = dbTasks.filter(task => 
+                    task.status === 'unchecked' || task.status === 'checked'
+                  );
+                  taskDragStateManager.initializeFromQuery(prevListId, activeTasks);
+                  prevListState = taskDragStateManager.getState(prevListId);
+                  prevListTasks = prevListState?.tasks || [];
+                }
+                
+                // Move task to bottom of previous list in same column
+                const taskToMoveWithNewListId = { ...taskToMove, listId: prevListId };
+                const targetTasks = [...prevListTasks, taskToMoveWithNewListId];
+                taskDragStateManager.updateDragState(prevListId, targetTasks);
+                
+                // Update database
+                await moveTaskToPreviousList(taskId, prevListId);
+                
+                // Wait for DOM update and refocus the moved task
+                await tick();
+                const movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
+                if (movedTaskElement instanceof HTMLElement) {
+                  movedTaskElement.focus();
+                }
+              }
+            } else {
+              // No previous list found - can't move up
+              return;
+            }
+        } else {
         // Move up within same list
         const newTasks = [...draggableTasks];
         const [movedTask] = newTasks.splice(taskIndex, 1);
         newTasks.splice(taskIndex - 1, 0, movedTask);
-        setDraggableTasks(newTasks);
+        
+        // Use state manager to prevent liveQuery from overwriting
+        // Start drag if not already active (for first move in keyboard drag session)
+        // Use actualListId, not the bound listId (task may have moved to different list)
+        if (!taskDragStateManager.globalDragActive) {
+          taskDragStateManager.startDrag(actualListId, actualListId);
+        }
+        taskDragStateManager.updateDragState(actualListId, newTasks);
+        
         // Update database
-        await updateTaskOrderCrossList(listId, newTasks);
+        await updateTaskOrderCrossList(actualListId, newTasks);
+        // Don't complete drag here - keep it active during keyboard drag session
+        // It will be completed when keyboard drag ends (Enter/Space/Escape/Tab)
         // Wait for DOM update and refocus the moved task
         await tick();
         // Try to find the task in the current list's ul first
-        let movedTaskElement = ulElement.querySelector(`li[data-id="${taskId}"]`);
+        let movedTaskElement = ulElement?.querySelector(`li[data-id="${taskId}"]`);
         // If not found, search globally (for cross-list moves)
         if (!movedTaskElement) {
           movedTaskElement = document.querySelector(`li[data-id="${taskId}"]`);
@@ -381,6 +622,10 @@ export function setupTaskKeyboardDragDocumentHandler(
         await updateTaskOrderCrossList(targetListId, newTasks);
       }
     }
+        } finally {
+          // Always release processing lock, even if an error occurs
+          isProcessing = false;
+        }
   }
 
   // Use capture phase to intercept before svelte-dnd-action

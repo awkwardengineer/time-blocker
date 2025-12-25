@@ -82,28 +82,89 @@ export function getListsInColumnOrder(lists) {
  * Find the next/previous list ID relative to the current list,
  * using visual column order (left-to-right columns, top-to-bottom rows).
  * 
+ * The visual layout is row-first:
+ * - Row 0: Column 0, Column 1, Column 2, Column 3, Column 4
+ * - Row 1: Column 0, Column 1, Column 2, Column 3, Column 4
+ * - etc.
+ * 
  * @param {number} currentListId - The current list ID
  * @param {Array} lists - Array of all lists
  * @param {string} direction - 'next' or 'prev'
  * @returns {number|null} The neighbor list ID, or null if none exists
  */
 export function findNeighborListId(currentListId, lists, direction) {
-  const ordered = getListsInColumnOrder(lists);
-  if (!ordered.length) return null;
-
-  const index = ordered.findIndex((l) => l.id === currentListId);
-  if (index === -1) return null;
-
+  if (!Array.isArray(lists) || lists.length === 0) return null;
+  
+  // Find the current list
+  const currentList = lists.find(l => l.id === currentListId);
+  if (!currentList) return null;
+  
+  const currentColumnIndex = currentList.columnIndex ?? 0;
+  const currentOrder = currentList.order ?? 0;
+  
+  // Group lists by column
+  const columnCount = 5;
+  const listsByColumn = Array(columnCount).fill(null).map(() => []);
+  for (const list of lists) {
+    const colIndex = list.columnIndex ?? 0;
+    const safeColIndex = colIndex >= columnCount ? columnCount - 1 : colIndex;
+    listsByColumn[safeColIndex].push(list);
+  }
+  
+  // Sort lists within each column by order
+  for (let i = 0; i < listsByColumn.length; i++) {
+    listsByColumn[i].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
+  
+  
+  // Find the row index of the current list (its position within its column)
+  const currentColumnLists = listsByColumn[currentColumnIndex];
+  const currentRowIndex = currentColumnLists.findIndex(l => l.id === currentListId);
+  if (currentRowIndex === -1) return null;
+  
+  // Check if we're at the bottom of the current column (last list in column)
+  const isAtBottomOfColumn = currentRowIndex === currentColumnLists.length - 1;
+  // Check if we're at the top of the current column (first list in column)
+  const isAtTopOfColumn = currentRowIndex === 0;
+  
   if (direction === 'next') {
-    if (index >= ordered.length - 1) return null;
-    return ordered[index + 1].id;
+    // If NOT at bottom of column, move down within the same column
+    if (!isAtBottomOfColumn) {
+      const targetListId = currentColumnLists[currentRowIndex + 1].id;
+      return targetListId;
+    }
+    
+    // At bottom of column - move to TOP of next non-empty column
+    for (let col = currentColumnIndex + 1; col < columnCount; col++) {
+      const nextColumnLists = listsByColumn[col];
+      if (nextColumnLists.length > 0) {
+        const targetListId = nextColumnLists[0].id; // Top of next column
+        return targetListId;
+      }
+    }
+    // No next column found
+    return null;
   }
-
+  
   if (direction === 'prev') {
-    if (index <= 0) return null;
-    return ordered[index - 1].id;
+    // If NOT at top of column, move up within the same column
+    if (!isAtTopOfColumn) {
+      const targetListId = currentColumnLists[currentRowIndex - 1].id;
+      return targetListId;
+    }
+    
+    // At top of column - move to BOTTOM of previous non-empty column
+    for (let col = currentColumnIndex - 1; col >= 0; col--) {
+      const prevColumnLists = listsByColumn[col];
+      if (prevColumnLists.length > 0) {
+        const targetListId = prevColumnLists[prevColumnLists.length - 1].id; // Bottom of previous column
+        return targetListId;
+      }
+    }
+    // No previous column found
+    return null;
   }
-
+  
   return null;
 }
 

@@ -302,7 +302,12 @@
     if (!listId) return;
     
     const unsubscribe = taskDragStateManager.subscribe(listId, (state) => {
-      draggableTasks = state.tasks;
+      // Only update if state actually changed to prevent infinite loops
+      const stateTaskIds = state.tasks.map(t => t.id).join(',');
+      const currentTaskIds = draggableTasks.map(t => t.id).join(',');
+      if (stateTaskIds !== currentTaskIds) {
+        draggableTasks = state.tasks;
+      }
     });
     
     return () => {
