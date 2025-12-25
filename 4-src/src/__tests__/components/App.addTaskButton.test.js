@@ -164,7 +164,7 @@ describe('App - Add Task Button Behavior and Styling', () => {
 
   it('does not close input field when clicking outside if input has content', async () => {
     const user = userEvent.setup()
-    render(App)
+    const { container } = render(App)
     const workSection = await waitForListSection('Work')
     
     // Wait for tasks to load before checking button
@@ -181,15 +181,14 @@ describe('App - Add Task Button Behavior and Styling', () => {
     // Type some content
     await user.type(textarea, 'Task with content')
     
-    // Click outside
-    const listName = within(workSection).getByRole('button', { name: /rename list: work/i })
-    await user.click(listName)
+    // Click outside on document body (definitely outside the textarea)
+    await user.click(container)
     
     // Verify input is still open (has content, so shouldn't close)
-    await waitFor(() => {
-      expect(within(workSection).getByPlaceholderText('start typing...')).toBeInTheDocument()
-    }, { timeout: 1000 })
-  })
+    // Use queryByPlaceholderText to check if it still exists (not getBy which throws)
+    const textareaAfterClick = within(workSection).queryByPlaceholderText('start typing...')
+    expect(textareaAfterClick).toBeInTheDocument()
+  }, 10000)
 
   it('button container has proper styling classes', async () => {
     render(App)

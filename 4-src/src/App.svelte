@@ -10,11 +10,7 @@
 </script>
 
 <main class="min-h-screen flex flex-col items-center justify-center bg-grey-10 print:bg-white print:min-h-0 print:gap-0 print:py-0 gap-4 py-8">
-  <div class="flex justify-between print:hidden" style="width: {PRINT_CONTAINER_WIDTH}px;">
-    <div class="flex gap-4">
-      <a href="#/prototype/sortablejs" class="text-blue-500 hover:underline">SortableJS Basic</a>
-      <a href="?prototype=nested" class="text-blue-500 hover:underline">SortableJS Nested</a>
-    </div>
+  <div class="flex justify-end print:hidden" style="width: {PRINT_CONTAINER_WIDTH}px;">
     <Button variant="primary" size="large" onclick={handlePrint}>
       Print
     </Button>
