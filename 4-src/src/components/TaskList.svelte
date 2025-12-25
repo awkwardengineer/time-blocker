@@ -303,9 +303,10 @@
     
     const unsubscribe = taskDragStateManager.subscribe(listId, (state) => {
       // Only update if state actually changed to prevent infinite loops
-      const stateTaskIds = state.tasks.map(t => t.id).join(',');
-      const currentTaskIds = draggableTasks.map(t => t.id).join(',');
-      if (stateTaskIds !== currentTaskIds) {
+      // Compare IDs, statuses, and text to detect status changes (checkbox toggles) and text edits
+      const stateTaskSignature = state.tasks.map(t => `${t.id}:${t.status}:${t.text || ''}`).join(',');
+      const currentTaskSignature = draggableTasks.map(t => `${t.id}:${t.status}:${t.text || ''}`).join(',');
+      if (stateTaskSignature !== currentTaskSignature) {
         draggableTasks = state.tasks;
       }
     });
@@ -798,6 +799,7 @@
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   e.stopPropagation();
+                  e.stopImmediatePropagation(); // Prevent drag library from intercepting
                   handleToggleTaskStatus(task.id, task.status);
                 } else if (e.key === 'Escape') {
                   e.preventDefault();

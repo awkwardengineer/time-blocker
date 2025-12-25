@@ -222,6 +222,14 @@
           aria-label="Edit task text"
           aria-describedby={showValidation ? "validation-message" : undefined}
           rows="1"
+          onkeydown={(e) => {
+            // Handle Enter key directly on textarea for more reliable behavior
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSave();
+            }
+          }}
         ></textarea>
         
         {#if showValidation}

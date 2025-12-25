@@ -109,16 +109,13 @@ class TaskDragStateManager {
     // Only update if not actively dragging for this list
     if (!listState.isDragActive) {
       // Check if state actually changed to prevent infinite loops
-      const newTaskIds = activeTasks.map(t => t.id).join(',');
-      const currentTaskIds = listState.tasks.map(t => t.id).join(',');
+      // Compare IDs, statuses, and text to detect status changes (checkbox toggles) and text edits
+      const newTaskSignature = activeTasks.map(t => `${t.id}:${t.status}:${t.text || ''}`).join(',');
+      const currentTaskSignature = listState.tasks.map(t => `${t.id}:${t.status}:${t.text || ''}`).join(',');
       
-      if (newTaskIds !== currentTaskIds) {
+      if (newTaskSignature !== currentTaskSignature) {
         listState.tasks = activeTasks.map(task => ({ ...task }));
         listState.version++;
-        if (typeof fetch !== 'undefined') {
-          fetch('http://127.0.0.1:7242/ingest/6a91a8db-109e-459e-bb3e-5dc44dceea1f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'taskDragStateManager.js:114',message:'initializeFromQuery updating state',data:{listId,activeTasksLength:activeTasks.length,activeTaskIds:activeTasks.map(t=>t.id),newVersion:listState.version},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
-        }
-        // #endregion
         this.notify(listId);
       }
     }
