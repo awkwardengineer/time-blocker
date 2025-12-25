@@ -9,6 +9,7 @@
   let inputElement = $state(null);
   let modalElement = $state(null);
   let modalState = $state('edit'); // 'edit' or 'confirm-archive'
+  let backdropMousedownTarget = $state(null); // Track where mousedown occurred
   
   // Calculate modal position and width based on list name position
   // We want the input field to align with where the list name was
@@ -88,8 +89,56 @@
   function handleBackdropClick(e) {
     // Only close if clicking the backdrop itself, not the modal content
     if (e.target === e.currentTarget) {
+      e.preventDefault();
+      e.stopPropagation();
       handleCancel();
     }
+  }
+  
+  function handleBackdropMousedown(e) {
+    // Track where mousedown occurred - only close if both mousedown and mouseup are on backdrop
+    if (e.target === e.currentTarget) {
+      backdropMousedownTarget = e.target;
+    } else {
+      backdropMousedownTarget = null;
+    }
+    // Always stop propagation to prevent SortableJS from detecting drags
+    e.stopPropagation();
+    e.preventDefault();
+  }
+  
+  function handleBackdropMouseup(e) {
+    // Close on mouseup if both mousedown and mouseup were on the backdrop
+    // This prevents closing if user dragged from backdrop to modal content
+    if (e.target === e.currentTarget && backdropMousedownTarget === e.currentTarget) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleCancel();
+    }
+    // Reset tracking
+    backdropMousedownTarget = null;
+    // Always stop propagation to prevent SortableJS from detecting drags
+    e.stopPropagation();
+  }
+  
+  function handleBackdropMousemove(e) {
+    // Prevent mousemove from triggering drags in SortableJS
+    e.stopPropagation();
+    e.preventDefault();
+  }
+  
+  function handleBackdropDragStart(e) {
+    // Prevent any drag operations from starting on the backdrop
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+  
+  function handleBackdropDrag(e) {
+    // Prevent any drag operations on the backdrop
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
   }
   
   function handleKeydown(e) {
@@ -184,6 +233,12 @@
     tabindex="-1"
     class="modal-backdrop"
     onclick={handleBackdropClick}
+    onmousedown={handleBackdropMousedown}
+    onmouseup={handleBackdropMouseup}
+    onmousemove={handleBackdropMousemove}
+    ondragstart={handleBackdropDragStart}
+    ondrag={handleBackdropDrag}
+    ondragend={handleBackdropDrag}
     onkeydown={handleKeydown}
   >
     <!-- Modal positioned over the list name -->
@@ -192,6 +247,8 @@
       class="bg-grey-10 text-grey-110 p-6 rounded-xl shadow-2xl border-2 border-grey-50 fixed box-border"
       style={modalStyle()}
       onclick={(e) => e.stopPropagation()}
+      onmousedown={(e) => e.stopPropagation()}
+      onmouseup={(e) => e.stopPropagation()}
       role="document"
     >
       {#if modalState === 'edit'}
@@ -281,6 +338,11 @@
     height: 100vh !important;
     background-color: rgba(0, 0, 0, 0.7) !important;
     z-index: 9999 !important;
+    /* Prevent any drag operations from starting on the backdrop */
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
   }
   
   .list-input {

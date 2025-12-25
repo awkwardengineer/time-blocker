@@ -99,3 +99,13 @@ body.keyboard-list-dragging-active .add-task-container,
 body.keyboard-list-dragging-active .add-task-button {
   flex-shrink: 0 !important;
 }
+
+/* Disable drag operations when a modal is open */
+body:has(.modal-backdrop) .sortable-column-container {
+  pointer-events: none !important;
+}
+
+/* Re-enable pointer events for the modal itself */
+.modal-backdrop {
+  pointer-events: auto !important;
+}

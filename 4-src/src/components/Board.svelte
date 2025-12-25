@@ -45,6 +45,38 @@
   // SortableJS instances for list columns
   let columnSortables = $state(new Map()); // Map<columnIndex, Sortable>
   
+  // Function to disable/enable all SortableJS instances when modal is open
+  function setSortablesDisabled(disabled) {
+    columnSortables.forEach((sortable) => {
+      if (sortable) {
+        sortable.option('disabled', disabled);
+      }
+    });
+  }
+  
+  // Watch for modal backdrop and disable sortables when modal is open
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+    
+    const observer = new MutationObserver(() => {
+      const modalBackdrop = document.querySelector('.modal-backdrop');
+      setSortablesDisabled(!!modalBackdrop);
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    // Initial check
+    const modalBackdrop = document.querySelector('.modal-backdrop');
+    setSortablesDisabled(!!modalBackdrop);
+    
+    return () => {
+      observer.disconnect();
+    };
+  });
+  
   // Extract items from DOM order for lists
   // Uses state manager's current state to ensure we get the latest data
   // CRITICAL: Sets columnIndex to target column for all extracted items (fixes cross-column drags)
@@ -316,15 +348,29 @@
       draggable: '[data-id]', // Only drag list containers
       filter: 'ul, li, .create-list-container, .empty-drop-zone', // Prevent dragging tasks, button, and empty drop zone
       preventOnFilter: false,
+      delay: 50, // Shorter delay before drag starts - prevents accidental drags on clicks
+      delayOnStartOnly: true, // Only delay on start, not during drag
+      distance: 5, // Require mouse to move 5px before drag starts - prevents text selection
       emptyInsertThreshold: 50, // Allow dropping into empty columns (distance in pixels from edge)
       forceFallback: true, // Use clone instead of moving element - prevents DOM manipulation conflicts with Svelte
       fallbackOnBody: true, // Clone appears at cursor position
       scroll: true, // Enable auto-scrolling when dragging near edges
       scrollSensitivity: 30, // Distance from edge to trigger scroll
       scrollSpeed: 10, // Scroll speed
-      onStart: () => {
-        // Hide create list buttons during drag
+      onStart: (evt) => {
+        // Prevent drag if a modal is open (check for modal backdrop)
         if (typeof document !== 'undefined') {
+          const modalBackdrop = document.querySelector('.modal-backdrop');
+          if (modalBackdrop) {
+            // Cancel the drag by disabling and immediately re-enabling
+            // This prevents the drag from continuing
+            sortable.option('disabled', true);
+            // Re-enable after a tick to allow normal operation when modal closes
+            setTimeout(() => {
+              sortable.option('disabled', false);
+            }, 0);
+            return;
+          }
           document.body.classList.add('list-dragging-active');
         }
         // Show drop zones on all columns
