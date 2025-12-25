@@ -785,7 +785,7 @@
           <li
             data-id={task.id}
             tabindex="0"
-            role="group"
+            role="listitem"
             aria-label={`Task: ${task.text || 'blank task'}`}
             class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full m-0 list-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             onkeydowncapture={(e) => handleTaskItemKeydownCapture(e, task.id)}
