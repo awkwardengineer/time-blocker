@@ -1,15 +1,28 @@
 <script>
   import Board from './components/Board.svelte';
   import ArchivedView from './components/ArchivedView.svelte';
+  import Header from './components/Header.svelte';
+  import SettingsFlyout from './components/SettingsFlyout.svelte';
   import Button from './components/Button.svelte';
   import { PRINT_CONTAINER_WIDTH, PRINT_CONTAINER_HEIGHT } from './lib/constants.js';
+
+  let isSettingsOpen = $state(false);
+
+  function handleSettingsOpen() {
+    isSettingsOpen = true;
+  }
+
+  function handleSettingsClose() {
+    isSettingsOpen = false;
+  }
 
   function handlePrint() {
     window.print();
   }
 </script>
 
-<main class="min-h-screen flex flex-col items-center justify-center bg-grey-10 print:bg-white print:min-h-0 print:gap-0 print:py-0 gap-4 py-8">
+<main class="min-h-screen flex flex-col items-center justify-start bg-grey-10 print:bg-white print:min-h-0 print:gap-0 print:py-0 gap-4 pt-4 pb-8">
+  <Header onSettingsClick={handleSettingsOpen} />
   <div class="flex justify-end print:hidden" style="width: {PRINT_CONTAINER_WIDTH}px;">
     <Button variant="primary" size="large" onclick={handlePrint}>
       Print
@@ -22,6 +35,7 @@
     </div>
   </div>
   <ArchivedView />
+  <SettingsFlyout isOpen={isSettingsOpen} onClose={handleSettingsClose} />
 </main>
 
 <style>
