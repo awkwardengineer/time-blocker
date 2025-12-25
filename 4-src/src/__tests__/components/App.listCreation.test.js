@@ -201,13 +201,18 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     const user = userEvent.setup()
     render(App)
     
+    // Helper to count only list containers (div with h2), not ul elements
+    function countListContainers() {
+      return Array.from(document.querySelectorAll('[data-list-id]'))
+        .filter(section => section.querySelector('h2') !== null)
+        .length
+    }
+    
     // Count initial lists
     await waitFor(() => {
-      const listSections = document.querySelectorAll('[data-list-id]')
-      expect(listSections.length).toBeGreaterThan(0)
+      expect(countListContainers()).toBeGreaterThan(0)
     })
-    const initialListSections = document.querySelectorAll('[data-list-id]')
-    const initialCount = initialListSections.length
+    const initialCount = countListContainers()
     
     const input = await activateCreateListInput(user)
     await user.type(input, 'Immediate List')
@@ -215,8 +220,7 @@ describe('App - List Creation (Happy Path - Inline Input)', () => {
     
     // Wait for list to appear
     await waitFor(() => {
-      const updatedListSections = document.querySelectorAll('[data-list-id]')
-      expect(updatedListSections.length).toBe(initialCount + 1)
+      expect(countListContainers()).toBe(initialCount + 1)
     })
     
     // Verify the new list is visible

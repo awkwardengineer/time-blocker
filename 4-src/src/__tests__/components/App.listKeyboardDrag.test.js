@@ -10,7 +10,10 @@ import { waitForListSection } from '../helpers/appTestHelpers.js'
 async function getColumnListOrder(columnIndex = 0) {
   const column = document.querySelector(`[data-column-index="${columnIndex}"]`)
   if (!column) return []
+  // Query for [data-list-id] elements that have an h2 heading (the outer div, not the ul)
+  // This filters out ul elements which also have data-list-id but no heading
   const listSections = Array.from(column.querySelectorAll('[data-list-id]'))
+    .filter(section => section.querySelector('h2') !== null)
   return listSections.map(section => {
     const heading = section.querySelector('h2')
     return heading ? heading.textContent : ''

@@ -5,30 +5,33 @@ import App from '../../App.svelte'
 import db from '../../lib/db.js'
 import { setupTestData } from '../helpers/appTestSetup.js'
 import { waitForListSection } from '../helpers/appTestHelpers.js'
+import { updateTaskOrderCrossList } from '../../lib/dataAccess.js'
 
 /**
- * Simulates a drag-and-drop operation by dispatching consider and finalize events
- * @param {HTMLElement} dropZone - The ul element that acts as the drop zone
+ * Simulates a drag-and-drop operation by directly updating the database.
+ * TaskList uses SortableJS's onEnd callback, not event listeners, so we
+ * directly call the database update function that the drag handler would call.
+ * @param {HTMLElement} dropZone - The ul element that acts as the drop zone (for getting listId)
  * @param {Array} items - Array of task objects in the desired order after drop
  */
 async function simulateDragDrop(dropZone, items) {
-  // Simulate consider event (visual feedback during drag)
-  const considerEvent = new CustomEvent('consider', {
-    detail: { items }
-  })
-  dropZone.dispatchEvent(considerEvent)
+  // Get the target list ID from the drop zone's data-list-id attribute
+  const targetListId = parseInt(dropZone.getAttribute('data-list-id'), 10)
   
-  // Wait a bit for consider to process
-  await new Promise(resolve => setTimeout(resolve, 10))
+  // Filter out invalid items (placeholders, etc.)
+  const validItems = items.filter(item => 
+    item && typeof item.id === 'number'
+  )
   
-  // Simulate finalize event (database update)
-  const finalizeEvent = new CustomEvent('finalize', {
-    detail: { items }
-  })
-  dropZone.dispatchEvent(finalizeEvent)
+  if (validItems.length === 0) {
+    return
+  }
   
-  // Wait for database updates and UI to reflect changes
-  await new Promise(resolve => setTimeout(resolve, 100))
+  // Directly call the database update function (same as what handleTaskDragEnd does)
+  await updateTaskOrderCrossList(targetListId, validItems)
+  
+  // Wait for database updates and UI to reflect changes via liveQuery
+  await new Promise(resolve => setTimeout(resolve, 200))
 }
 
 /**
