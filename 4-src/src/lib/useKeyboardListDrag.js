@@ -7,6 +7,7 @@
  */
 
 import { focusListCardForKeyboardDrag } from './focusUtils.js';
+import { createTabResumeByIdHandler } from './drag/tabResumeUtils.js';
 
 // Re-export for convenience
 export { focusListCardForKeyboardDrag };
@@ -43,18 +44,17 @@ export function setupKeyboardListDragHandler(state, onMove, onStop, onBlur) {
 
     // After a blur-on-drop via Tab, treat the very next Tab as
     // "refocus the last dragged list card", then let Tab behave normally.
-    if (
-      !isActive &&
-      key === 'Tab' &&
-      shouldRefocusListOnNextTab &&
-      lastKeyboardDraggedListId != null
-    ) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      setShouldRefocusListOnNextTab(false);
-      focusListCardForKeyboardDrag(lastKeyboardDraggedListId);
-      return;
+    if (!isActive) {
+      const tabResumeHandler = createTabResumeByIdHandler({
+        getShouldResume: getShouldRefocusListOnNextTab,
+        getLastDraggedId: getLastKeyboardDraggedListId,
+        setShouldResume: setShouldRefocusListOnNextTab,
+        focusFunction: focusListCardForKeyboardDrag
+      });
+      
+      if (tabResumeHandler(e)) {
+        return;
+      }
     }
 
     if (!isActive || activeListId == null) {

@@ -5,7 +5,7 @@
   import { taskDragStateManager } from '../lib/drag/taskDragStateManager.js';
   import { getTasksForList, createTask, updateTaskStatus, updateTaskOrder, updateTaskText, updateTaskOrderCrossList, updateListName, archiveList, archiveAllTasksInList } from '../lib/dataAccess.js';
   import { filterValidTaskItems } from '../lib/drag/taskDragHandlers.js';
-  import { applyDropZoneStyles, removeDropZoneStyles } from '../lib/drag/dropZoneUtils.js';
+  import { getTaskSortableConfig } from '../lib/drag/taskMouseDrag.js';
   import { createTaskItemKeydownCaptureHandler, createTaskItemBlurHandler, setupTaskKeyboardDragDocumentHandler } from '../lib/drag/taskKeyboardDrag.js';
   import { setupListTitleKeydownCapture, setupAddTaskButtonKeydownCapture, setupTaskTextKeydownCapture } from '../lib/drag/capturePhaseHandlers.js';
   import TaskEditModal from './TaskEditModal.svelte';
@@ -152,93 +152,16 @@
     }
   }
   
-  // Apply drop zones to all task lists
-  function applyDropZonesToAllTaskLists() {
-    if (typeof document === 'undefined') return;
-    const allTaskLists = document.querySelectorAll('ul[data-list-id]');
-    allTaskLists.forEach(ul => {
-      if (ul instanceof HTMLElement) {
-        applyDropZoneStyles(ul);
-      }
-    });
-  }
-  
-  // Remove drop zones from all task lists
-  function removeDropZonesFromAllTaskLists() {
-    if (typeof document === 'undefined') return;
-    const allTaskLists = document.querySelectorAll('ul[data-list-id]');
-    allTaskLists.forEach(ul => {
-      if (ul instanceof HTMLElement) {
-        removeDropZoneStyles(ul);
-      }
-    });
-  }
-  
   // Initialize SortableJS for tasks
   function initializeTaskSortable() {
     if (!ulElement || taskSortable) return;
     
-    taskSortable = new Sortable(ulElement, {
-      animation: 150,
-      ghostClass: 'sortable-ghost-task',
-      group: 'tasks', // Enable cross-list task dragging
-      draggable: 'li[data-id]', // Only drag task items
-      filter: '[data-no-drag]', // Prevent dragging from elements with data-no-drag
-      preventOnFilter: false, // Allow normal interaction with filtered elements
-      emptyInsertThreshold: 50, // Allow dropping into empty lists (distance in pixels from edge)
-      swapThreshold: 0.65, // Threshold for when to swap elements (0-1)
-      onStart: (evt) => {
-        // Disable hover states during drag
-        if (typeof document !== 'undefined') {
-          document.body.classList.add('task-dragging-active');
-        }
-        // Show drop zones on all task lists
-        dragJustEnded = false;
-        // Ensure the ghost class is applied to the correct element
-        const item = evt.item;
-        if (item && item instanceof HTMLElement) {
-          // Remove ghost class from any other elements in ALL lists, not just this one
-          const allTaskLists = document.querySelectorAll('ul[data-list-id]');
-          allTaskLists.forEach(ul => {
-            const siblings = Array.from(ul.children);
-            siblings.forEach(sibling => {
-              if (sibling !== item && sibling.classList.contains('sortable-ghost-task')) {
-                sibling.classList.remove('sortable-ghost-task');
-              }
-            });
-          });
-        }
-        applyDropZonesToAllTaskLists();
-      },
-      onMove: (evt) => {
-        // Apply drop zone to target list when hovering over it
-        if (evt.to && evt.to instanceof HTMLElement) {
-          applyDropZoneStyles(evt.to);
-        }
-        // Also ensure source list has drop zone
-        if (evt.from && evt.from instanceof HTMLElement) {
-          applyDropZoneStyles(evt.from);
-        }
-      },
-      onEnd: (evt) => {
-        // Re-enable hover states after drag
-        if (typeof document !== 'undefined') {
-          document.body.classList.remove('task-dragging-active');
-        }
-        // Remove drop zones from all task lists
-        removeDropZonesFromAllTaskLists();
-        
-        // Mark that a drag just ended to prevent click handlers
-        dragJustEnded = true;
-        // Reset flag after a short delay to allow normal clicks again
-        setTimeout(() => {
-          dragJustEnded = false;
-        }, 100);
-        
-        // Handle drag end
-        handleTaskDragEnd(evt);
-      }
+    const sortableConfig = getTaskSortableConfig({
+      onDragEnd: handleTaskDragEnd,
+      setDragJustEnded: (value) => { dragJustEnded = value; }
     });
+    
+    taskSortable = new Sortable(ulElement, sortableConfig);
   }
   
   // Initialize SortableJS when ulElement is ready or listId changes

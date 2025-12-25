@@ -12,6 +12,47 @@
 import { findNeighborListId, moveTaskToNextList, moveTaskToPreviousList } from './taskDragHandlers.js';
 
 /**
+ * Generic factory for creating capture-phase keydown handlers
+ * Handles the common pattern: check key, check target, prevent default, call callback
+ * 
+ * @param {Object} config - Configuration object
+ * @param {HTMLElement} config.containerElement - Container element to attach listener to
+ * @param {Function} config.keyMatches - Function to check if key matches (e.key) => boolean
+ * @param {Function} config.targetMatches - Function to check if target matches (target, container) => boolean
+ * @param {Function} config.onMatch - Callback when key and target match (e, target) => void
+ * @returns {Function} Cleanup function to remove the event listener
+ */
+function createCaptureHandler(config) {
+  const { containerElement, keyMatches, targetMatches, onMatch } = config;
+  
+  if (!containerElement) {
+    return () => {}; // No-op cleanup
+  }
+  
+  function handleCapture(e) {
+    const target = e.target;
+    
+    if (keyMatches(e.key) && target instanceof HTMLElement && targetMatches(target, containerElement)) {
+      e.preventDefault();
+      e.stopImmediatePropagation(); // Stop ALL handlers including drag library
+      
+      if (onMatch) {
+        onMatch(e, target);
+      }
+    }
+  }
+  
+  // Use capture phase to intercept before drag library
+  containerElement.addEventListener('keydown', handleCapture, true);
+  
+  return () => {
+    if (containerElement) {
+      containerElement.removeEventListener('keydown', handleCapture, true);
+    }
+  };
+}
+
+/**
  * Creates a capture-phase keydown handler for list title (h2 element)
  * Prevents drag library from intercepting Enter/Space on list title
  * 
@@ -20,35 +61,22 @@ import { findNeighborListId, moveTaskToNextList, moveTaskToPreviousList } from '
  * @returns {Function} Cleanup function to remove the event listener
  */
 export function setupListTitleKeydownCapture(listSectionElement, listModal) {
-  if (!listSectionElement) {
-    return () => {}; // No-op cleanup
-  }
-  
-  function handleListTitleKeydownCapture(e) {
-    const target = e.target;
-    
-    // Handle Enter/Space on list title (h2 element) for editing
-    if ((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.tagName === 'H2' && target.hasAttribute('role') && target.getAttribute('role') === 'button') {
-      // Check if this is our list title (within this list section)
-      const h2Element = listSectionElement?.querySelector('h2[role="button"]');
-      if (h2Element && target === h2Element) {
-        e.preventDefault();
-        e.stopImmediatePropagation(); // Stop ALL handlers including drag library
-        
-        // Open the list edit modal
-        listModal.openModal(target);
+  return createCaptureHandler({
+    containerElement: listSectionElement,
+    keyMatches: (key) => key === 'Enter' || key === ' ',
+    targetMatches: (target, container) => {
+      // Check if this is our list title (h2 element with role="button")
+      if (target.tagName === 'H2' && target.hasAttribute('role') && target.getAttribute('role') === 'button') {
+        const h2Element = container?.querySelector('h2[role="button"]');
+        return h2Element && target === h2Element;
       }
+      return false;
+    },
+    onMatch: (e, target) => {
+      // Open the list edit modal
+      listModal.openModal(target);
     }
-  }
-  
-  // Use capture phase to intercept before drag library
-  listSectionElement.addEventListener('keydown', handleListTitleKeydownCapture, true);
-  
-  return () => {
-    if (listSectionElement) {
-      listSectionElement.removeEventListener('keydown', handleListTitleKeydownCapture, true);
-    }
-  };
+  });
 }
 
 /**
@@ -60,35 +88,22 @@ export function setupListTitleKeydownCapture(listSectionElement, listModal) {
  * @returns {Function} Cleanup function to remove the event listener
  */
 export function setupAddTaskButtonKeydownCapture(addTaskContainerElement, onAddTaskClick) {
-  if (!addTaskContainerElement) {
-    return () => {}; // No-op cleanup
-  }
-  
-  function handleAddTaskButtonKeydownCapture(e) {
-    const target = e.target;
-    
-    // Handle Enter/Space on Add Task button (span with role="button")
-    if ((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.hasAttribute('role') && target.getAttribute('role') === 'button') {
-      // Check if this is the Add Task button (within the add task container)
-      const addTaskButton = addTaskContainerElement?.querySelector('span[role="button"]');
-      if (addTaskButton && target === addTaskButton) {
-        e.preventDefault();
-        e.stopImmediatePropagation(); // Stop ALL handlers including drag library
-        
-        // Activate the input (same as clicking)
-        onAddTaskClick();
+  return createCaptureHandler({
+    containerElement: addTaskContainerElement,
+    keyMatches: (key) => key === 'Enter' || key === ' ',
+    targetMatches: (target, container) => {
+      // Check if this is the Add Task button (span with role="button")
+      if (target.hasAttribute('role') && target.getAttribute('role') === 'button') {
+        const addTaskButton = container?.querySelector('span[role="button"]');
+        return addTaskButton && target === addTaskButton;
       }
+      return false;
+    },
+    onMatch: (e, target) => {
+      // Activate the input (same as clicking)
+      onAddTaskClick();
     }
-  }
-  
-  // Use capture phase to intercept before drag library
-  addTaskContainerElement.addEventListener('keydown', handleAddTaskButtonKeydownCapture, true);
-  
-  return () => {
-    if (addTaskContainerElement) {
-      addTaskContainerElement.removeEventListener('keydown', handleAddTaskButtonKeydownCapture, true);
-    }
-  };
+  });
 }
 
 /**

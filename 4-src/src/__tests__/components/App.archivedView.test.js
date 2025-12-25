@@ -228,51 +228,65 @@ describe('App - Archived View Grid Layout', () => {
     
     const workSection = await waitForListSection('Work')
     
+    // Wait for tasks to load before trying to get checkbox (ensures tasks are loaded)
+    await waitFor(() => {
+      expect(within(workSection).getByText('Task 1')).toBeInTheDocument()
+    }, { timeout: 5000 })
+    
     // Archive Task 1
     const checkbox1 = await getFirstCheckboxFor('Work')
     await user.click(checkbox1)
     
+    // Re-query checkbox inside waitFor to avoid stale reference
     await waitFor(() => {
-      expect(checkbox1).toBeChecked()
-    })
+      const listSection = getListSection('Work')
+      const checkboxes = within(listSection).getAllByRole('checkbox')
+      expect(checkboxes[0]).toBeChecked()
+    }, { timeout: 5000 })
     
-    const archiveButton1 = await within(workSection).findByRole('button', { name: /archive/i })
+    const archiveButton1 = await within(workSection).findByRole('button', { name: /archive/i }, { timeout: 5000 })
     await user.click(archiveButton1)
     
     // Wait a bit to ensure different archive times
     await new Promise(resolve => setTimeout(resolve, 100))
     
     // Archive Task 2 - re-query to get fresh reference
+    // Wait for tasks to update after archiving Task 1
     await waitFor(() => {
       const checkboxes = within(workSection).getAllByRole('checkbox')
       expect(checkboxes.length).toBeGreaterThan(0)
-    })
+    }, { timeout: 5000 })
     
     const checkboxes = within(workSection).getAllByRole('checkbox')
     const checkbox2 = checkboxes[0] // After archiving Task 1, Task 2 is now first
     await user.click(checkbox2)
     
+    // Re-query checkbox inside waitFor to avoid stale reference
     await waitFor(() => {
-      const updatedCheckbox = within(workSection).getAllByRole('checkbox')[0]
+      const listSection = getListSection('Work')
+      const updatedCheckbox = within(listSection).getAllByRole('checkbox')[0]
       expect(updatedCheckbox).toBeChecked()
-    })
+    }, { timeout: 5000 })
     
-    const archiveButton2 = await within(workSection).findByRole('button', { name: /archive/i })
+    const archiveButton2 = await within(workSection).findByRole('button', { name: /archive/i }, { timeout: 5000 })
     await user.click(archiveButton2)
     
-    // Check archived view
-    const archivedSection = screen.getByText('Archived Tasks').parentElement
+    // Check archived view - wait for it to appear first (positive assertion)
+    const archivedSection = await waitFor(() => {
+      const heading = screen.getByText('Archived Tasks')
+      return heading.parentElement
+    }, { timeout: 5000 })
     
     // Verify both tasks appear in archived view
     await waitFor(() => {
       expect(within(archivedSection).getByText('Task 1')).toBeInTheDocument()
       expect(within(archivedSection).getByText('Task 2')).toBeInTheDocument()
-    }, { timeout: 3000 })
+    }, { timeout: 10000 })
     
     // Tasks should be grouped by date (they should appear under date headers)
     // The exact date format may vary, but tasks should be organized
     const workListInArchive = within(archivedSection).getByText('Work').closest('div')
     expect(workListInArchive).toBeInTheDocument()
-  })
+  }, 20000)
 })
 

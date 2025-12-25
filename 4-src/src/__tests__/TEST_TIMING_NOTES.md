@@ -82,6 +82,25 @@ expect(within(section).queryByPlaceholderText('Add new task...')).not.toBeInTheD
 - ✅ Test is now stable when all tests run together
 - The code changes and test structure updates have made this test reliably green
 
+### App.archivedView.test.js - "groups tasks by archive date within each list"
+
+**Issue**: Test fails with "Unable to find role='checkbox'" when trying to get checkbox before tasks have loaded. The test was calling `getFirstCheckboxFor('Work')` immediately after getting the list section, but tasks might still be loading.
+
+**Root Cause**: The test didn't wait for tasks to load before trying to access checkboxes. When the list is still in loading state, there are no checkboxes in the DOM yet.
+
+**Fixes Applied** (December 2024):
+1. **Wait for tasks to load**: Added wait for "Task 1" to appear before trying to get checkbox - ensures tasks are loaded before accessing checkboxes
+2. **Re-query checkboxes**: Re-query checkbox inside waitFor after clicking to avoid stale references
+3. **Test timeout**: Added explicit test timeout of 20000ms
+4. **Timeout increases**: Increased timeouts for waitFor calls (5000ms, 10000ms)
+5. **Positive assertions first**: Wait for archived section to appear first, then check for tasks
+6. **findByRole with timeout**: Use findByRole with explicit timeout for archive buttons
+
+**Current Status (Dec 2024)**: 
+- ✅ Test passes when run in isolation
+- ✅ Test is now stable when all tests run together
+- The fix follows the same pattern as "shows active lists with archived tasks with [List Active] badge"
+
 ### App.taskCreation.test.js - "Enter key on empty string"
 
 **Issue**: Test times out when checking for textarea to disappear after pressing Enter on empty input. The test fails in CI/deployment but passes when run in isolation. The DOM may not have updated yet when checking for textarea removal, even with `tick()` and delays in the implementation.

@@ -12,6 +12,7 @@ import { findNeighborListId, moveTaskToNextList, moveTaskToPreviousList } from '
 import { getTasksForList, updateTaskOrderCrossList } from '../dataAccess.js';
 import { groupListsIntoColumns } from '../listDndUtils.js';
 import { taskDragStateManager } from './taskDragStateManager.js';
+import { createTabResumeElementHandler } from './tabResumeUtils.js';
 
 /**
  * Create a capture-phase keydown handler for task list items.
@@ -257,39 +258,25 @@ export function setupTaskKeyboardDragDocumentHandler(
         return;
       }
 
-      // Handle Tab resume after blur for tasks (mirrors list behavior in App.svelte)
-      const shouldRefocusTaskOnNextTab = getShouldRefocusTaskOnNextTab();
-      const lastBlurredTaskElement = getLastBlurredTaskElement();
-      
-      if (key === 'Tab' && shouldRefocusTaskOnNextTab && lastBlurredTaskElement) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        e.stopPropagation();
-
-        setShouldRefocusTaskOnNextTab(false);
-
-        // Try to refocus the previously blurred task-related element
-        if (typeof document !== 'undefined') {
-          let target = lastBlurredTaskElement;
-          // If stored element is no longer in the DOM, fall back to the Add Task button
-          if (
-            !(target instanceof HTMLElement) ||
-            !document.contains(target)
-          ) {
-            if (addTaskContainerElement) {
-              const addTaskButton = addTaskContainerElement.querySelector(
-                'span[role="button"]'
-              );
-              if (addTaskButton && addTaskButton instanceof HTMLElement) {
-                target = addTaskButton;
-              }
+      // Handle Tab resume after blur for tasks
+      const tabResumeHandler = createTabResumeElementHandler({
+        getShouldResume: getShouldRefocusTaskOnNextTab,
+        getLastBlurredElement: getLastBlurredTaskElement,
+        setShouldResume: setShouldRefocusTaskOnNextTab,
+        getFallbackElement: () => {
+          if (addTaskContainerElement) {
+            const addTaskButton = addTaskContainerElement.querySelector(
+              'span[role="button"]'
+            );
+            if (addTaskButton && addTaskButton instanceof HTMLElement) {
+              return addTaskButton;
             }
           }
-
-          if (target && target instanceof HTMLElement) {
-            target.focus();
-          }
+          return null;
         }
+      });
+      
+      if (tabResumeHandler(e)) {
         return;
       }
     }
