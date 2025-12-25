@@ -825,20 +825,22 @@
         {/each}
       </ul>
       {#if draggableTasks.length === 0}
-        <AddTaskInput
-          bind:isInputActive={isInputActive}
-          bind:containerElement={addTaskContainerElement}
-          bind:textareaElement={addTaskTextareaElement}
-          inputValue={newTaskInput}
-          onInputChange={onInputChange}
-          onSave={handleCreateTask}
-          onEscape={handleInputEscape}
-          onActivate={handleAddTaskClick}
-          buttonText="Add your first task"
-          placeholder="start typing..."
-          ariaLabel="Add your first task to {listName}"
-          marginLeft={false}
-        />
+        <div style="margin-top: calc((var(--task-item-padding-y) + var(--line-height-body) + var(--task-item-padding-y)) * -1);">
+          <AddTaskInput
+            bind:isInputActive={isInputActive}
+            bind:containerElement={addTaskContainerElement}
+            bind:textareaElement={addTaskTextareaElement}
+            inputValue={newTaskInput}
+            onInputChange={onInputChange}
+            onSave={handleCreateTask}
+            onEscape={handleInputEscape}
+            onActivate={handleAddTaskClick}
+            buttonText="Add your first task"
+            placeholder="start typing..."
+            ariaLabel="Add your first task to {listName}"
+            marginLeft={false}
+          />
+        </div>
       {:else}
         <AddTaskInput
           bind:isInputActive={isInputActive}
