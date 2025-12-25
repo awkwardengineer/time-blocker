@@ -47,6 +47,40 @@
   let addTaskTextareaElement = $state(null); // Reference to the add-task textarea
   let listTitleContainerElement = $state(null); // Reference to the list title container
   
+  // Measure dimensions for debugging
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    setTimeout(() => {
+      if (ulElement) {
+        const ulStyle = getComputedStyle(ulElement);
+        const rootStyle = getComputedStyle(document.documentElement);
+        const paddingY = rootStyle.getPropertyValue('--task-item-padding-y');
+        const lineHeight = rootStyle.getPropertyValue('--line-height-body');
+        const ulHeight = ulStyle.height;
+        const ulPaddingTop = ulStyle.paddingTop;
+        const ulPaddingBottom = ulStyle.paddingBottom;
+        const ulTotal = parseFloat(ulHeight) + parseFloat(ulPaddingTop) + parseFloat(ulPaddingBottom);
+        if (draggableTasks.length === 0) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/6a91a8db-109e-459e-bb3e-5dc44dceea1f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskList.svelte:effect',message:'Empty drop zone dimensions',data:{ulHeight,ulPaddingTop,ulPaddingBottom,ulTotal,paddingY,lineHeight,expectedTotal:parseFloat(paddingY) + parseFloat(lineHeight) + parseFloat(paddingY)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+          // #endregion
+        } else if (draggableTasks.length > 0) {
+          const firstTask = ulElement.querySelector('li[data-id]');
+          if (firstTask && firstTask instanceof HTMLElement) {
+            const taskStyle = getComputedStyle(firstTask);
+            const taskHeight = taskStyle.height;
+            const taskPaddingTop = taskStyle.paddingTop;
+            const taskPaddingBottom = taskStyle.paddingBottom;
+            const taskTotal = parseFloat(taskHeight) + parseFloat(taskPaddingTop) + parseFloat(taskPaddingBottom);
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/6a91a8db-109e-459e-bb3e-5dc44dceea1f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskList.svelte:effect',message:'Task vs Drop zone comparison',data:{taskHeight,taskPaddingTop,taskPaddingBottom,taskTotal,ulHeight,ulPaddingTop,ulPaddingBottom,ulTotal,expectedTaskTotal:parseFloat(paddingY) + parseFloat(lineHeight) + parseFloat(paddingY),difference:taskTotal - ulTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
+          }
+        }
+      }
+    }, 200);
+  });
+  
   // Track last blurred task-related element and whether the next Tab
   // should refocus it (mirrors list behavior in App.svelte).
   let lastBlurredTaskElement = $state(null);
@@ -690,7 +724,8 @@
         onkeydown={handleListNameKeydown}
         role="button"
         tabindex="0"
-        class="list-title cursor-pointer m-0 px-2 py-2 leading-none text-grey-110 font-gilda text-[24px] rounded -my-1 transition-colors flex-1 min-w-0 focus:outline-none"
+        class="list-title cursor-pointer m-0 leading-none text-grey-110 font-gilda rounded -my-1 transition-colors flex-1 min-w-0 focus:outline-none"
+        style="font-size: var(--font-size-heading); padding: var(--list-title-padding-y) var(--list-title-padding-x); line-height: var(--line-height-heading);"
         aria-label={`Rename list: ${listName}`}
       >
         {listName}
@@ -702,7 +737,25 @@
       <ul 
         bind:this={ulElement}
         data-list-id={listId}
-        class="space-y-0 m-0 p-0 list-none w-full {draggableTasks.length === 0 ? 'empty-drop-zone min-h-[24px]' : ''}"
+        class="space-y-0 m-0 p-0 list-none w-full {draggableTasks.length === 0 ? 'empty-drop-zone' : ''}"
+        style={draggableTasks.length === 0 ? (() => {
+          // #region agent log
+          if (typeof window !== 'undefined' && ulElement) {
+            setTimeout(() => {
+              const rootStyle = getComputedStyle(document.documentElement);
+              const ulStyle = getComputedStyle(ulElement);
+              const paddingY = rootStyle.getPropertyValue('--task-item-padding-y');
+              const lineHeight = rootStyle.getPropertyValue('--line-height-body');
+              const actualUlHeight = ulStyle.height;
+              const actualUlPaddingTop = ulStyle.paddingTop;
+              const actualUlPaddingBottom = ulStyle.paddingBottom;
+              const actualUlTotal = parseFloat(actualUlPaddingTop) + parseFloat(actualUlHeight) + parseFloat(actualUlPaddingBottom);
+              fetch('http://127.0.0.1:7242/ingest/6a91a8db-109e-459e-bb3e-5dc44dceea1f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskList.svelte:707',message:'Drop zone actual rendered dimensions',data:{paddingY,lineHeight,actualUlHeight,actualUlPaddingTop,actualUlPaddingBottom,actualUlTotal,expectedTotal:`${paddingY} + ${lineHeight} + ${paddingY} = ${parseFloat(paddingY) + parseFloat(lineHeight) + parseFloat(paddingY)}px`,usingMinHeight:'calc(2*padding + line-height)'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            }, 100);
+          }
+          // #endregion
+          return `height: var(--line-height-body); padding-top: var(--task-item-padding-y); padding-bottom: var(--task-item-padding-y); box-sizing: content-box;`;
+        })() : ''}
       >
         {#each draggableTasks as task (task.id)}
           <li
@@ -710,7 +763,8 @@
             tabindex="0"
             role="listitem"
             aria-label={`Task: ${task.text || 'blank task'}`}
-            class="flex items-center gap-2 py-1 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full m-0 list-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+            class="flex items-center gap-2 border-b border-grey-50 cursor-move hover:bg-grey-20 w-full m-0 list-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+            style="padding-top: var(--task-item-padding-y); padding-bottom: var(--task-item-padding-y); gap: var(--task-item-gap);"
             onkeydowncapture={(e) => handleTaskItemKeydownCapture(e, task.id)}
             onblur={(e) => handleTaskItemBlur(e, task.id)}
           >
@@ -745,7 +799,8 @@
               aria-label={`Mark task "${task.text || 'blank task'}" as ${task.status === 'checked' ? 'unchecked' : 'checked'}`}
             />
             <span 
-              class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100' : 'cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-100'}
+              class={task.status === 'checked' ? 'line-through cursor-pointer hover:underline break-words flex-1 font-urbanist text-grey-100' : 'cursor-pointer hover:underline break-words flex-1 font-urbanist text-grey-100'}
+              style="font-size: var(--font-size-body); line-height: var(--line-height-body);"
               onclick={(e) => handleTaskTextClick(task.id, task.text, e)}
               role="button"
               tabindex="0"
@@ -769,25 +824,21 @@
           </li>
         {/each}
       </ul>
-      
-      <!-- Add Task button - styled like a task item, positioned to align with list items -->
       {#if draggableTasks.length === 0}
-        <div class="-mt-6">
-          <AddTaskInput
-            bind:isInputActive={isInputActive}
-            bind:containerElement={addTaskContainerElement}
-            bind:textareaElement={addTaskTextareaElement}
-            inputValue={newTaskInput}
-            onInputChange={onInputChange}
-            onSave={handleCreateTask}
-            onEscape={handleInputEscape}
-            onActivate={handleAddTaskClick}
-            buttonText="Add your first task"
-            placeholder="start typing..."
-            ariaLabel="Add your first task to {listName}"
-            marginLeft={false}
-          />
-        </div>
+        <AddTaskInput
+          bind:isInputActive={isInputActive}
+          bind:containerElement={addTaskContainerElement}
+          bind:textareaElement={addTaskTextareaElement}
+          inputValue={newTaskInput}
+          onInputChange={onInputChange}
+          onSave={handleCreateTask}
+          onEscape={handleInputEscape}
+          onActivate={handleAddTaskClick}
+          buttonText="Add your first task"
+          placeholder="start typing..."
+          ariaLabel="Add your first task to {listName}"
+          marginLeft={false}
+        />
       {:else}
         <AddTaskInput
           bind:isInputActive={isInputActive}

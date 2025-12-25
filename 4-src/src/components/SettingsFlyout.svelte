@@ -1,7 +1,22 @@
 <script>
   import Button from './Button.svelte';
+  import { getFontSizePreference, setFontSize } from '../lib/theme.js';
   
   let { isOpen, onClose } = $props();
+  
+  let currentFontSize = $state('medium');
+  
+  function handleFontSizeChange(size) {
+    setFontSize(size);
+    currentFontSize = size;
+  }
+  
+  // Update current font size when flyout opens
+  $effect(() => {
+    if (isOpen) {
+      currentFontSize = getFontSizePreference();
+    }
+  });
   
   let flyoutElement = $state(null);
   let backdropMousedownTarget = $state(null);
@@ -179,9 +194,55 @@
         </button>
       </div>
       
-      <!-- Content (placeholder) -->
+      <!-- Content -->
       <div class="flex-1 p-6 overflow-y-auto">
-        <p class="text-grey-110">Settings content will go here.</p>
+        <!-- Font Size Setting -->
+        <div class="bg-grey-20 rounded-lg p-4 mb-6">
+          <label class="block text-grey-110 font-gilda text-sm font-medium mb-3">
+            Font Size
+          </label>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              onclick={() => handleFontSizeChange('small')}
+              aria-pressed={currentFontSize === 'small'}
+              class={`flex-1 px-4 py-2 text-sm font-urbanist transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                currentFontSize === 'small'
+                  ? 'bg-grey-80 text-grey-110'
+                  : 'bg-white text-grey-110 hover:bg-grey-30'
+              }`}
+              aria-label="Small font size (10px body, 12px heading)"
+            >
+              Small
+            </button>
+            <button
+              type="button"
+              onclick={() => handleFontSizeChange('medium')}
+              aria-pressed={currentFontSize === 'medium'}
+              class={`flex-1 px-4 py-2 text-sm font-urbanist transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                currentFontSize === 'medium'
+                  ? 'bg-grey-80 text-grey-110'
+                  : 'bg-white text-grey-110 hover:bg-grey-30'
+              }`}
+              aria-label="Medium font size (12px body, 14px heading)"
+            >
+              Medium
+            </button>
+            <button
+              type="button"
+              onclick={() => handleFontSizeChange('large')}
+              aria-pressed={currentFontSize === 'large'}
+              class={`flex-1 px-4 py-2 text-sm font-urbanist transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                currentFontSize === 'large'
+                  ? 'bg-grey-80 text-grey-110'
+                  : 'bg-white text-grey-110 hover:bg-grey-30'
+              }`}
+              aria-label="Large font size (14px body, 16px heading)"
+            >
+              Large
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

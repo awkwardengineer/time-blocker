@@ -9,8 +9,8 @@ input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  width: 16px;
-  height: 16px;
+  width: var(--checkbox-size, 18px);
+  height: var(--checkbox-size, 18px);
   border: 1.5px solid var(--color-grey-60);
   border-radius: 50%;
   background-color: transparent;

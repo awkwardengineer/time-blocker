@@ -31,18 +31,20 @@
       // Small delay to ensure textarea is rendered
       setTimeout(() => {
         inputElement?.focus();
-        // Auto-resize textarea to fit content, starting with single line height (24px = line-height of text-body)
+        // Auto-resize textarea to fit content, using CSS variable for line height
         if (inputElement instanceof HTMLTextAreaElement) {
           inputElement.style.height = 'auto';
           const scrollHeight = inputElement.scrollHeight;
-          // Use at least 24px (single line height) but allow it to grow
-          inputElement.style.height = `${Math.max(24, Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
+          // Use CSS variable for minimum height (line-height-body)
+          const minHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--line-height-body')) || 24;
+          inputElement.style.height = `${Math.max(minHeight, Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
         }
       }, 0);
     } else if (!isInputActive && inputElement) {
-      // Reset height when input becomes inactive
+      // Reset height when input becomes inactive, using CSS variable
       if (inputElement instanceof HTMLTextAreaElement) {
-        inputElement.style.height = '24px';
+        const lineHeight = getComputedStyle(document.documentElement).getPropertyValue('--line-height-body') || '24px';
+        inputElement.style.height = lineHeight;
       }
     }
   });
@@ -53,8 +55,9 @@
       const resizeTextarea = () => {
         inputElement.style.height = 'auto';
         const scrollHeight = inputElement.scrollHeight;
-        // Use at least 24px (single line height) but allow it to grow
-        inputElement.style.height = `${Math.max(24, Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
+        // Use CSS variable for minimum height (line-height-body)
+        const minHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--line-height-body')) || 24;
+        inputElement.style.height = `${Math.max(minHeight, Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
       };
       
       inputElement.addEventListener('input', resizeTextarea);
@@ -98,8 +101,8 @@
 
 <div 
   bind:this={containerRef}
-  class="flex items-center gap-2 py-1 border-b border-grey-50 hover:bg-grey-20 w-full print:hidden add-task-container add-task-button"
-  style={marginLeft ? "margin-left: 1.5rem;" : ""}
+  class="flex items-center border-b border-grey-50 hover:bg-grey-20 w-full print:hidden add-task-container add-task-button"
+  style={`padding-top: var(--add-task-padding-y); padding-bottom: var(--add-task-padding-y); gap: var(--task-item-gap); ${marginLeft ? "margin-left: 1.5rem;" : ""}`}
 >
   {#if isInputActive}
     <input
@@ -115,9 +118,9 @@
       value={inputValue}
       oninput={(e) => onInputChange?.(e.currentTarget.value)}
       onkeydown={handleKeydown}
-      class="flex-1 break-words resize-none max-h-[10rem] overflow-y-auto text-body font-urbanist text-grey-100 placeholder:italic"
+      class="flex-1 break-words resize-none max-h-[10rem] overflow-y-auto font-urbanist text-grey-100 placeholder:italic"
       rows="1"
-      style="height: 24px;"
+      style="font-size: var(--font-size-body); line-height: var(--line-height-body); height: var(--line-height-body);"
     ></textarea>
   {:else}
     <input
@@ -128,7 +131,8 @@
       tabindex="-1"
     />
     <span 
-      class="cursor-pointer hover:underline break-words flex-1 text-body font-urbanist text-grey-60"
+      class="cursor-pointer hover:underline break-words flex-1 font-urbanist text-grey-60"
+      style="font-size: var(--font-size-body); line-height: var(--line-height-body);"
       onclick={onActivate}
       onkeydown={handleButtonKeydown}
       role="button"

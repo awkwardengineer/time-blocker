@@ -639,7 +639,7 @@
     <p>Loading...</p>
   {:else if Array.isArray($lists)}
     <!-- 5-column grid layout with column containers -->
-    <div class="grid grid-cols-5 w-full h-full py-4 px-1">
+    <div class="grid grid-cols-5 w-full h-full px-1" style="padding-top: var(--board-padding-y); padding-bottom: var(--board-padding-y);">
       {#each listsByColumn as columnLists, columnIndex}
         <ListColumn
           {columnIndex}

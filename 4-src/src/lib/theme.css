@@ -1,0 +1,33 @@
+/**
+ * CSS Custom Properties for Theme System
+ * These variables are set dynamically via JavaScript based on user preference
+ * Default values are set for medium size (12px body, 14px heading)
+ */
+
+:root {
+  /* Font sizes - default to medium */
+  --font-size-body: 12px;
+  --font-size-heading: 18px;
+  
+  /* Checkbox size - default to medium */
+  --checkbox-size: 18px;
+  
+  /* Grid system - default to medium */
+  --grid-unit: 24px;
+  --grid-unit-half: 12px;
+  
+  /* Line heights - default to medium (tighter for multiline) */
+  --line-height-body: 20px;
+  --line-height-heading: 21.6px; /* 18px * 1.2 */
+  
+  /* Component-specific spacing - default to medium (tighter) */
+  --list-title-padding-y: 10px;
+  --list-title-padding-x: 8px;
+  --task-item-padding-y: 10px;
+  --task-item-gap: 8px;
+  --add-task-padding-y: 10px;
+  --list-spacing-top: 12px;
+  --list-gap: 16px;
+  --board-padding-y: 12px;
+}
+

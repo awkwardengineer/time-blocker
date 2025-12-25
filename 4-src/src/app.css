@@ -1,4 +1,5 @@
 @import './components/checkbox.css';
+@import './lib/theme.css';
 
 @tailwind base;
 @tailwind components;
@@ -79,7 +80,7 @@ body.keyboard-list-dragging-active .sortable-column-container > .empty-drop-zone
 
 /* Ensure empty columns have minimum height to accept drops */
 .sortable-column-container:has(.empty-drop-zone) {
-  min-height: 96px;
+  min-height: var(--grid-unit);
 }
 
 body.list-dragging-active .sortable-column-container,
