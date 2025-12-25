@@ -67,6 +67,14 @@ body.keyboard-list-dragging-active .sortable-column-container > .empty-drop-zone
 /* Make sortable container fill column during drag, shrink to fit when not dragging */
 .sortable-column-container {
   flex: 0 1 auto; /* Shrink to fit content by default */
+  /* Hide scrollbar but keep scrolling functional */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Hide scrollbar for WebKit browsers */
+.sortable-column-container::-webkit-scrollbar {
+  display: none;
 }
 
 /* Ensure empty columns have minimum height to accept drops */

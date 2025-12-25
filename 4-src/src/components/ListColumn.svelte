@@ -128,7 +128,7 @@
   
   <div
     bind:this={columnElement}
-    class="sortable-column-container flex flex-col pt-0 gap-y-6 min-h-0 overflow-y-auto px-1"
+    class="sortable-column-container flex flex-col pt-0 gap-y-6 min-h-0 overflow-y-auto overflow-x-hidden px-1"
   >
     <!-- Render lists in this column -->
     {#each columnLists as dragItem, index (dragItem.id)}
