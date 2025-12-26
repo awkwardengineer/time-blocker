@@ -265,6 +265,46 @@
       const currentTaskSignature = draggableTasks.map(t => `${t.id}:${t.status}:${t.text || ''}`).join(',');
       if (stateTaskSignature !== currentTaskSignature) {
         draggableTasks = state.tasks;
+        
+        // CRITICAL FIX: Clean up SortableJS duplicates immediately after draggableTasks assignment
+        // 
+        // WHAT WE LEARNED: SortableJS manipulates the DOM during cross-list drags, especially when
+        // dragging to/from empty lists. Even with forceFallback: true, SortableJS still moves elements
+        // in the DOM after drag ends. This creates duplicates because:
+        // 1. SortableJS moves the element to the target list
+        // 2. Svelte renders based on draggableTasks (which is correct)
+        // 3. Both the SortableJS-moved element and Svelte-rendered element exist briefly
+        // 
+        // SOLUTION: Use Promise.resolve().then() (microtask) to clean up duplicates immediately
+        // after Svelte renders but before the next frame. This runs ~4ms after assignment,
+        // fast enough to prevent visible flicker. The cleanup removes any DOM elements that:
+        // - Don't match the expected task IDs from draggableTasks, OR
+        // - Are duplicates (same ID appears multiple times)
+        //
+        // This is a pragmatic solution - we're cleaning up rather than preventing, but it works
+        // because the microtask timing ensures cleanup happens after Svelte renders but before
+        // the browser paints, so users never see the duplicates.
+        Promise.resolve().then(() => {
+          if (ulElement) {
+            const draggableTaskIds = draggableTasks.map(t => t.id);
+            const expectedIds = new Set(draggableTaskIds);
+            const seenIds = new Map(); // Map<id, firstElement>
+            const children = Array.from(ulElement.children);
+            
+            children.forEach((child) => {
+              const idAttr = child.getAttribute('data-id');
+              if (!idAttr) return;
+              const id = parseInt(idAttr, 10);
+              
+              // Remove if not in expected list OR if duplicate
+              if (!expectedIds.has(id) || seenIds.has(id)) {
+                child.remove();
+              } else {
+                seenIds.set(id, child);
+              }
+            });
+          }
+        });
       }
     });
     
@@ -280,6 +320,28 @@
     
     if ($tasksQuery && Array.isArray($tasksQuery)) {
       taskDragStateManager.initializeFromQuery(listId, $tasksQuery);
+      
+      // CRITICAL FIX: Clean up duplicates after liveQuery sync
+      // Use a microtask to check after current render cycle but before next frame
+      Promise.resolve().then(() => {
+        if (ulElement) {
+          const seenIds = new Map(); // Map<id, firstElement>
+          const children = Array.from(ulElement.children);
+          
+          children.forEach((child) => {
+            const idAttr = child.getAttribute('data-id');
+            if (!idAttr) return;
+            const id = parseInt(idAttr, 10);
+            
+            if (seenIds.has(id)) {
+              // Duplicate found - remove this one (keep the first one we saw)
+              child.remove();
+            } else {
+              seenIds.set(id, child);
+            }
+          });
+        }
+      });
     }
   });
 
