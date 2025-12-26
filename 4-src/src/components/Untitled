@@ -1,0 +1,11 @@
+[plugin:vite-plugin-svelte:compile] /home/sam/Dropbox/code-timeblocker/4-src/src/components/TaskList.svelte:874:7 {:...} block is invalid at this position (did you forget to close the preceding element or block?)
+https://svelte.dev/e/block_invalid_continuation_placement
+TaskList.svelte:874:7
+872 |          {/if}
+ 873 |        </ul>
+ 874 |        {:else}
+               ^
+ 875 |          <AddTaskInput
+ 876 |            bind:isInputActive={isInputActive}
+Click outside, press Esc key, or fix the code to dismiss.
+You can also disable this overlay by setting server.hmr.overlay to false in vite.config.js.

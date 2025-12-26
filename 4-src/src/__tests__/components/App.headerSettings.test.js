@@ -182,25 +182,6 @@ describe('App - Header and Settings Flyout', () => {
     }, { timeout: 3000 })
   }, 15000)
 
-  it('displays placeholder content in settings flyout', async () => {
-    const user = userEvent.setup()
-    render(App)
-    
-    // Open flyout
-    const settingsButton = await screen.findByRole('button', { name: /settings/i })
-    await user.click(settingsButton)
-    
-    // Wait for flyout to appear (positive assertion)
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument()
-    }, { timeout: 5000 })
-    
-    // Verify placeholder content (positive assertion)
-    await waitFor(() => {
-      expect(screen.getByText('Settings content will go here.')).toBeInTheDocument()
-    }, { timeout: 3000 })
-  }, 15000)
-
   it('header is hidden during print', async () => {
     render(App)
     

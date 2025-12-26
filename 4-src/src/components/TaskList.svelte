@@ -47,40 +47,6 @@
   let addTaskTextareaElement = $state(null); // Reference to the add-task textarea
   let listTitleContainerElement = $state(null); // Reference to the list title container
   
-  // Measure dimensions for debugging
-  $effect(() => {
-    if (typeof window === 'undefined') return;
-    setTimeout(() => {
-      if (ulElement) {
-        const ulStyle = getComputedStyle(ulElement);
-        const rootStyle = getComputedStyle(document.documentElement);
-        const paddingY = rootStyle.getPropertyValue('--task-item-padding-y');
-        const lineHeight = rootStyle.getPropertyValue('--line-height-body');
-        const ulHeight = ulStyle.height;
-        const ulPaddingTop = ulStyle.paddingTop;
-        const ulPaddingBottom = ulStyle.paddingBottom;
-        const ulTotal = parseFloat(ulHeight) + parseFloat(ulPaddingTop) + parseFloat(ulPaddingBottom);
-        if (draggableTasks.length === 0) {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/6a91a8db-109e-459e-bb3e-5dc44dceea1f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskList.svelte:effect',message:'Empty drop zone dimensions',data:{ulHeight,ulPaddingTop,ulPaddingBottom,ulTotal,paddingY,lineHeight,expectedTotal:parseFloat(paddingY) + parseFloat(lineHeight) + parseFloat(paddingY)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-          // #endregion
-        } else if (draggableTasks.length > 0) {
-          const firstTask = ulElement.querySelector('li[data-id]');
-          if (firstTask && firstTask instanceof HTMLElement) {
-            const taskStyle = getComputedStyle(firstTask);
-            const taskHeight = taskStyle.height;
-            const taskPaddingTop = taskStyle.paddingTop;
-            const taskPaddingBottom = taskStyle.paddingBottom;
-            const taskTotal = parseFloat(taskHeight) + parseFloat(taskPaddingTop) + parseFloat(taskPaddingBottom);
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/6a91a8db-109e-459e-bb3e-5dc44dceea1f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskList.svelte:effect',message:'Task vs Drop zone comparison',data:{taskHeight,taskPaddingTop,taskPaddingBottom,taskTotal,ulHeight,ulPaddingTop,ulPaddingBottom,ulTotal,expectedTaskTotal:parseFloat(paddingY) + parseFloat(lineHeight) + parseFloat(paddingY),difference:taskTotal - ulTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-            // #endregion
-          }
-        }
-      }
-    }, 200);
-  });
-  
   // Track last blurred task-related element and whether the next Tab
   // should refocus it (mirrors list behavior in App.svelte).
   let lastBlurredTaskElement = $state(null);
@@ -800,24 +766,7 @@
         bind:this={ulElement}
         data-list-id={listId}
         class="space-y-0 m-0 p-0 list-none w-full {draggableTasks.length === 0 ? 'empty-drop-zone' : ''}"
-        style={draggableTasks.length === 0 ? (() => {
-          // #region agent log
-          if (typeof window !== 'undefined' && ulElement) {
-            setTimeout(() => {
-              const rootStyle = getComputedStyle(document.documentElement);
-              const ulStyle = getComputedStyle(ulElement);
-              const paddingY = rootStyle.getPropertyValue('--task-item-padding-y');
-              const lineHeight = rootStyle.getPropertyValue('--line-height-body');
-              const actualUlHeight = ulStyle.height;
-              const actualUlPaddingTop = ulStyle.paddingTop;
-              const actualUlPaddingBottom = ulStyle.paddingBottom;
-              const actualUlTotal = parseFloat(actualUlPaddingTop) + parseFloat(actualUlHeight) + parseFloat(actualUlPaddingBottom);
-              fetch('http://127.0.0.1:7242/ingest/6a91a8db-109e-459e-bb3e-5dc44dceea1f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskList.svelte:707',message:'Drop zone actual rendered dimensions',data:{paddingY,lineHeight,actualUlHeight,actualUlPaddingTop,actualUlPaddingBottom,actualUlTotal,expectedTotal:`${paddingY} + ${lineHeight} + ${paddingY} = ${parseFloat(paddingY) + parseFloat(lineHeight) + parseFloat(paddingY)}px`,usingMinHeight:'calc(2*padding + line-height)'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            }, 100);
-          }
-          // #endregion
-          return `height: var(--line-height-body); padding-top: var(--task-item-padding-y); padding-bottom: var(--task-item-padding-y); box-sizing: content-box;`;
-        })() : ''}
+        style={draggableTasks.length === 0 ? 'height: var(--line-height-body); padding-top: var(--task-item-padding-y); padding-bottom: var(--task-item-padding-y); box-sizing: content-box;' : ''}
       >
         {#each draggableTasks as task (task.id)}
           <li

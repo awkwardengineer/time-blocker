@@ -22,8 +22,6 @@ export async function seedDatabase() {
     // Insert tasks with the correct listId references
     // mockTasks use listId: 1, 2, 3 which matches the IDs assigned above
     await db.tasks.bulkAdd(mockTasks);
-    
-    console.log('Database seeded with mock data');
   } catch (error) {
     console.error('Error seeding database:', error);
     throw error;
